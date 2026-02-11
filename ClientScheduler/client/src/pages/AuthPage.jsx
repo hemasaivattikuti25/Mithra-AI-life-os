@@ -150,6 +150,29 @@ export default function AuthPage() {
     return Object.keys(errs).length === 0;
   };
 
+  // Helper to convert Supabase error messages to user-friendly messages
+  const getReadableError = (message) => {
+    const errorMap = {
+      'Invalid login credentials': 'Email or password is incorrect',
+      'Email not confirmed': 'Please check your email inbox and click the confirmation link',
+      'User already registered': 'An account with this email already exists. Try signing in instead.',
+      'Password should be at least 6 characters': 'Password must be at least 6 characters',
+      'Unable to validate email address': 'Please enter a valid email address',
+      'Token has expired': 'Your session has expired. Please sign in again.',
+      'invalid_grant': 'Your session has expired. Please sign in again.',
+      'Refresh Token Not Found': 'Your session has expired. Please sign in again.',
+      'JWT expired': 'Your session has expired. Please sign in again.',
+      'Database error': 'Account created! Please try signing in.',
+    };
+    
+    for (const [key, value] of Object.entries(errorMap)) {
+      if (message?.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
+    }
+    return message || 'Something went wrong. Please try again.';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -164,7 +187,7 @@ export default function AuthPage() {
         setView('resetSuccess');
       }
     } catch (err) {
-      setGlobalError(err.message || 'Something went wrong');
+      setGlobalError(getReadableError(err.message));
     } finally { setLoading(false); }
   };
 
@@ -550,6 +573,13 @@ export default function AuthPage() {
                 )}
               </AnimatePresence>
             </div>
+          </div>
+
+          {/* Mobile Footer — Developed by */}
+          <div className="lg:hidden text-center mt-8">
+            <p className="text-[11px] text-white/40 tracking-wide">
+              Developed by <span className="text-white/60 font-medium">Hema Sai Vattikuti</span>
+            </p>
           </div>
 
         </motion.div>

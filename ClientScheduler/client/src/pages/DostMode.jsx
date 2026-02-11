@@ -9,6 +9,7 @@ import {
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { format, addDays, parse } from 'date-fns';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 /* =========================================
    DOST MODE — AI Companion with full power:
@@ -19,7 +20,9 @@ import axios from 'axios';
    ✅ File import (CSV, Excel/xlsx, JPG/image)
    ========================================= */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Only use API if explicitly configured - NEVER fall back to localhost
+const API_BASE = import.meta.env.VITE_API_URL || null;
+const isAPIConfigured = !!API_BASE;
 
 const INITIAL_MSG = [
   {
@@ -284,8 +287,12 @@ export default function DostMode() {
   } = useData();
   const isLight = theme === 'light';
 
-  // Check if API server is reachable
+  // Check if API server is reachable - ONLY if API is configured
   useEffect(() => {
+    if (!isAPIConfigured) {
+      setIsOnline(false);
+      return;
+    }
     const checkAPI = async () => {
       try {
         const res = await axios.get(`${API_BASE}/`, { timeout: 3000 });
@@ -386,10 +393,75 @@ export default function DostMode() {
           addAiMsg(`📋 **Imported ${importedTasks.length} tasks** from ${file.name}!\n\n${importedTasks.slice(0, 5).map(t => `• ${t.title}`).join('\n')}${importedTasks.length > 5 ? `\n• ...and ${importedTasks.length - 5} more` : ''}`, { type: 'action' });
         }
       } else if (ext === 'xlsx' || ext === 'xls') {
-        addAiMsg(`📄 I received your Excel file "${file.name}". For best results, please export it as CSV first (File → Save As → CSV). I'll be able to parse the tasks perfectly from CSV format.`);
+        // Parse Excel file using SheetJS
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          
+          if (jsonData.length === 0) {
+            addAiMsg(`📄 The Excel file "${file.name}" appears to be empty.`);
+          } else {
+            // Find title column (first row as headers)
+            const headers = jsonData[0].map(h => String(h).toLowerCase().trim());
+            const titleIdx = headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('name') || h.includes('item'));
+            const priorityIdx = headers.findIndex(h => h.includes('priority'));
+            const dateIdx = headers.findIndex(h => h.includes('date') || h.includes('due'));
+            
+            const importedTasks = [];
+            for (let i = 1; i < Math.min(jsonData.length, 101); i++) {
+              const row = jsonData[i];
+              if (!row || row.length === 0) continue;
+              
+              // Use title column if found, otherwise use first non-empty cell
+              let title = titleIdx >= 0 ? String(row[titleIdx] || '') : String(row[0] || '');
+              title = title.trim();
+              if (!title || title.length < 2) continue;
+              
+              const priority = priorityIdx >= 0 && row[priorityIdx] 
+                ? String(row[priorityIdx]).toLowerCase().includes('high') ? 'high' 
+                  : String(row[priorityIdx]).toLowerCase().includes('low') ? 'low' : 'medium'
+                : 'medium';
+              
+              let dueDate = new Date();
+              if (dateIdx >= 0 && row[dateIdx]) {
+                const excelDate = row[dateIdx];
+                // Excel stores dates as numbers (days since 1/1/1900)
+                if (typeof excelDate === 'number') {
+                  dueDate = new Date((excelDate - 25569) * 86400 * 1000);
+                } else {
+                  try { dueDate = new Date(excelDate); } catch {}
+                }
+              }
+              
+              importedTasks.push({
+                id: `import-${Date.now()}-${i}`,
+                title,
+                priority,
+                dueDate: isNaN(dueDate.getTime()) ? new Date() : dueDate,
+                completed: false,
+                starred: false,
+                subtasks: [],
+                listId: 'default',
+                details: '',
+              });
+            }
+            
+            if (importedTasks.length === 0) {
+              addAiMsg(`📄 I couldn't find any tasks in "${file.name}". Make sure the first row has column headers like "Title" or "Task".`);
+            } else {
+              importedTasks.forEach(t => addTask(t));
+              addAiMsg(`📊 **Imported ${importedTasks.length} tasks** from Excel!\n\n${importedTasks.slice(0, 5).map(t => `• ${t.title}`).join('\n')}${importedTasks.length > 5 ? `\n• ...and ${importedTasks.length - 5} more` : ''}`, { type: 'action' });
+            }
+          }
+        } catch (xlsxErr) {
+          console.error('Excel parse error:', xlsxErr);
+          addAiMsg(`📄 I had trouble reading "${file.name}". Try saving it as CSV (File → Save As → CSV) for better compatibility.`);
+        }
       } else if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
         const url = URL.createObjectURL(file);
-        addAiMsg(`🖼 I received your image "${file.name}". Here's what you can do:\n\n1. Type out the tasks/events you see in the image\n2. Use "Add task: <title>" to create each one\n3. Or export the data as CSV for bulk import`, { imageUrl: url });
+        addAiMsg(`🖼 I received your image "${file.name}". I can see the image, but I can't automatically extract text from it yet.\n\nHere's what you can do:\n1. Type out the tasks/events you see\n2. Use "Add task: <title>" to create each one\n3. Or export the data as CSV/Excel for bulk import`, { imageUrl: url });
       } else {
         try {
           const text = await file.text();
@@ -411,7 +483,7 @@ export default function DostMode() {
             addAiMsg(`📋 Imported ${imported.length} items from "${file.name}" as tasks:\n\n${imported.slice(0, 8).map(t => `• ${t.title}`).join('\n')}`);
           }
         } catch {
-          addAiMsg(`I couldn't read that file format. Try CSV, TXT, or image files.`);
+          addAiMsg(`I couldn't read that file format. Try CSV, Excel, TXT, or image files.`);
         }
       }
     } catch (err) {

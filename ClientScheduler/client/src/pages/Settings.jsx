@@ -391,8 +391,8 @@ export default function Settings() {
     : 'Recently';
 
   return (
-    <div className="p-8 md:p-12 max-w-4xl mx-auto pb-20" style={{ color: 'var(--text-primary)' }}>
-      <h1 className="text-4xl font-light mb-8">Settings</h1>
+    <div className="p-4 pt-2 md:p-12 max-w-4xl mx-auto pb-28 md:pb-20" style={{ color: 'var(--text-primary)' }}>
+      <h1 className="text-2xl md:text-4xl font-light mb-6 md:mb-8">Settings</h1>
 
       <div className="space-y-8">
 

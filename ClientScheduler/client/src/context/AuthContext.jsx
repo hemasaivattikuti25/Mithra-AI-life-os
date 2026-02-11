@@ -160,6 +160,22 @@ export function AuthProvider({ children }) {
     } catch {}
   }, [profile, user]);
 
+  /* ── Helper to clear old user data for fresh start ── */
+  const clearOldUserData = useCallback((userId) => {
+    // Clear any global (non-scoped) mithra data that might have lingered
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('mithra-') && !key.includes(userId)) {
+        // Remove old user-scoped data and global data
+        if (key.match(/mithra-(tasks|habits|calendar-events|journal|mood|focus|chat-history)/)) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  }, []);
+
   /* ══════════════════════════════════════════════════════════════
      SIGN UP — Supabase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
@@ -169,6 +185,9 @@ export function AuthProvider({ children }) {
       const data = await authService.signUp(email, password, fullName);
       if (!data || !data.user) throw new Error('Sign up failed - please try again');
       const supaUser = data.user;
+
+      // Clear any old demo/test data for this new user
+      clearOldUserData(supaUser.id);
 
       const authUser = { id: supaUser.id, email: supaUser.email, provider: 'supabase' };
       setUser(authUser);
@@ -200,6 +219,9 @@ export function AuthProvider({ children }) {
       salt,
       createdAt: new Date().toISOString(),
     };
+
+    // Clear any old demo/test data for this new user
+    clearOldUserData(newUser.id);
 
     users.push(newUser);
     try {
