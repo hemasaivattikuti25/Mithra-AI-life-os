@@ -206,12 +206,16 @@ Distributed under MIT License. See `LICENSE` for more information.
 
 ---
 
-## Devloped by
+## Crafted with by  -Hemasai Vattikuti
 
-**Hemasai Vattikuti** 
+
 **GitHub-https://github.com/hemasaivattikuti25**
+
 **Linkedin-https://www.linkedin.com/in/hemsaivattikuti**
+
 **Instagram-https://www.instagram.com/hemasai_chowdary**
+
+**Mail Id -hemasaivattikuti2727@gmail.com**
 
 ---
 
