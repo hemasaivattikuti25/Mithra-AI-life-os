@@ -4,7 +4,7 @@ import {
   Moon, Sun, Database, LogOut, Calendar, Bell, BellOff, Download,
   ChevronDown, Clock, User, Mail, Phone, MapPin, Globe, Camera,
   Edit3, Check, X, Lock, Shield, AlertCircle, Loader2, Pencil,
-  CheckSquare, Activity, Flame, AlertTriangle, Info
+  CheckSquare, Activity, Flame, AlertTriangle, Info, Star, ExternalLink, Heart
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -588,6 +588,54 @@ export default function Settings() {
           <Toggle label="Sync Tasks to Calendar" description="Show tasks with due dates as events on your calendar" isActive={syncSettings.syncTasksToCalendar} onToggle={toggleSyncTasks} />
           <Toggle label="Sync Habits to Calendar" description="Show daily habits as scheduled blocks" isActive={syncSettings.syncHabitsToCalendar} onToggle={toggleSyncHabits} />
           <Toggle label="Sync Focus to Tracker" description="Automatically log focus sessions as habit progress" isActive={syncSettings.syncFocusToTracker} onToggle={toggleSyncFocus} />
+        </section>
+
+        {/* ═══════ SUPPORT & ABOUT ═══════ */}
+        <section className="glass-panel glass-shine rounded-2xl p-6">
+          <h2 className="uppercase text-xs font-bold tracking-widest mb-4" style={{ color: 'var(--accent-color)' }}>Support & About</h2>
+          
+          {/* Star on GitHub */}
+          <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noopener noreferrer"
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group border-b"
+            style={{ borderColor: 'var(--glass-border)' }}
+            onMouseEnter={e => e.currentTarget.style.background = isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}>
+                <Star size={18} className="text-white" fill="white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Star us on GitHub</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Support the project with a star</div>
+              </div>
+            </div>
+            <ExternalLink size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
+          </a>
+
+          {/* About */}
+          <div className="w-full flex items-center justify-between p-4 rounded-lg text-left border-b"
+            style={{ borderColor: 'var(--glass-border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }}>
+                <Info size={18} className="text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>About</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Mithra AI v1.0.0</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="pt-6 text-center">
+            <p className="text-sm flex items-center justify-center gap-1" style={{ color: 'var(--text-dim)' }}>
+              Crafted with <Heart size={14} className="text-red-500" fill="#ef4444" /> by
+            </p>
+            <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer"
+              className="text-sm font-semibold hover:underline mt-1 inline-block" style={{ color: 'var(--accent-color)' }}>
+              Hemasai Vattikuti
+            </a>
+          </div>
         </section>
 
         {/* ═══════ DATA ZONE ═══════ */}

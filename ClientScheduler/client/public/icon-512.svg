@@ -6,5 +6,13 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#grad)"/>
-  <text x="256" y="340" font-family="Inter, sans-serif" font-size="240" font-weight="700" fill="white" text-anchor="middle">M</text>
+  <!-- Sparkle/AI Assistant Symbol -->
+  <g transform="translate(256, 256)" fill="white">
+    <!-- Main star -->
+    <path d="M0,-120 L21,-21 L120,0 L21,21 L0,120 L-21,21 L-120,0 L-21,-21 Z" />
+    <!-- Top right small sparkle -->
+    <circle cx="85" cy="-85" r="16" />
+    <!-- Bottom left small sparkle -->
+    <circle cx="-75" cy="80" r="11" />
+  </g>
 </svg>
