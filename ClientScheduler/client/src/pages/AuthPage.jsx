@@ -154,7 +154,7 @@ export default function AuthPage() {
   const getReadableError = (message) => {
     const errorMap = {
       'Invalid login credentials': 'Email or password is incorrect',
-      'Email not confirmed': 'Please check your email inbox and click the confirmation link',
+      'Email not confirmed': 'Please verify your email first. Check inbox & spam folder for the confirmation link.',
       'User already registered': 'An account with this email already exists. Try signing in instead.',
       'Password should be at least 6 characters': 'Password must be at least 6 characters',
       'Unable to validate email address': 'Please enter a valid email address',
@@ -163,6 +163,9 @@ export default function AuthPage() {
       'Refresh Token Not Found': 'Your session has expired. Please sign in again.',
       'JWT expired': 'Your session has expired. Please sign in again.',
       'Database error': 'Account created! Please try signing in.',
+      'rate limit exceeded': 'Too many attempts. Please wait a few minutes and try again.',
+      'email rate limit exceeded': 'Email limit reached. Please wait 5 minutes or try a different email address.',
+      'over_email_send_rate_limit': 'Email limit reached. Please wait 5 minutes and try again.',
     };
     
     for (const [key, value] of Object.entries(errorMap)) {
