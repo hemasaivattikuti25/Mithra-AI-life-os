@@ -24,6 +24,16 @@ build/
 .DS_Store
 Thumbs.db
 
+# Replit / Agent State (should not be committed)
+.local/
+.replit
+replit.nix
+.upm/
+.cache/
+.pythonlibs/
+*.agent_state*.bin
+.streamlit/
+
 # Python
 .venv/
 __pycache__/
