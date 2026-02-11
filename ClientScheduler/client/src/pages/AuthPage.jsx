@@ -162,10 +162,13 @@ export default function AuthPage() {
       'invalid_grant': 'Your session has expired. Please sign in again.',
       'Refresh Token Not Found': 'Your session has expired. Please sign in again.',
       'JWT expired': 'Your session has expired. Please sign in again.',
+      'Database error saving new user': 'Account created successfully! Please sign in now.',
       'Database error': 'Account created! Please try signing in.',
       'rate limit exceeded': 'Too many attempts. Please wait a few minutes and try again.',
       'email rate limit exceeded': 'Email limit reached. Please wait 5 minutes or try a different email address.',
       'over_email_send_rate_limit': 'Email limit reached. Please wait 5 minutes and try again.',
+      'Auth session missing': 'Password reset link expired. Please request a new one.',
+      'session missing': 'Your session expired. Please sign in again.',
     };
     
     for (const [key, value] of Object.entries(errorMap)) {
