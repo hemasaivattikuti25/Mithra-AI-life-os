@@ -44,6 +44,7 @@ export const authService = {
   /** Sign up with email + password, stores fullName in metadata */
   async signUp(email, password, fullName) {
     if (!supabase) return null; // fall back to localStorage auth
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,10 +52,55 @@ export const authService = {
         data: { full_name: fullName },
       },
     });
-    if (error) throw error;
 
-    // Profile is created automatically by database trigger (handle_new_user)
-    // No manual insert needed - trigger fires on auth.users insert
+    // Handle "Database error saving new user" - user was created but trigger failed
+    // This happens when the handle_new_user trigger fails, but auth user exists
+    if (error) {
+      // Check if this is a trigger failure (user was still created)
+      if (error.message?.includes('Database error')) {
+        // Try to sign in with the newly created credentials
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (signInData?.user) {
+          // User exists, manually create profile
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: signInData.user.id,
+              full_name: fullName || '',
+              email: email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' })
+            .select();
+          
+          return { user: signInData.user, session: signInData.session };
+        }
+      }
+      throw error;
+    }
+
+    // If signup succeeded, also try to ensure profile exists (belt and suspenders)
+    if (data?.user) {
+      try {
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            full_name: fullName || '',
+            email: email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' })
+          .select();
+      } catch {
+        // Profile upsert failed, but that's ok - user is created
+        console.warn('[Mithra] Could not create profile, but user signup succeeded');
+      }
+    }
 
     return data;
   },
