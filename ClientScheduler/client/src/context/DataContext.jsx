@@ -255,20 +255,8 @@ export const saveUserStorage = (baseKey, value) => {
   } catch {}
 };
 
-/* ── initial tasks ── */
-const INITIAL_TASKS = [
-  { id: '1', title: 'Client presentation slides', details: 'Prepare Q1 metrics and roadmap overview for the stakeholder meeting', listId: 'work', completed: false, starred: true, priority: 'high', dueDate: today, subtasks: [
-    { id: 's1', title: 'Gather Q1 metrics', completed: true },
-    { id: 's2', title: 'Design slide deck', completed: false },
-    { id: 's3', title: 'Practice presentation', completed: false },
-  ]},
-  { id: '2', title: 'Review PR #482', details: 'Check the authentication refactor branch', listId: 'work', completed: false, starred: false, priority: 'medium', dueDate: today, subtasks: [] },
-  { id: '3', title: 'Gym — Leg Day', details: '', listId: 'personal', completed: false, starred: false, priority: 'low', dueDate: today, subtasks: [] },
-  { id: '4', title: 'Read 30 pages of Atomic Habits', details: 'Chapter 4-6', listId: 'personal', completed: false, starred: true, priority: 'low', dueDate: addDays(today, 1), subtasks: [] },
-  { id: '5', title: 'Deploy staging environment', details: 'Push the new auth flow to staging for QA', listId: 'work', completed: false, starred: false, priority: 'high', dueDate: addDays(today, 2), subtasks: [] },
-  { id: '6', title: 'Grocery shopping', details: 'Eggs, milk, protein powder, bananas', listId: 'personal', completed: true, starred: false, priority: 'low', dueDate: addDays(today, -1), subtasks: [] },
-  { id: '7', title: 'Weekly team standup notes', details: '', listId: 'work', completed: true, starred: false, priority: 'medium', dueDate: addDays(today, -1), subtasks: [] },
-];
+/* ── initial tasks — empty for new users ── */
+const INITIAL_TASKS = [];
 
 /* ── initial habits ── */
 function generateConsistency(probability) {
@@ -282,13 +270,8 @@ function generateConsistency(probability) {
   return days;
 }
 
-const INITIAL_HABITS = [
-  { id: 'h1', title: 'Deep Work', category: 'Work', streak: 12, bestStreak: 24, consistency: generateConsistency(0.65), todayDone: false, focusDuration: 90 },
-  { id: 'h2', title: 'Reading', category: 'Learning', streak: 5, bestStreak: 15, consistency: generateConsistency(0.5), todayDone: false, focusDuration: 30 },
-  { id: 'h3', title: 'Meditation', category: 'Mindfulness', streak: 45, bestStreak: 45, consistency: generateConsistency(0.8), todayDone: true, focusDuration: 15 },
-  { id: 'h4', title: 'Exercise', category: 'Health', streak: 8, bestStreak: 30, consistency: generateConsistency(0.55), todayDone: false, focusDuration: 45 },
-  { id: 'h5', title: 'Journaling', category: 'Personal', streak: 3, bestStreak: 10, consistency: generateConsistency(0.4), todayDone: false, focusDuration: 10 },
-];
+/* ── initial habits — empty for new users ── */
+const INITIAL_HABITS = [];
 
 /* ── initial lists ── */
 const INITIAL_LISTS = [
