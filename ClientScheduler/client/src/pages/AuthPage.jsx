@@ -552,10 +552,6 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Bottom watermark */}
-          <p className="text-center text-[11px] text-white/40 mt-6 tracking-[0.15em] uppercase font-medium">
-            Developed by Hema Sai Vattikuti
-          </p>
         </motion.div>
       </div>
     </div>

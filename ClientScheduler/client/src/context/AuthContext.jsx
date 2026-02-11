@@ -166,8 +166,9 @@ export function AuthProvider({ children }) {
   const signUp = useCallback(async ({ fullName, email, password }) => {
     // ── Supabase path ──
     if (isSupabaseConfigured) {
-      const { user: supaUser, error } = await authService.signUp(email, password, fullName);
-      if (error) throw new Error(error.message || 'Sign up failed');
+      const data = await authService.signUp(email, password, fullName);
+      if (!data || !data.user) throw new Error('Sign up failed - please try again');
+      const supaUser = data.user;
 
       const authUser = { id: supaUser.id, email: supaUser.email, provider: 'supabase' };
       setUser(authUser);
