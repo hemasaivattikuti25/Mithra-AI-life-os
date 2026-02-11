@@ -107,7 +107,7 @@ const features = [
   { icon: Zap, title: 'Dost Focus Mode', desc: 'AI-powered deep work sessions with your personal focus companion' },
 ];
 
-export default function AuthPage() {
+export default function AuthPage({ isPasswordReset = false }) {
   const { signIn, signUp, resetPassword, confirmResetPassword } = useAuth();
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -120,6 +120,21 @@ export default function AuthPage() {
   const [confirmNewPw, setConfirmNewPw] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [agreeTerms, setAgreeTerms] = useState(false);
+
+  // Check for password recovery session on mount
+  React.useEffect(() => {
+    const isRecovery = sessionStorage.getItem('mithra-password-recovery');
+    const recoveryEmail = sessionStorage.getItem('mithra-recovery-email');
+    if (isPasswordReset || isRecovery) {
+      setView('resetNew');
+      if (recoveryEmail) {
+        setEmail(recoveryEmail);
+      }
+      // Clear the flags
+      sessionStorage.removeItem('mithra-password-recovery');
+      sessionStorage.removeItem('mithra-recovery-email');
+    }
+  }, [isPasswordReset]);
 
   const clearForm = () => {
     setFullName(''); setEmail(''); setPassword(''); setConfirmPw('');

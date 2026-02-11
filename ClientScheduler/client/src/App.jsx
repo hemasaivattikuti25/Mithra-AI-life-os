@@ -72,6 +72,7 @@ function AppRoutes() {
       <Routes>
         {/* Auth routes — no sidebar/layout */}
         <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
+        <Route path="/reset-password" element={<AuthPage isPasswordReset={true} />} />
 
         {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />

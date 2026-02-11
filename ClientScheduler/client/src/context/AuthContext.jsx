@@ -116,10 +116,17 @@ export function AuthProvider({ children }) {
 
     initSession();
 
-    // Listen for auth state changes (sign in, sign out, token refresh)
+    // Listen for auth state changes (sign in, sign out, token refresh, password recovery)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (event === 'PASSWORD_RECOVERY') {
+          // User clicked password reset link - store flag and redirect
+          sessionStorage.setItem('mithra-password-recovery', 'true');
+          if (session?.user?.email) {
+            sessionStorage.setItem('mithra-recovery-email', session.user.email);
+          }
+          window.location.hash = '#/reset-password';
+        } else if (event === 'SIGNED_IN' && session?.user) {
           const supaUser = {
             id: session.user.id,
             email: session.user.email,
