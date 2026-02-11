@@ -209,9 +209,9 @@ Distributed under MIT License. See `LICENSE` for more information.
 ## Devloped by
 
 **Hemasai Vattikuti** 
-[GitHub](https://github.com/hemasaivattikuti25)  
-[Linkedin](https://www.linkedin.com/in/hemsaivattikuti/)
-[Instagram](https://www.instagram.com/hemasai_chowdary/)
+GitHub-https://github.com/hemasaivattikuti25 
+Linkedin-https://www.linkedin.com/in/hemsaivattikuti
+Instagram-https://www.instagram.com/hemasai_chowdary
 
 ---
 
