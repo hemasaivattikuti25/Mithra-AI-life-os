@@ -30,6 +30,7 @@
 ## 📦 Table of Contents
 
 - [Features](#-features)
+- [Screenshots](#-screenshots)
 - [Installation](#-installation)
 - [Project Structure](#-project-structure)
 - [Tech Stack](#-tech-stack)
@@ -80,7 +81,26 @@
 
 ---
 
-## 💻 Installation
+## � Screenshots
+
+<p align="center">
+  <img src="ClientScheduler/client/docs/screenshots/dost-mode.png" alt="Dost Mode - AI Assistant" width="800">
+</p>
+<p align="center"><em>Dost Mode — AI-powered companion for mood tracking, daily summaries, and natural conversation</em></p>
+
+<p align="center">
+  <img src="ClientScheduler/client/docs/screenshots/settings-profile.png" alt="Settings - Profile & Themes" width="800">
+</p>
+<p align="center"><em>Settings — Profile management, dark mode toggle, and 6 beautiful color themes</em></p>
+
+<p align="center">
+  <img src="ClientScheduler/client/docs/screenshots/settings-notifications.png" alt="Settings - Notifications" width="800">
+</p>
+<p align="center"><em>Settings — Smart notifications, reminder timing, and sync preferences</em></p>
+
+---
+
+## �💻 Installation
 
 ### Prerequisites
 - Node.js 18+
