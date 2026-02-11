@@ -53,15 +53,8 @@ export const authService = {
     });
     if (error) throw error;
 
-    // Create profile row
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
+    // Profile is created automatically by database trigger (handle_new_user)
+    // No manual insert needed - trigger fires on auth.users insert
 
     return data;
   },
