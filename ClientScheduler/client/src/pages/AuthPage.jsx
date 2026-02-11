@@ -1,0 +1,563 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ChevronLeft, Check, AlertCircle, Loader2, Sparkles, Shield, Zap, BarChart3, Brain, Calendar, Flame, Bot } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+
+/* ═══════════════════════════════════════════════════════════════
+   MITHRA AUTH — Redesigned split-screen premium auth experience
+   ═══════════════════════════════════════════════════════════════ */
+
+const heroParticles = Array.from({ length: 30 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: Math.random() * 2.5 + 0.5,
+  duration: Math.random() * 25 + 10,
+  delay: Math.random() * 8,
+}));
+
+/* ── Floating Input ── */
+const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange, error, autoFocus }) => {
+  const [focused, setFocused] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const isPassword = type === 'password';
+
+  return (
+    <div className="relative group">
+      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${
+        error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2 ring-[var(--accent-color)]/40' : 'ring-1 ring-white/[0.08]'
+      }`}
+        style={{
+          background: focused ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pl-4 pr-2 py-4">
+          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? 'var(--accent-color)' : 'rgba(255,255,255,0.3)' }} />
+        </div>
+        <input
+          type={isPassword ? (showPw ? 'text' : 'password') : type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoFocus={autoFocus}
+          autoComplete={isPassword ? 'current-password' : type === 'email' ? 'email' : 'off'}
+          className="flex-1 bg-transparent py-4 pr-4 text-sm text-white placeholder:text-white/25 outline-none"
+        />
+        {isPassword && (
+          <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
+            className="pr-4 text-white/30 hover:text-white/60 transition-colors">
+            {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
+      </div>
+      <motion.div
+        className="absolute bottom-0 left-1/2 h-[2px] rounded-full -translate-x-1/2"
+        style={{ background: 'var(--accent-color)' }}
+        animate={{ width: focused ? '60%' : '0%', opacity: focused ? 1 : 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      />
+      {error && (
+        <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-1.5 text-xs text-red-400 mt-2 pl-1">
+          <AlertCircle size={12} /> {error}
+        </motion.p>
+      )}
+    </div>
+  );
+};
+
+/* ── Password Strength Meter ── */
+const PasswordStrength = ({ password }) => {
+  const getStrength = (pw) => {
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    if (pw.length >= 12) s++;
+    return s;
+  };
+  const strength = getStrength(password);
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
+  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4'];
+  if (!password) return null;
+  return (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 px-1">
+      <div className="flex gap-1 mb-1.5">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex-1 h-1 rounded-full transition-all duration-500"
+            style={{ background: i <= strength ? colors[strength] : 'rgba(255,255,255,0.06)' }} />
+        ))}
+      </div>
+      <p className="text-[10px] font-medium tracking-wide" style={{ color: colors[strength] }}>
+        {labels[strength]}
+      </p>
+    </motion.div>
+  );
+};
+
+/* ── Feature Cards for Hero Panel ── */
+const features = [
+  { icon: Brain, title: 'Your AI Life Companion', desc: 'Mithra learns your patterns and helps you plan smarter every day' },
+  { icon: Calendar, title: 'Unified Dashboard', desc: 'Tasks, habits, journal & calendar — all in one beautiful view' },
+  { icon: Flame, title: 'Build Streaks & Habits', desc: 'Track consistency with GitHub-style maps & never break your streak' },
+  { icon: Zap, title: 'Dost Focus Mode', desc: 'AI-powered deep work sessions with your personal focus companion' },
+];
+
+export default function AuthPage() {
+  const { signIn, signUp, resetPassword, confirmResetPassword } = useAuth();
+  const [view, setView] = useState('login');
+  const [loading, setLoading] = useState(false);
+  const [globalError, setGlobalError] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPw, setConfirmNewPw] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [agreeTerms, setAgreeTerms] = useState(false);
+
+  const clearForm = () => {
+    setFullName(''); setEmail(''); setPassword(''); setConfirmPw('');
+    setNewPassword(''); setConfirmNewPw('');
+    setFieldErrors({}); setGlobalError(''); setAgreeTerms(false);
+  };
+  const switchView = (v) => { clearForm(); setView(v); };
+
+  const validate = () => {
+    const errs = {};
+    if (view === 'signup' && !fullName.trim()) errs.fullName = 'Full name is required';
+    if (view !== 'resetNew' && !email.trim()) errs.email = 'Email is required';
+    else if (view !== 'resetNew' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email';
+    if (view !== 'forgot' && view !== 'resetSent' && view !== 'resetNew') {
+      if (!password) errs.password = 'Password is required';
+      else if (password.length < 6) errs.password = 'Min 6 characters';
+    }
+    if (view === 'signup') {
+      if (password !== confirmPw) errs.confirmPw = 'Passwords do not match';
+      if (!agreeTerms) errs.terms = 'You must agree to continue';
+    }
+    if (view === 'resetNew') {
+      if (!newPassword) errs.newPassword = 'New password is required';
+      else if (newPassword.length < 6) errs.newPassword = 'Min 6 characters';
+      if (newPassword !== confirmNewPw) errs.confirmNewPw = 'Passwords do not match';
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true); setGlobalError('');
+    try {
+      if (view === 'login') await signIn({ email, password });
+      else if (view === 'signup') await signUp({ fullName, email, password });
+      else if (view === 'forgot') { await resetPassword(email); setView('resetSent'); }
+      else if (view === 'resetNew') {
+        const resetEmail = localStorage.getItem('mithra-reset-email') || email;
+        await confirmResetPassword(resetEmail, newPassword);
+        setView('resetSuccess');
+      }
+    } catch (err) {
+      setGlobalError(err.message || 'Something went wrong');
+    } finally { setLoading(false); }
+  };
+
+  const slideVariants = {
+    enter: (dir) => ({ x: dir > 0 ? 300 : -300, opacity: 0, scale: 0.95 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (dir) => ({ x: dir > 0 ? -300 : 300, opacity: 0, scale: 0.95 }),
+  };
+  const direction = view === 'signup' ? 1 : view === 'forgot' ? 1 : -1;
+
+  return (
+    <div className="min-h-screen w-full flex relative overflow-hidden" style={{ background: '#050505' }}>
+
+      {/* ══════════ LEFT PANEL — Hero / Branding (desktop only) ══════════ */}
+      <div className="hidden lg:flex w-[52%] relative flex-col items-center justify-center p-12 overflow-hidden">
+        {/* Mesh gradient background */}
+        <div className="absolute inset-0">
+          <motion.div className="absolute w-[800px] h-[800px] rounded-full blur-[250px]"
+            style={{ background: 'var(--accent-color)', opacity: 0.12, top: '-30%', left: '-20%' }}
+            animate={{ x: [0, 80, 0], y: [0, -50, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }} />
+          <motion.div className="absolute w-[600px] h-[600px] rounded-full blur-[200px]"
+            style={{ background: 'var(--accent-soft, #8B1A2B)', opacity: 0.08, bottom: '-20%', right: '-10%' }}
+            animate={{ x: [0, -60, 0], y: [0, 60, 0] }}
+            transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }} />
+          <motion.div className="absolute w-[350px] h-[350px] rounded-full blur-[180px]"
+            style={{ background: 'var(--accent-secondary, #D4AF37)', opacity: 0.05, top: '50%', left: '60%' }}
+            animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} />
+          {heroParticles.map(p => (
+            <motion.div key={p.id} className="absolute rounded-full"
+              style={{ width: p.size, height: p.size, left: `${p.x}%`, top: `${p.y}%`,
+                background: p.id % 3 === 0 ? 'var(--accent-color)' : 'rgba(255,255,255,0.12)' }}
+              animate={{ y: [0, -80, 0], opacity: [0.08, 0.5, 0.08] }}
+              transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }} />
+          ))}
+          <div className="absolute inset-0 opacity-[0.02]"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+        </div>
+
+        {/* Hero content */}
+        <div className="relative z-10 max-w-lg text-center">
+          <motion.div className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-8 relative"
+            style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+              boxShadow: '0 20px 60px var(--accent-glow), 0 0 120px var(--accent-glow)' }}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
+            <Sparkles className="w-11 h-11 text-white" />
+            <div className="absolute inset-0 rounded-3xl border border-white/10" />
+            <motion.div className="absolute -inset-1 rounded-[28px]"
+              style={{ border: '1px solid var(--accent-color)' }}
+              animate={{ opacity: [0.4, 0, 0.4], scale: [1, 1.08, 1] }}
+              transition={{ duration: 3, repeat: Infinity }} />
+          </motion.div>
+
+          <motion.h1 className="text-5xl font-bold text-white tracking-tight mb-4"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}>Mithra</motion.h1>
+          <motion.p className="text-lg text-white/50 font-light mb-3"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.8 }}>Your AI-Powered Life Operating System</motion.p>
+          <motion.div className="w-16 h-[2px] mx-auto rounded-full mb-10"
+            style={{ background: 'var(--accent-color)' }}
+            initial={{ width: 0 }} animate={{ width: 64 }}
+            transition={{ delay: 0.5, duration: 0.6 }} />
+
+          <div className="grid grid-cols-2 gap-4 text-left">
+            {features.map((f, i) => (
+              <motion.div key={f.title} className="p-4 rounded-2xl group cursor-default"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
+                whileHover={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                <f.icon size={20} className="mb-2.5 transition-colors" style={{ color: 'var(--accent-color)' }} />
+                <h3 className="text-sm font-semibold text-white/90 mb-1">{f.title}</h3>
+                <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-0 right-0 text-center">
+          <p className="text-[11px] text-white/40 tracking-[0.2em] uppercase font-medium">
+            Developed by Hema Sai Vattikuti
+          </p>
+        </div>
+      </div>
+
+      {/* ══════════ RIGHT PANEL — Auth Forms ══════════ */}
+      <div className="flex-1 flex items-center justify-center relative p-6 lg:p-12">
+        <div className="absolute inset-0">
+          <motion.div className="absolute w-[500px] h-[500px] rounded-full blur-[200px]"
+            style={{ background: 'var(--accent-color)', opacity: 0.04, top: '20%', right: '-20%' }}
+            animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }} />
+          <div className="absolute inset-0 opacity-[0.01]"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        </div>
+
+        <div className="hidden lg:block absolute left-0 top-[15%] bottom-[15%] w-px"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent)' }} />
+
+        <motion.div initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 w-full max-w-[420px]">
+
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <motion.div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 relative"
+              style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                boxShadow: '0 8px 32px var(--accent-glow)' }}>
+              <Sparkles className="w-7 h-7 text-white" />
+            </motion.div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Mithra</h1>
+            <p className="text-xs text-white/30 mt-1">AI Life Operating System</p>
+          </div>
+
+          {/* Glass card */}
+          <div className="relative rounded-3xl overflow-hidden"
+            style={{ background: 'rgba(12,10,10,0.55)', backdropFilter: 'blur(40px) saturate(1.4)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 0 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+            <div className="absolute top-0 left-0 right-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 50%, transparent)' }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[2px] rounded-full"
+              style={{ background: 'var(--accent-color)', opacity: 0.5 }} />
+
+            <div className="p-8 pt-10 pb-10">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <AnimatePresence mode="wait">
+                  <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                      {view === 'login' && 'Welcome back'}
+                      {view === 'signup' && 'Create account'}
+                      {view === 'forgot' && 'Reset password'}
+                      {view === 'resetSent' && 'Verify your account'}
+                      {view === 'resetNew' && 'Set new password'}
+                      {view === 'resetSuccess' && 'Password updated!'}
+                    </h2>
+                    <p className="text-sm text-white/40 mt-1.5">
+                      {view === 'login' && 'Sign in to your Mithra workspace'}
+                      {view === 'signup' && 'Start your journey with Mithra'}
+                      {view === 'forgot' && "Enter your email to verify your account"}
+                      {view === 'resetSent' && 'Account verified — set your new password'}
+                      {view === 'resetNew' && 'Choose a strong password for your account'}
+                      {view === 'resetSuccess' && 'You can now sign in with your new password'}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Global Error */}
+              <AnimatePresence>
+                {globalError && (
+                  <motion.div initial={{ opacity: 0, y: -8, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    className="mb-5 p-3.5 rounded-xl flex items-center gap-2.5 text-sm"
+                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#fca5a5' }}>
+                    <AlertCircle size={16} className="text-red-400 shrink-0" />
+                    {globalError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Forms */}
+              <AnimatePresence mode="wait" custom={direction}>
+                {/* LOGIN */}
+                {view === 'login' && (
+                  <motion.form key="login" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    onSubmit={handleSubmit} className="space-y-4">
+                    <FloatingInput icon={Mail} type="email" placeholder="Email address"
+                      value={email} onChange={e => setEmail(e.target.value)} error={fieldErrors.email} autoFocus />
+                    <FloatingInput icon={Lock} type="password" placeholder="Password"
+                      value={password} onChange={e => setPassword(e.target.value)} error={fieldErrors.password} />
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => switchView('forgot')}
+                        className="text-xs font-medium transition-colors hover:underline underline-offset-4"
+                        style={{ color: 'var(--accent-color)' }}>Forgot password?</button>
+                    </div>
+                    <motion.button type="submit" disabled={loading}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <>Sign In <ArrowRight size={16} /></>}
+                      </span>
+                    </motion.button>
+                    <p className="text-center text-sm text-white/30 pt-2">
+                      Don't have an account?{' '}
+                      <button type="button" onClick={() => switchView('signup')}
+                        className="font-semibold transition-colors hover:underline underline-offset-4"
+                        style={{ color: 'var(--accent-color)' }}>Sign up</button>
+                    </p>
+                  </motion.form>
+                )}
+
+                {/* SIGN UP */}
+                {view === 'signup' && (
+                  <motion.form key="signup" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    onSubmit={handleSubmit} className="space-y-4">
+                    <FloatingInput icon={User} type="text" placeholder="Full name"
+                      value={fullName} onChange={e => setFullName(e.target.value)} error={fieldErrors.fullName} autoFocus />
+                    <FloatingInput icon={Mail} type="email" placeholder="Email address"
+                      value={email} onChange={e => setEmail(e.target.value)} error={fieldErrors.email} />
+                    <div>
+                      <FloatingInput icon={Lock} type="password" placeholder="Create password"
+                        value={password} onChange={e => setPassword(e.target.value)} error={fieldErrors.password} />
+                      <PasswordStrength password={password} />
+                    </div>
+                    <FloatingInput icon={Lock} type="password" placeholder="Confirm password"
+                      value={confirmPw} onChange={e => setConfirmPw(e.target.value)} error={fieldErrors.confirmPw} />
+                    <label className="flex items-start gap-3 cursor-pointer group pt-1">
+                      <button type="button" onClick={() => setAgreeTerms(!agreeTerms)}
+                        className="w-5 h-5 mt-0.5 rounded-md border flex items-center justify-center shrink-0 transition-all"
+                        style={{ borderColor: fieldErrors.terms ? 'rgba(239,68,68,0.5)' : agreeTerms ? 'var(--accent-color)' : 'rgba(255,255,255,0.12)',
+                          background: agreeTerms ? 'var(--accent-color)' : 'transparent' }}>
+                        {agreeTerms && <Check size={12} className="text-white" strokeWidth={3} />}
+                      </button>
+                      <span className="text-xs text-white/40 leading-relaxed">
+                        I agree to the <span style={{ color: 'var(--accent-color)' }} className="cursor-pointer hover:underline">Terms of Service</span> and{' '}
+                        <span style={{ color: 'var(--accent-color)' }} className="cursor-pointer hover:underline">Privacy Policy</span>
+                      </span>
+                    </label>
+                    {fieldErrors.terms && (
+                      <p className="flex items-center gap-1.5 text-xs text-red-400 pl-1">
+                        <AlertCircle size={12} /> {fieldErrors.terms}
+                      </p>
+                    )}
+                    <motion.button type="submit" disabled={loading}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <>Create Account <ArrowRight size={16} /></>}
+                      </span>
+                    </motion.button>
+                    <p className="text-center text-sm text-white/30 pt-2">
+                      Already have an account?{' '}
+                      <button type="button" onClick={() => switchView('login')}
+                        className="font-semibold transition-colors hover:underline underline-offset-4"
+                        style={{ color: 'var(--accent-color)' }}>Sign in</button>
+                    </p>
+                  </motion.form>
+                )}
+
+                {/* FORGOT PASSWORD */}
+                {view === 'forgot' && (
+                  <motion.form key="forgot" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-sm text-white/40 mb-2">
+                      Enter the email address associated with your account and we'll send you a link to reset your password.
+                    </p>
+                    <FloatingInput icon={Mail} type="email" placeholder="Email address"
+                      value={email} onChange={e => setEmail(e.target.value)} error={fieldErrors.email} autoFocus />
+                    <motion.button type="submit" disabled={loading}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <>Send Reset Link <Mail size={16} /></>}
+                      </span>
+                    </motion.button>
+                    <button type="button" onClick={() => switchView('login')}
+                      className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors mx-auto pt-2">
+                      <ChevronLeft size={16} /> Back to sign in
+                    </button>
+                  </motion.form>
+                )}
+
+                {/* RESET SENT → Set New Password */}
+                {view === 'resetSent' && (
+                  <motion.div key="resetSent" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="text-center space-y-5 py-4">
+                    <motion.div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
+                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
+                      initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.2 }}>
+                      <Check size={28} className="text-green-400" />
+                    </motion.div>
+                    <div>
+                      <p className="text-white/70 text-sm">Account verified for</p>
+                      <p className="text-white font-semibold mt-1">{email}</p>
+                    </div>
+                    <motion.button type="button" onClick={() => setView('resetNew')}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        Set New Password <ArrowRight size={16} />
+                      </span>
+                    </motion.button>
+                    <button type="button" onClick={() => switchView('login')}
+                      className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors mx-auto pt-2">
+                      <ChevronLeft size={16} /> Back to sign in
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* RESET NEW PASSWORD FORM */}
+                {view === 'resetNew' && (
+                  <motion.form key="resetNew" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-sm text-white/40 mb-2">
+                      Create a new password for <span className="text-white font-medium">{email || localStorage.getItem('mithra-reset-email')}</span>
+                    </p>
+                    <div>
+                      <FloatingInput icon={Lock} type="password" placeholder="New password"
+                        value={newPassword} onChange={e => setNewPassword(e.target.value)} error={fieldErrors.newPassword} autoFocus />
+                      <PasswordStrength password={newPassword} />
+                    </div>
+                    <FloatingInput icon={Lock} type="password" placeholder="Confirm new password"
+                      value={confirmNewPw} onChange={e => setConfirmNewPw(e.target.value)} error={fieldErrors.confirmNewPw} />
+                    <motion.button type="submit" disabled={loading}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <>Update Password <Shield size={16} /></>}
+                      </span>
+                    </motion.button>
+                    <button type="button" onClick={() => switchView('login')}
+                      className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors mx-auto pt-2">
+                      <ChevronLeft size={16} /> Back to sign in
+                    </button>
+                  </motion.form>
+                )}
+
+                {/* RESET SUCCESS */}
+                {view === 'resetSuccess' && (
+                  <motion.div key="resetSuccess" custom={direction} variants={slideVariants}
+                    initial="enter" animate="center" exit="exit"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="text-center space-y-5 py-4">
+                    <motion.div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
+                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
+                      initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.2 }}>
+                      <Check size={28} className="text-green-400" />
+                    </motion.div>
+                    <div>
+                      <p className="text-white font-semibold text-lg">Password Updated Successfully!</p>
+                      <p className="text-white/50 text-sm mt-2">You can now sign in with your new password.</p>
+                    </div>
+                    <motion.button type="button" onClick={() => switchView('login')}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group"
+                      style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
+                        boxShadow: '0 4px 24px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileTap={{ scale: 0.98 }}>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        Go to Sign In <ArrowRight size={16} />
+                      </span>
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Bottom watermark */}
+          <p className="text-center text-[11px] text-white/40 mt-6 tracking-[0.15em] uppercase font-medium">
+            Developed by Hema Sai Vattikuti
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,9 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+supabase==2.3.4
+google-generativeai==0.3.2
+python-dotenv==1.0.0
+pydantic==2.6.0
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+pgvector==0.2.4

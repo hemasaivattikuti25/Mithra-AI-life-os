@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+pandas
+spacy
+python-dateutil
+chromadb
+pydantic

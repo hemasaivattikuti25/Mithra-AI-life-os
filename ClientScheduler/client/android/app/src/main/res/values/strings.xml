@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mithra</string>
+    <string name="title_activity_main">Mithra</string>
+    <string name="package_name">com.hemasai.mithra</string>
+    <string name="custom_url_scheme">com.hemasai.mithra</string>
+</resources>

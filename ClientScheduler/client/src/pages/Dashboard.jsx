@@ -1,0 +1,884 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sun, Moon, CloudSun, Calendar, CheckCircle2, Circle,
+  Star, Clock, ArrowRight, Zap, BookOpen,
+  ChevronRight, Sparkles, Target, Flame, Dumbbell,
+  Code, Brain, Heart, AlertTriangle,
+  TrendingUp, BarChart3, Inbox, FileText
+} from 'lucide-react';
+import { format, isToday as isTodayFn } from 'date-fns';
+import clsx from 'clsx';
+import { useNavigate } from 'react-router-dom';
+import { useData, getUserScopedKey } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+
+/* ───── animation config ───── */
+const luxuryEase = [0.22, 1, 0.36, 1];
+const sectionReveal = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.08, duration: 0.65, ease: luxuryEase },
+  }),
+};
+
+/* ───── greeting logic ───── */
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good Morning', icon: Sun, period: 'morning' };
+  if (h < 17) return { text: 'Good Afternoon', icon: CloudSun, period: 'afternoon' };
+  return { text: 'Good Evening', icon: Moon, period: 'evening' };
+};
+
+/* ───── mock data ───── */
+const CATEGORY_COLORS = {
+  Work: '#3b82f6',
+  Health: '#f97316',
+  Personal: '#a855f7',
+  Focus: '#06b6d4',
+  Social: '#FACC15',
+  default: '#C2185B',
+};
+
+const PRIORITY_TASKS = [
+  { id: 1, title: 'Finish project proposal', priority: 'HIGH', done: false, starred: true },
+  { id: 2, title: 'Review pull requests', priority: 'HIGH', done: false, starred: false },
+  { id: 3, title: 'Update documentation', priority: 'MED', done: true, starred: false },
+  { id: 4, title: 'Prepare presentation slides', priority: 'HIGH', done: false, starred: true },
+  { id: 5, title: 'Send weekly report', priority: 'MED', done: false, starred: false },
+];
+
+const MOOD_EMOJIS = [
+  { emoji: '😊', label: 'Happy', value: 5, message: "You're radiating positivity! Keep spreading that joy — the world needs your light. ✨" },
+  { emoji: '😌', label: 'Calm', value: 4, message: "Beautiful inner peace. Stay in this flow — calmness is your superpower. 🧘" },
+  { emoji: '😐', label: 'Neutral', value: 3, message: "It's okay to feel neutral — not every day has to be extraordinary. You're doing just fine. 💛" },
+  { emoji: '😔', label: 'Sad', value: 2, message: "It's okay to feel this way. Be gentle with yourself — brighter days are ahead. You matter. 💙" },
+  { emoji: '😤', label: 'Stressed', value: 1, message: "Take a deep breath. You've overcome tough days before, and you'll get through this too. 💪" },
+];
+
+/* ───── habit category config ───── */
+const HABIT_CATEGORY_CONFIG = {
+  Work:        { icon: Code, color: '#3b82f6' },
+  Health:      { icon: Dumbbell, color: '#f97316' },
+  Personal:    { icon: Heart, color: '#a855f7' },
+  Learning:    { icon: BookOpen, color: '#06b6d4' },
+  Mindfulness: { icon: Brain, color: '#C2185B' },
+};
+
+/* ───── glass card wrapper ───── */
+const GlassCard = ({ children, className = '', custom = 0, shine = true, ...props }) => (
+  <motion.div
+    custom={custom}
+    variants={sectionReveal}
+    initial="hidden"
+    animate="visible"
+    className={clsx(
+      'rounded-2xl glass-card',
+      shine && 'glass-shine',
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </motion.div>
+);
+
+/* ───── Weekly Analytics Chart ───── */
+const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
+  const data = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const dayLabel = format(d, 'EEE');
+
+      const tasksCompleted = tasks.filter(t => {
+        if (!t.completed || !t.dueDate) return false;
+        return format(new Date(t.dueDate), 'yyyy-MM-dd') === dateStr;
+      }).length;
+
+      const totalTasks = tasks.filter(t => {
+        if (!t.dueDate) return false;
+        return format(new Date(t.dueDate), 'yyyy-MM-dd') === dateStr;
+      }).length;
+
+      const habitsCompleted = habits.filter(h =>
+        h.consistency?.includes(dateStr)
+      ).length;
+      const totalHabits = habits.length;
+
+      days.push({
+        label: dayLabel,
+        date: dateStr,
+        tasksCompleted,
+        totalTasks: Math.max(totalTasks, 1),
+        habitsCompleted,
+        totalHabits: Math.max(totalHabits, 1),
+        taskPct: totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : 0,
+        habitPct: totalHabits > 0 ? Math.round((habitsCompleted / totalHabits) * 100) : 0,
+      });
+    }
+    return days;
+  }, [tasks, habits]);
+
+  const maxPct = 100;
+
+  return (
+    <div className="space-y-4">
+      {/* Bar Chart */}
+      <div className="flex items-end gap-2 justify-between h-40">
+        {data.map((day, i) => (
+          <div key={day.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+            <div className="flex gap-1 items-end flex-1 w-full justify-center">
+              {/* Tasks bar */}
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${Math.max(day.taskPct, 4)}%` }}
+                transition={{ delay: 0.3 + i * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="w-3 md:w-4 rounded-t-md relative group cursor-pointer"
+                style={{ background: 'var(--accent-color)', minHeight: '4px', opacity: day.taskPct > 0 ? 1 : 0.2 }}
+                title={`${day.tasksCompleted} tasks done`}
+              />
+              {/* Habits bar */}
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${Math.max(day.habitPct, 4)}%` }}
+                transition={{ delay: 0.35 + i * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="w-3 md:w-4 rounded-t-md relative group cursor-pointer"
+                style={{ background: '#f97316', minHeight: '4px', opacity: day.habitPct > 0 ? 1 : 0.2 }}
+                title={`${day.habitsCompleted} habits done`}
+              />
+            </div>
+            <span className="text-[10px] text-mithra-merino/40 font-medium mt-1">{day.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Summary stats */}
+      <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
+        <div className="flex items-center gap-2">
+          <TrendingUp size={14} className="text-accent-visor" />
+          <span className="text-xs text-mithra-merino/50">
+            {data.reduce((s, d) => s + d.tasksCompleted, 0)} tasks &middot; {data.reduce((s, d) => s + d.habitsCompleted, 0)} habits this week
+          </span>
+        </div>
+        <div className="text-xs font-semibold text-accent-visor">
+          {Math.round(data.reduce((s, d) => s + d.habitPct, 0) / 7)}% avg habit rate
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════
+   DASHBOARD — Royal Merino + Black Glassmorphism
+   ═══════════════════════════════════════════ */
+export default function Dashboard() {
+  const [selectedMood, setSelectedMood] = useState(null);
+  const [moodSaved, setMoodSaved] = useState(false);
+  const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents } = useData();
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const isLight = theme === 'light';
+  const greeting = useMemo(getGreeting, []);
+  const GreetingIcon = greeting.icon;
+  const today = new Date();
+
+  /* ── Today's events from real calendar data (deduplicated) ── */
+  const todayEvents = useMemo(() => {
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const events = [];
+    const seenIds = new Set();
+    // Load saved calendar events from localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem(getUserScopedKey('calendar-events')) || '[]');
+      saved.forEach(evt => {
+        if (!evt.start || seenIds.has(evt.id)) return;
+        const evtDate = format(new Date(evt.start), 'yyyy-MM-dd');
+        if (evtDate === todayStr) {
+          seenIds.add(evt.id);
+          events.push({
+            id: evt.id,
+            title: evt.title,
+            time: `${format(new Date(evt.start), 'h:mm a')}${evt.end ? ` – ${format(new Date(evt.end), 'h:mm a')}` : ''}`,
+            color: CATEGORY_COLORS[evt.category] || CATEGORY_COLORS.default,
+            source: 'calendar',
+          });
+        }
+      });
+    } catch {}
+    // Also add synced task events (skip duplicates)
+    if (taskCalendarEvents) {
+      taskCalendarEvents.forEach(evt => {
+        if (seenIds.has(evt.id)) return;
+        if (format(new Date(evt.start), 'yyyy-MM-dd') === todayStr) {
+          seenIds.add(evt.id);
+          events.push({
+            id: evt.id,
+            title: evt.title,
+            time: format(new Date(evt.start), 'h:mm a'),
+            color: CATEGORY_COLORS[evt.category] || CATEGORY_COLORS.default,
+            source: 'task',
+          });
+        }
+      });
+    }
+    // Habits are shown in their own section — not mixed into Events
+    // Sort by time string
+    return events.sort((a, b) => a.time.localeCompare(b.time));
+  }, [taskCalendarEvents]);
+
+  /* Map real tasks into dashboard format — show empty state if no tasks */
+  const dashTasks = useMemo(() => {
+    if (realTasks && realTasks.length > 0) {
+      return realTasks
+        .filter(t => {
+          if (!t.dueDate) return true;
+          const d = new Date(t.dueDate);
+          return d.toDateString() === today.toDateString();
+        })
+        .slice(0, 6)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          priority: (t.priority || 'med').toUpperCase(),
+          done: !!t.completed,
+          starred: !!t.starred,
+        }));
+    }
+    return [];
+  }, [realTasks]);
+
+  const toggleTask = (id) => {
+    if (ctxToggleTask) ctxToggleTask(id);
+  };
+
+  const handleMoodSelect = (mood) => {
+    setSelectedMood(mood);
+    setMoodSaved(false);
+    /* Persist mood to localStorage */
+    const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+    moodHistory.push({ date: new Date().toISOString(), mood: mood.value, label: mood.label });
+    try {
+      localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-30)));
+    } catch (e) {
+      // Quota exceeded — trim more aggressively
+      try { localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-10))); } catch {}
+    }
+    setTimeout(() => setMoodSaved(true), 600);
+  };
+
+  const pendingCount = dashTasks.filter((t) => !t.done).length;
+  const doneCount = dashTasks.filter((t) => t.done).length;
+
+  /* Compute real stats from data */
+  const completedTasks = realTasks ? realTasks.filter(t => t.completed).length : doneCount;
+  const totalHabits = habits ? habits.length : 0;
+
+  /* Best streak across all habits */
+  const bestStreakData = useMemo(() => {
+    if (!habits || habits.length === 0) return { streak: 0, habit: 'None' };
+    let best = habits[0];
+    for (const h of habits) {
+      if ((h.bestStreak || h.streak) > (best.bestStreak || best.streak)) best = h;
+    }
+    return { streak: best.bestStreak || best.streak, habit: best.title };
+  }, [habits]);
+  const bestStreak = bestStreakData.streak;
+  const bestStreakHabit = bestStreakData.habit;
+
+  /* Streak alerts — habits where streak < bestStreak / 2 or streak = 0 */
+  const streakAlerts = useMemo(() => {
+    if (!habits) return [];
+    return habits.filter(h => {
+      if (h.bestStreak > 3 && h.streak === 0) return true;
+      if (h.bestStreak > 5 && h.streak <= Math.floor(h.bestStreak * 0.3)) return true;
+      return false;
+    });
+  }, [habits]);
+
+  /* Last mood from localStorage */
+  const lastMood = useMemo(() => {
+    try {
+      const history = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+      if (history.length === 0) return null;
+      const last = history[history.length - 1];
+      const matching = MOOD_EMOJIS.find(m => m.value === last.mood);
+      return matching || null;
+    } catch { return null; }
+  }, [selectedMood]);
+
+  /* Overdue tasks (past due, not completed) */
+  const overdueTasks = useMemo(() => {
+    if (!realTasks) return [];
+    const now = new Date();
+    return realTasks.filter(t => {
+      if (t.completed || !t.dueDate) return false;
+      return new Date(t.dueDate) < now;
+    });
+  }, [realTasks]);
+
+  /* Recent journal entries */
+  const recentJournals = useMemo(() => {
+    try {
+      const entries = JSON.parse(localStorage.getItem(getUserScopedKey('journal-entries')) || '[]');
+      return entries
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 4);
+    } catch { return []; }
+  }, []);
+
+  const MOOD_EMOJI_MAP = { 5: '😊', 4: '😌', 3: '😐', 2: '😔', 1: '😤' };
+
+  return (
+    <div className="min-h-screen p-4 sm:p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto pb-24 md:pb-8">
+
+      {/* ════════════════════════════════════
+          GREETING CARD — Hero glass panel
+          ════════════════════════════════════ */}
+      <motion.div
+        custom={0}
+        variants={sectionReveal}
+        initial="hidden"
+        animate="visible"
+        className="relative overflow-hidden rounded-3xl p-8 md:p-10 glass-shine"
+        style={{
+          background: isLight
+            ? 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(252,228,236,0.3) 50%, rgba(255,255,255,0.75) 100%)'
+            : 'linear-gradient(135deg, rgba(10,8,8,0.7) 0%, rgba(74,4,4,0.15) 50%, rgba(10,8,8,0.7) 100%)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          border: isLight ? '1px solid rgba(107,21,37,0.1)' : '1px solid rgba(242,235,227,0.08)',
+          boxShadow: isLight
+            ? '0 8px 40px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)'
+            : '0 16px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(242,235,227,0.05)',
+        }}
+      >
+        {/* ambient glows inside the card */}
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.06]"
+          style={{ background: isLight ? 'radial-gradient(circle, var(--accent-soft, var(--accent-color)) 0%, transparent 70%)' : 'radial-gradient(circle, var(--accent-color) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-[20%] w-56 h-56 rounded-full opacity-[0.05]"
+          style={{ background: 'radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 right-[15%] w-40 h-40 rounded-full opacity-[0.04]"
+          style={{ background: isLight ? 'radial-gradient(circle, var(--accent-soft, var(--accent-color)) 0%, transparent 70%)' : 'radial-gradient(circle, var(--accent-color) 0%, transparent 70%)' }} />
+
+        <div className="relative flex items-center justify-between flex-wrap gap-5">
+          <div>
+            <motion.div
+              className="flex items-center gap-3 mb-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{
+                  background: isLight ? 'rgb(var(--color-visor) / 0.08)' : 'rgb(var(--color-visor) / 0.12)',
+                  backdropFilter: 'blur(12px)',
+                  border: isLight ? '1px solid rgb(var(--color-visor) / 0.15)' : '1px solid rgb(var(--color-visor) / 0.2)',
+                }}>
+                <GreetingIcon className="w-5 h-5 text-mithra-merino/80" />
+              </div>
+              <span className="text-mithra-merino/45 text-sm font-medium tracking-widest uppercase">
+                {format(today, 'EEEE')}
+              </span>
+            </motion.div>
+
+            <motion.h1
+              className="text-3xl md:text-4xl font-light text-mithra-merino tracking-tight"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.6, ease: luxuryEase }}
+            >
+              {greeting.text},&nbsp;
+              <span className="font-semibold bg-gradient-to-r from-mithra-merino to-mithra-merino/70 bg-clip-text text-transparent">
+                {profile?.fullName || 'there'}
+              </span>
+            </motion.h1>
+
+            <motion.p
+              className="text-mithra-merino/35 text-base mt-2 font-light"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.6, ease: luxuryEase }}
+            >
+              {format(today, 'MMMM d, yyyy')} &middot;&nbsp;
+              <span className="text-accent-visor/70">{pendingCount} tasks pending</span>
+            </motion.p>
+          </div>
+
+          {/* Date badge — frosted glass */}
+          <motion.div
+            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl glass-card"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.45, duration: 0.5, ease: luxuryEase }}
+          >
+            <span className="text-accent-visor text-2xl font-bold leading-none">{format(today, 'd')}</span>
+            <span className="text-mithra-merino/45 text-xs uppercase mt-1 tracking-wider">{format(today, 'MMM')}</span>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* ════════════════════════════════════
+          STREAK ALERTS — if any habit streak dropped
+          ════════════════════════════════════ */}
+      <AnimatePresence>
+        {streakAlerts.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} custom={0.5}>
+            <GlassCard custom={0.5} className="p-4 border-l-4 border-orange-500/60">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-mithra-merino text-sm font-semibold mb-1">Streak Alert!</h3>
+                  <div className="space-y-1">
+                    {streakAlerts.map(a => (
+                      <p key={a.id} className="text-mithra-merino/60 text-xs">
+                        <span className="font-medium text-orange-400">{a.title}</span> — streak dropped to {a.streak} {a.streak === 0 ? '(lost!)' : `from best of ${a.bestStreak}`}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════
+          OVERDUE TASKS — warning section
+          ════════════════════════════════════ */}
+      <AnimatePresence>
+        {overdueTasks.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <GlassCard custom={0.6} className="p-4 border-l-4 border-red-500/60">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-mithra-merino text-sm font-semibold mb-1">Overdue Tasks</h3>
+                  <div className="space-y-1">
+                    {overdueTasks.slice(0, 5).map(t => (
+                      <p key={t.id} className="text-mithra-merino/60 text-xs">
+                        <span className="font-medium text-red-400">{t.title}</span>
+                        <span className="text-mithra-merino/30"> — due {format(new Date(t.dueDate), 'MMM d')}</span>
+                      </p>
+                    ))}
+                    {overdueTasks.length > 5 && (
+                      <p className="text-mithra-merino/40 text-xs">...and {overdueTasks.length - 5} more</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════
+          EVENTS + TASKS + HABITS — three-column glass grid
+          ════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Today's Events */}
+        <GlassCard custom={1} className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <Calendar className="w-[18px] h-[18px] text-accent-visor" />
+              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Events</h2>
+            </div>
+            <button onClick={() => navigate('/calendar')} className="text-mithra-merino/45 text-xs font-semibold hover:text-accent-visor transition-colors">{todayEvents.length} today →</button>
+          </div>
+
+          {todayEvents.length > 0 ? (
+            <div className="space-y-2">
+              {todayEvents.map((event, i) => (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
+                  className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:bg-mithra-merino/[0.03]"
+                  onClick={() => {
+                    if (event.source === 'task') navigate('/tasks');
+                    else if (event.source === 'habit') navigate('/habits');
+                    else navigate('/calendar');
+                  }}
+                >
+                  <div className="w-1 h-10 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: event.color, boxShadow: `0 0 8px ${event.color}33` }} />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-mithra-merino/90 text-sm font-medium truncate group-hover:text-mithra-merino transition-colors duration-300">
+                      {event.title}
+                    </p>
+                    <p className="text-mithra-merino/30 text-xs mt-0.5 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" /> {event.time}
+                    </p>
+                  </div>
+
+                  <ArrowRight className="w-4 h-4 text-mithra-merino/0 group-hover:text-mithra-merino/30 transition-all duration-300 -translate-x-1 group-hover:translate-x-0" />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Inbox size={24} className="text-mithra-merino/20 mb-2" />
+              <p className="text-mithra-merino/40 text-sm">No events today</p>
+              <p className="text-mithra-merino/25 text-xs mt-1">Add events in Calendar</p>
+            </div>
+          )}
+        </GlassCard>
+
+        {/* Priority Tasks */}
+        <GlassCard custom={2} className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-[18px] h-[18px] text-accent-visor" />
+              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Tasks</h2>
+            </div>
+            <button onClick={() => navigate('/tasks')} className="text-mithra-merino/45 text-xs font-semibold hover:text-accent-visor transition-colors px-2 py-0.5 rounded-lg"
+              style={{ background: isLight ? 'rgb(var(--color-visor) / 0.06)' : 'rgb(var(--color-visor) / 0.1)' }}>
+              {doneCount}/{dashTasks.length} →
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            {dashTasks.map((task, i) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
+                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-mithra-merino/[0.03] transition-all duration-300"
+                style={{
+                  background: task.priority === 'HIGH'
+                    ? (isLight ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)')
+                    : task.priority === 'MED'
+                      ? (isLight ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.07)')
+                      : task.priority === 'LOW'
+                        ? (isLight ? 'rgba(34,197,94,0.05)' : 'rgba(34,197,94,0.06)')
+                        : 'transparent',
+                }}
+              >
+                <button
+                  onClick={() => toggleTask(task.id)}
+                  className="flex-shrink-0 transition-transform duration-200 active:scale-90"
+                >
+                  {task.done ? (
+                    <CheckCircle2 className="w-5 h-5 text-accent-visor drop-shadow-[0_0_4px_rgba(194,24,91,0.3)]" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-mithra-merino/20 group-hover:text-mithra-merino/45 transition-colors duration-300" />
+                  )}
+                </button>
+
+                <span className={clsx(
+                  'flex-1 text-sm transition-all duration-300 truncate',
+                  task.done
+                    ? 'line-through text-mithra-merino/20'
+                    : 'text-mithra-merino/85 group-hover:text-mithra-merino'
+                )}>
+                  {task.title}
+                </span>
+
+                {task.starred && (
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(251,191,36,0.3)]" />
+                )}
+
+                <span className={clsx(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 uppercase tracking-wider',
+                  task.priority === 'HIGH' ? 'text-red-400' : 'text-amber-400'
+                )}
+                  style={{
+                    background: task.priority === 'HIGH' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                  }}
+                >
+                  {task.priority}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </GlassCard>
+
+        {/* Habit Tracker — in main grid */}
+        <GlassCard custom={3} className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <Flame className="w-[18px] h-[18px] text-accent-visor" />
+              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Habits</h2>
+            </div>
+            <button onClick={() => navigate('/habits')} className="text-mithra-merino/50 text-xs font-semibold hover:text-accent-visor transition-colors px-2 py-0.5 rounded-lg"
+              style={{ background: isLight ? 'rgb(var(--color-visor) / 0.06)' : 'rgb(var(--color-visor) / 0.1)' }}>
+              {habits ? habits.filter(h => h.todayDone).length : 0}/{habits ? habits.length : 0} →
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {habits && habits.length > 0 ? habits.map((habit, i) => {
+              const catConfig = HABIT_CATEGORY_CONFIG[habit.category] || HABIT_CATEGORY_CONFIG.Work;
+              const HabitIcon = catConfig.icon;
+              return (
+                <motion.div
+                  key={habit.id}
+                  initial={{ opacity: 0, x: 15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
+                  className={clsx(
+                    'flex items-center gap-3 p-3 rounded-xl transition-all duration-300',
+                    habit.todayDone ? 'opacity-70' : 'hover:bg-mithra-merino/[0.03]'
+                  )}
+                  style={{
+                    background: habit.todayDone
+                      ? (isLight ? `${habit.color || catConfig.color}08` : `${habit.color || catConfig.color}12`)
+                      : (isLight ? `${habit.color || catConfig.color}05` : `${habit.color || catConfig.color}08`),
+                    borderLeft: `3px solid ${habit.color || catConfig.color}${habit.todayDone ? '60' : '30'}`,
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${habit.color || catConfig.color}15`, border: `1px solid ${habit.color || catConfig.color}25` }}>
+                    <HabitIcon size={14} style={{ color: habit.color || catConfig.color }} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <span className={clsx(
+                      'text-sm font-medium transition-all truncate block',
+                      habit.todayDone ? 'line-through text-mithra-merino/35' : 'text-mithra-merino/85'
+                    )}>
+                      {habit.title}
+                    </span>
+                    <span className="text-xs flex items-center gap-1 mt-0.5">
+                      <Flame size={10} className="text-orange-500" />
+                      <span className="text-orange-400 font-semibold">{habit.streak}</span>
+                    </span>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => toggleHabit(habit.id)}
+                    className={clsx('w-7 h-7 rounded-full flex items-center justify-center transition-all border flex-shrink-0',
+                      habit.todayDone
+                        ? 'bg-accent-visor border-accent-visor text-black shadow-[0_0_12px_var(--accent-glow)]'
+                        : 'border-mithra-merino/15 text-mithra-merino/30 hover:border-accent-visor/50 hover:text-accent-visor'
+                    )}
+                    style={habit.todayDone ? { backgroundColor: 'var(--accent-color)', borderColor: 'var(--accent-color)' } : {}}
+                  >
+                    {habit.todayDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                  </motion.button>
+                </motion.div>
+              );
+            }) : (
+              <p className="text-mithra-merino/40 text-sm text-center py-8">
+                No habits yet — create some in the Focus Hub!
+              </p>
+            )}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* ════════════════════════════════════
+          MOOD PICKER — glass panel with animated emojis
+          ════════════════════════════════════ */}
+      <GlassCard custom={4} className="p-6 md:p-8">
+        <div className="flex items-center gap-2.5 mb-6">
+          <Sparkles className="w-[18px] h-[18px] text-accent-visor" />
+          <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+            How are you feeling?
+          </h2>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 md:gap-5 flex-wrap">
+          {MOOD_EMOJIS.map((mood, i) => (
+            <motion.button
+              key={mood.value}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 + i * 0.08, duration: 0.4, ease: luxuryEase }}
+              whileHover={{ scale: 1.18, y: -8, rotate: [0, -5, 5, 0] }}
+              whileTap={{ scale: 0.88 }}
+              onClick={() => handleMoodSelect(mood)}
+              className={clsx(
+                'flex flex-col items-center gap-2.5 p-4 md:p-5 rounded-2xl transition-all duration-300',
+                selectedMood?.value === mood.value
+                  ? 'glass-tab-active shadow-lg'
+                  : 'hover:bg-mithra-merino/[0.03]'
+              )}
+            >
+              <span className="text-4xl md:text-5xl select-none drop-shadow-lg">{mood.emoji}</span>
+              <span className={clsx(
+                'text-xs font-medium transition-colors duration-300',
+                selectedMood?.value === mood.value
+                  ? 'text-mithra-merino'
+                  : 'text-mithra-merino/35'
+              )}>
+                {mood.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {moodSaved && selectedMood && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mt-5 p-4 rounded-xl text-center"
+              style={{
+                background: isLight ? 'rgba(var(--color-visor), 0.04)' : 'rgba(var(--color-visor), 0.08)',
+                border: '1px solid rgba(var(--color-visor), 0.12)',
+              }}
+            >
+              <p className="text-accent-visor/70 text-sm font-medium mb-1">✓ Mood logged</p>
+              <p className="text-mithra-merino/60 text-sm leading-relaxed italic">
+                "{selectedMood.message}"
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </GlassCard>
+
+      {/* ════════════════════════════════════
+          STATS ROW — live computed stat cards
+          ════════════════════════════════════ */}
+      <motion.div
+        custom={5}
+        variants={sectionReveal}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      >
+        {[
+          { label: 'Tasks Done', value: String(completedTasks), icon: CheckCircle2, change: `${pendingCount} left` },
+          { label: 'Habits Done', value: `${habits ? habits.filter(h => h.todayDone).length : 0}/${totalHabits}`, icon: Flame, change: 'Today' },
+          { label: 'Best Streak', value: `${bestStreak}d`, icon: Target, change: bestStreakHabit },
+          { label: 'Focus Sessions', value: (() => { try { return localStorage.getItem(getUserScopedKey('focus-sessions')) || '0'; } catch { return '0'; } })(), icon: BookOpen, change: 'Total' },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + i * 0.07, duration: 0.5, ease: luxuryEase }}
+              className="rounded-2xl p-5 glass-card glass-shine group hover:scale-[1.02] transition-transform duration-300"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: isLight ? 'rgb(var(--color-visor) / 0.08)' : 'rgb(var(--color-visor) / 0.12)',
+                    backdropFilter: 'blur(8px)',
+                    border: isLight ? '1px solid rgb(var(--color-visor) / 0.15)' : '1px solid rgb(var(--color-visor) / 0.2)',
+                  }}>
+                  <Icon className="w-4 h-4 text-accent-visor" />
+                </div>
+                <span className="text-accent-visor text-xs font-semibold">{stat.change}</span>
+              </div>
+              <p className="text-mithra-merino text-2xl font-bold tracking-tight">{stat.value}</p>
+              <p className="text-mithra-merino/50 text-xs mt-1 font-medium">{stat.label}</p>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      {/* ════════════════════════════════════
+          WEEKLY ANALYTICS GRAPH 
+          ════════════════════════════════════ */}
+      <GlassCard custom={6} className="p-6 md:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            <BarChart3 className="w-[18px] h-[18px] text-accent-visor" />
+            <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+              Weekly Progress
+            </h2>
+          </div>
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ background: 'var(--accent-color)' }} />
+              Tasks
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-orange-500" />
+              Habits
+            </span>
+          </div>
+        </div>
+        <WeeklyAnalyticsChart tasks={realTasks || []} habits={habits || []} isLight={isLight} />
+      </GlassCard>
+
+      {/* ════════════════════════════════════
+          JOURNAL ENTRIES — recent entries
+          ════════════════════════════════════ */}
+      <GlassCard custom={7} className="p-6 md:p-8">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <BookOpen className="w-[18px] h-[18px] text-accent-visor" />
+            <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+              Recent Journal
+            </h2>
+          </div>
+          <button
+            onClick={() => navigate('/journal')}
+            className="flex items-center gap-1 text-xs text-accent-visor/70 hover:text-accent-visor transition-colors font-medium"
+          >
+            View All <ArrowRight size={12} />
+          </button>
+        </div>
+
+        {recentJournals.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recentJournals.map((entry, i) => (
+              <motion.div
+                key={entry.id || i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.06, duration: 0.5, ease: luxuryEase }}
+                onClick={() => navigate('/journal')}
+                className="p-4 rounded-xl cursor-pointer transition-all duration-300 hover:scale-[1.01] group"
+                style={{
+                  background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)'}`,
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg">{MOOD_EMOJI_MAP[entry.mood] || '📝'}</span>
+                  <span className="text-[10px] font-medium" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>
+                    {entry.date ? format(new Date(entry.date), 'MMM d') : ''}
+                  </span>
+                </div>
+                <h4 className="text-sm font-medium text-mithra-merino/85 truncate group-hover:text-mithra-merino transition-colors">
+                  {entry.title || 'Untitled'}
+                </h4>
+                <p className="text-xs text-mithra-merino/35 mt-1 line-clamp-2 leading-relaxed">
+                  {entry.body || entry.content || ''}
+                </p>
+                {entry.tags && entry.tags.length > 0 && (
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {entry.tags.slice(0, 3).map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{
+                        color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)',
+                        background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <FileText size={24} className="text-mithra-merino/20 mb-2" />
+            <p className="text-mithra-merino/40 text-sm">No journal entries yet</p>
+            <button
+              onClick={() => navigate('/journal')}
+              className="text-accent-visor/70 text-xs mt-2 hover:text-accent-visor transition-colors"
+            >
+              Write your first entry →
+            </button>
+          </div>
+        )}
+      </GlassCard>
+    </div>
+  );
+}

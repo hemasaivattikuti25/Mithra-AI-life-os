@@ -1,0 +1,9 @@
+# Mithra AI — Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://mithra-ai.vercel.app/sitemap.xml
+
+# Block API routes (if any)
+Disallow: /api/
