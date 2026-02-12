@@ -664,15 +664,15 @@ export default function MithraTasks() {
       {/* ── MAIN TASK LIST ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header with filter chips */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#F2EBE3]/5 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-medium tracking-tight text-[#F2EBE3]">Tasks</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[#F2EBE3]/5 flex-shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
+            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[#F2EBE3] flex-shrink-0">Tasks</h2>
             {/* Filter chips */}
-            <div className="flex gap-1.5 ml-4">
+            <div className="flex gap-1.5 ml-2 sm:ml-4">
               <button
                 onClick={() => { setActiveFilter('all'); setSelectedTask(null); }}
                 className={clsx(
-                  'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                  'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
                   activeFilter === 'all'
                     ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10'
                     : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35 hover:border-[#F2EBE3]/20'
@@ -687,7 +687,7 @@ export default function MithraTasks() {
                     key={list.id}
                     onClick={() => { setActiveFilter(list.id); setSelectedTask(null); }}
                     className={clsx(
-                      'px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5',
+                      'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 whitespace-nowrap',
                       activeFilter === list.id
                         ? 'bg-white/[0.08] text-[#F2EBE3] font-semibold'
                         : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35 hover:border-[#F2EBE3]/20'

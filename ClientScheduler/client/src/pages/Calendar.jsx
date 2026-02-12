@@ -28,6 +28,23 @@ const CATEGORY_COLORS = {
 
 const getColor = (cat) => CATEGORY_COLORS[cat] || CATEGORY_COLORS.default;
 
+/* Get the display color for an event — prefers custom eventColor/habitColor, falls back to category */
+const getEventDisplayColor = (evt) => {
+  const customHex = evt.eventColor || evt.habitColor;
+  if (customHex && customHex !== '#3b82f6') {
+    // Return inline-style-friendly object for custom colors
+    return {
+      hex: customHex,
+      isCustom: true,
+      bg: `${customHex}22`,        // 13% opacity
+      text: customHex,
+      border: customHex,
+    };
+  }
+  const cat = getColor(evt.category);
+  return { hex: cat.hex, isCustom: false, ...cat };
+};
+
 /* ═══════════════════════════════════════════════════════════════
    OVERLAP DETECTION — Column-based layout for overlapping events
    ═══════════════════════════════════════════════════════════════ */
@@ -677,7 +694,7 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                 {/* Events */}
                 {layoutEvents.map((evt) => {
                   const style = getEventStyle(evt);
-                  const color = getColor(evt.category);
+                  const dc = getEventDisplayColor(evt);
                   const colWidth = 100 / evt._totalCols;
                   const colLeft = evt._col * colWidth;
                   return (
@@ -687,17 +704,18 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                       onClick={(e) => { e.stopPropagation(); onEventClick(evt); }}
                       className={clsx(
                         'absolute rounded-lg px-2 py-1.5 cursor-pointer border-l-[3px] overflow-hidden group transition-shadow',
-                        color.bg, color.border,
+                        !dc.isCustom && dc.bg, !dc.isCustom && dc.border,
                         'hover:shadow-lg hover:z-20'
                       )}
                       style={{
                         ...style,
                         left: `calc(${colLeft}% + 2px)`,
                         width: `calc(${colWidth}% - 4px)`,
+                        ...(dc.isCustom ? { backgroundColor: dc.bg, borderLeftColor: dc.border } : {}),
                       }}
                       whileHover={{ scale: 1.02 }}
                     >
-                      <div className={clsx('text-xs font-semibold truncate', color.text)}>{evt.title}</div>
+                      <div className={clsx('text-xs font-semibold truncate', !dc.isCustom && dc.text)} style={dc.isCustom ? { color: dc.text } : {}}>{evt.title}</div>
                       <div className="text-[10px] text-[#F2EBE3]/40 mt-0.5">
                         {format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}
                       </div>
@@ -766,12 +784,13 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
               </div>
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map(evt => {
-                  const c = getColor(evt.category);
+                  const dc = getEventDisplayColor(evt);
                   return (
                     <div
                       key={evt.id}
                       onClick={(e) => { e.stopPropagation(); onEventClick(evt); }}
-                      className={clsx('text-[11px] px-2 py-0.5 rounded truncate cursor-pointer', c.bg, c.text, 'hover:opacity-80')}
+                      className={clsx('text-[11px] px-2 py-0.5 rounded truncate cursor-pointer', !dc.isCustom && dc.bg, !dc.isCustom && dc.text, 'hover:opacity-80')}
+                      style={dc.isCustom ? { backgroundColor: dc.bg, color: dc.text } : {}}
                     >
                       {format(evt.start, 'h:mm')} {evt.title}
                     </div>
@@ -851,22 +870,23 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
             ))}
             {layoutEvents.map(evt => {
               const style = getEventStyle(evt);
-              const color = getColor(evt.category);
+              const dc = getEventDisplayColor(evt);
               const colWidth = 100 / evt._totalCols;
               const colLeft = evt._col * colWidth;
               return (
                 <motion.div
                   key={evt.id}
                   onClick={(e) => { e.stopPropagation(); onEventClick(evt); }}
-                  className={clsx('absolute rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 cursor-pointer border-l-[3px] overflow-hidden', color.bg, color.border, 'hover:shadow-lg hover:z-20')}
+                  className={clsx('absolute rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 cursor-pointer border-l-[3px] overflow-hidden', !dc.isCustom && dc.bg, !dc.isCustom && dc.border, 'hover:shadow-lg hover:z-20')}
                   style={{
                     ...style,
                     left: `calc(${colLeft}% + 4px)`,
                     width: `calc(${colWidth}% - 8px)`,
+                    ...(dc.isCustom ? { backgroundColor: dc.bg, borderLeftColor: dc.border } : {}),
                   }}
                   whileHover={{ scale: 1.01 }}
                 >
-                  <div className={clsx('text-sm font-semibold', color.text)}>{evt.title}</div>
+                  <div className={clsx('text-sm font-semibold', !dc.isCustom && dc.text)} style={dc.isCustom ? { color: dc.text } : {}}>{evt.title}</div>
                   <div className="text-xs text-[#F2EBE3]/40 mt-0.5">{format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}</div>
                 </motion.div>
               );
