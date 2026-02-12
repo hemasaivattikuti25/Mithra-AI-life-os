@@ -387,9 +387,10 @@ export default function LandingPage() {
                                 className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10"
                             >
                                 <img
-                                    src={require(`../../public/demo/${preview.id}.png`)}
+                                    src={`/demo/${preview.id}.png`}
                                     alt={`Mithra AI ${preview.name}`}
                                     className="w-full h-full object-cover aspect-video group-hover:scale-110 transition-transform duration-500"
+                                    loading="lazy"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                                     <div className="text-white text-sm font-medium">{preview.name}</div>

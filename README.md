@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="ClientScheduler/client/public/hemasai.jpg" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
+  <img src="ClientScheduler/attached_assets/logo.png" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
 </p>
 
 <h1 align="center">Mithra AI</h1>
