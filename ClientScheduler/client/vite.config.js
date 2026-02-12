@@ -11,13 +11,7 @@ export default defineConfig({
     // Produce relative asset paths for Android WebView
     assetsDir: 'assets',
     // Performance optimizations
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-        drop_debugger: true
-      }
-    },
+    minify: 'esbuild', // Use default esbuild (faster, no extra dependency)
     // Code splitting for better caching
     rollupOptions: {
       output: {
