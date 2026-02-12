@@ -19,12 +19,12 @@ import { useData, getUserScopedKey } from '../context/DataContext';
    COLOR PALETTE FOR EVENT CATEGORIES
    ═══════════════════════════════════════════════════════════════ */
 const CATEGORY_COLORS = {
-  Work:     { bg: 'bg-blue-500/15', border: 'border-blue-500', text: 'text-blue-400', dot: 'bg-blue-500', hex: '#3b82f6' },
-  Meeting:  { bg: 'bg-purple-500/15', border: 'border-purple-500', text: 'text-purple-400', dot: 'bg-purple-500', hex: '#a855f7' },
+  Work: { bg: 'bg-blue-500/15', border: 'border-blue-500', text: 'text-blue-400', dot: 'bg-blue-500', hex: '#3b82f6' },
+  Meeting: { bg: 'bg-purple-500/15', border: 'border-purple-500', text: 'text-purple-400', dot: 'bg-purple-500', hex: '#a855f7' },
   Personal: { bg: 'bg-[#C2185B]/10', border: 'border-[#C2185B]', text: 'text-[#C2185B]', dot: 'bg-[#C2185B]', hex: '#C2185B' },
-  Health:   { bg: 'bg-orange-500/15', border: 'border-orange-500', text: 'text-orange-400', dot: 'bg-orange-500', hex: '#f97316' },
-  Focus:    { bg: 'bg-cyan-500/15', border: 'border-cyan-500', text: 'text-cyan-400', dot: 'bg-cyan-500', hex: '#06b6d4' },
-  default:  { bg: 'bg-[#F2EBE3]/10', border: 'border-[#F2EBE3]/30', text: 'text-[#F2EBE3]', dot: 'bg-[#F2EBE3]', hex: '#F2EBE3' },
+  Health: { bg: 'bg-orange-500/15', border: 'border-orange-500', text: 'text-orange-400', dot: 'bg-orange-500', hex: '#f97316' },
+  Focus: { bg: 'bg-cyan-500/15', border: 'border-cyan-500', text: 'text-cyan-400', dot: 'bg-cyan-500', hex: '#06b6d4' },
+  default: { bg: 'bg-[#F2EBE3]/10', border: 'border-[#F2EBE3]/30', text: 'text-[#F2EBE3]', dot: 'bg-[#F2EBE3]', hex: '#F2EBE3' },
 };
 
 const getColor = (cat) => CATEGORY_COLORS[cat] || CATEGORY_COLORS.default;
@@ -177,7 +177,7 @@ const loadEvents = () => {
         end: new Date(e.end),
       }));
     }
-  } catch {}
+  } catch { }
   return null;
 };
 
@@ -188,7 +188,7 @@ const saveEvents = (events) => {
     } catch (e) {
       console.warn('Failed to save calendar events:', e.message);
     }
-  } catch {}
+  } catch { }
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -301,7 +301,7 @@ const MiniCalendar = ({ currentDate, onDateClick, events }) => {
         </div>
       </div>
       <div className="grid grid-cols-7 gap-0 text-center text-xs font-medium text-[#F2EBE3]/50 mb-2">
-        {['S','M','T','W','T','F','S'].map((d, i) => <span key={i}>{d}</span>)}
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
       </div>
       <div className="grid grid-cols-7 gap-0">
         {days.map((day, i) => {
@@ -809,7 +809,7 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
     <div className="flex-1 flex flex-col">
       {/* Headers */}
       <div className="grid grid-cols-7 border-b border-[#F2EBE3]/5 flex-shrink-0">
-        {['S','M','T','W','T','F','S'].map((d, i) => (
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <div key={i} className="text-center py-1.5 sm:py-2 text-[10px] sm:text-xs text-[#F2EBE3]/40 uppercase tracking-wider">{d}</div>
         ))}
       </div>
@@ -963,7 +963,15 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
    MAIN CALENDAR COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 const MithraCalendar = () => {
-  const { taskCalendarEvents, habitCalendarEvents, deleteTask, deleteHabit } = useData();
+  const {
+    taskCalendarEvents,
+    habitCalendarEvents,
+    googleEvents,
+    syncSettings,
+    toggleSyncGoogleCalendar,
+    deleteTask,
+    deleteHabit
+  } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState(() => loadEvents() || INITIAL_EVENTS);
   const [view, setView] = useState('week'); // 'month' | 'week' | 'day'
@@ -974,11 +982,12 @@ const MithraCalendar = () => {
   // Persist events to localStorage
   React.useEffect(() => { saveEvents(events); }, [events]);
 
-  // Merge own events (with repeat expansion) with synced task/habit events
+  // Merge own events (with repeat expansion) with synced task/habit/google events
   const allEvents = useMemo(() => {
     const expandedEvents = expandRepeatingEvents(events);
-    return [...expandedEvents, ...taskCalendarEvents, ...habitCalendarEvents];
-  }, [events, taskCalendarEvents, habitCalendarEvents]);
+    const gEvents = syncSettings.syncGoogleCalendar ? googleEvents : [];
+    return [...expandedEvents, ...taskCalendarEvents, ...habitCalendarEvents, ...gEvents];
+  }, [events, taskCalendarEvents, habitCalendarEvents, googleEvents, syncSettings.syncGoogleCalendar]);
 
   // Navigation
   const navigateForward = () => {
@@ -1068,6 +1077,21 @@ const MithraCalendar = () => {
               {cat}
             </div>
           ))}
+
+          <div className="pt-4 mt-4 border-t border-[#F2EBE3]/5">
+            <h4 className="text-xs text-[#F2EBE3]/30 uppercase tracking-wider mb-3">Sync</h4>
+            <button
+              onClick={toggleSyncGoogleCalendar}
+              className="flex items-center gap-3 text-sm text-[#F2EBE3]/60 hover:text-[#F2EBE3] transition-colors w-full text-left"
+            >
+              <div className={clsx("w-3 h-3 rounded-full border flex items-center justify-center transition-colors",
+                syncSettings.syncGoogleCalendar ? "bg-green-500 border-green-500" : "border-[#F2EBE3]/30")}
+              >
+                {syncSettings.syncGoogleCalendar && <Check size={8} className="text-black" />}
+              </div>
+              Google Calendar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1089,20 +1113,21 @@ const MithraCalendar = () => {
               <Download size={16} />
             </button>
             <div className="flex gap-1 rounded-lg p-0.5 sm:p-1 glass-card">
-            {['day', 'week', 'month'].map(v => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={clsx(
-                  'px-3 sm:px-4 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm capitalize transition-all',
-                  view === v
-                    ? 'bg-[#C2185B]/10 text-[#C2185B] border border-[#C2185B]/30'
-                    : 'text-[#F2EBE3]/50 hover:text-[#F2EBE3] border border-transparent'
-                )}
-              >
-                {v}
-              </button>
-            ))}
+              {['day', 'week', 'month'].map(v => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={clsx(
+                    'px-3 sm:px-4 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm capitalize transition-all',
+                    view === v
+                      ? 'bg-[#C2185B]/10 text-[#C2185B] border border-[#C2185B]/30'
+                      : 'text-[#F2EBE3]/50 hover:text-[#F2EBE3] border border-transparent'
+                  )}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1149,7 +1174,7 @@ const MithraCalendar = () => {
         event={editingEvent}
         selectedDate={selectedSlotDate}
       />
-    {/* End main container */}
+    </motion.div>
   );
 };
 

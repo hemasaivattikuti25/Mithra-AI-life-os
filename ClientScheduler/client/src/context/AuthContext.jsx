@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     dateJoined: new Date().toISOString(),
   });
-  const [loading, setLoading] = useState(isSupabaseConfigured); // Only loading if Supabase active
+  const [loading, setLoading] = useState(isSupabaseConfigured && !user); // Optimistic: if user exists locally, don't show loading
   const authListenerRef = useRef(null);
 
   const isAuthenticated = !!user;
@@ -87,13 +87,13 @@ export function AuthProvider({ children }) {
         // PKCE OAuth callback: if ?code= is in the URL, exchange it for a session first
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        
+
         if (code) {
           try {
             const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             // Clean the URL (remove ?code= param) so it doesn't get reused
             window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-            
+
             if (data?.session?.user) {
               const supaUser = {
                 id: data.session.user.id,
@@ -101,7 +101,7 @@ export function AuthProvider({ children }) {
                 provider: 'supabase',
               };
               setUser(supaUser);
-              
+
               // Pull profile
               try {
                 const { data: profileData } = await supabase
@@ -125,8 +125,8 @@ export function AuthProvider({ children }) {
                     avatarUrl: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || prev.avatarUrl,
                   }));
                 }
-              } catch {}
-              
+              } catch { }
+
               setLoading(false);
               return; // Done — don't fall through to getSession
             }
@@ -215,7 +215,7 @@ export function AuthProvider({ children }) {
                 avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
               }));
             }
-          } catch {}
+          } catch { }
 
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
@@ -239,7 +239,7 @@ export function AuthProvider({ children }) {
       } else {
         localStorage.removeItem('mithra-auth');
       }
-    } catch {}
+    } catch { }
   }, [user]);
 
   // Persist profile scoped to user
@@ -249,7 +249,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem(`mithra-profile-${user.id}`, JSON.stringify(profile));
         localStorage.setItem('mithra-profile', JSON.stringify(profile));
       }
-    } catch {}
+    } catch { }
   }, [profile, user]);
 
   /* ── Helper to clear old user data for fresh start ── */
@@ -376,7 +376,7 @@ export function AuthProvider({ children }) {
             dateJoined: profileData.created_at || prev.dateJoined,
           }));
         }
-      } catch {}
+      } catch { }
 
       return authUser;
     }
@@ -396,7 +396,7 @@ export function AuthProvider({ children }) {
       const salt = generateSalt();
       found.salt = salt;
       found.password = await hashPassword(password, salt);
-      try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch {}
+      try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch { }
     }
 
     const authUser = { id: found.id, email: found.email };
@@ -426,7 +426,7 @@ export function AuthProvider({ children }) {
      ═══════════════════════════════════════════════════════════ */
   const signOut = useCallback(async () => {
     if (isSupabaseConfigured) {
-      try { await authService.signOut(); } catch {}
+      try { await authService.signOut(); } catch { }
     }
     setUser(null);
   }, []);
@@ -474,7 +474,7 @@ export function AuthProvider({ children }) {
     const salt = generateSalt();
     users[idx].password = await hashPassword(newPassword, salt);
     users[idx].salt = salt;
-    try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch {}
+    try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch { }
     localStorage.removeItem('mithra-reset-email');
     return true;
   }, []);
@@ -494,7 +494,7 @@ export function AuthProvider({ children }) {
           avatar_url: updates.avatarUrl || undefined,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'id' });
-      } catch {}
+      } catch { }
     }
   }, [user]);
 
@@ -512,7 +512,7 @@ export function AuthProvider({ children }) {
     const users = loadUsers();
     const idx = users.findIndex(u => u.email === user.email);
     if (idx === -1) throw new Error('User not found');
-    
+
     if (users[idx].salt) {
       const valid = await verifyPassword(currentPassword, users[idx].salt, users[idx].password);
       if (!valid) throw new Error('Current password is incorrect');
@@ -520,11 +520,11 @@ export function AuthProvider({ children }) {
       try { if (atob(users[idx].password) !== currentPassword) throw new Error('Current password is incorrect'); }
       catch { throw new Error('Current password is incorrect'); }
     }
-    
+
     const salt = generateSalt();
     users[idx].password = await hashPassword(newPassword, salt);
     users[idx].salt = salt;
-    try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch {}
+    try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch { }
     return true;
   }, [user]);
 
@@ -544,7 +544,7 @@ export function AuthProvider({ children }) {
         });
         localStorage.setItem('mithra-users', JSON.stringify(users));
       }
-    } catch {}
+    } catch { }
   };
 
   const value = useMemo(() => ({

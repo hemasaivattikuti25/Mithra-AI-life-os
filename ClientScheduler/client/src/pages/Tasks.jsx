@@ -31,10 +31,10 @@ const TASK_CATEGORIES = [
 /* ═══════════════════════════════════════════════════════════════
    ADD TASK MODAL — Rich input form
    ═══════════════════════════════════════════════════════════════ */
-const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
+const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('default');
+  const [category, setCategory] = useState(initialCategory && initialCategory !== 'all' ? initialCategory : 'default');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
@@ -44,12 +44,14 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(''); setDescription(''); setCategory('default');
+      setTitle(''); setDescription('');
+      setCategory(initialCategory && initialCategory !== 'all' ? initialCategory : 'default');
       setPriority('medium'); setDueDate('');
       setDueTime(''); setRecurrence('none'); setShowCatDropdown(false);
-      setTimeout(() => titleRef.current?.focus(), 100);
+      // Slight delay to allow animation to start before potential keyboard shift
+      setTimeout(() => titleRef.current?.focus(), 300);
     }
-  }, [isOpen]);
+  }, [isOpen, initialCategory]);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -78,10 +80,13 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xl sm:p-4" onClick={onClose}>
       <motion.div initial={{ y: '100%', opacity: 0.8 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={e => e.stopPropagation()} className="w-full sm:max-w-md max-h-[92vh] sm:max-h-[85vh] flex flex-col glass-heavy glass-shine rounded-t-2xl sm:rounded-2xl overflow-hidden">
+        onClick={e => e.stopPropagation()}
+        className="w-full sm:max-w-md max-h-[85dvh] flex flex-col glass-heavy glass-shine rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+      >
         {/* Drag handle for mobile */}
-        <div className="sm:hidden flex justify-center pt-2 pb-0">
-          <div className="w-10 h-1 rounded-full bg-[#F2EBE3]/20" />
+        <div className="sm:hidden flex justify-center pt-3 pb-1" onClick={onClose}>
+          <div className="w-12 h-1.5 rounded-full bg-[#F2EBE3]/20" />
         </div>
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[#F2EBE3]/5">
@@ -188,11 +193,10 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
                 { key: 'monthly', label: 'Monthly' },
               ].map(r => (
                 <button key={r.key} onClick={() => setRecurrence(r.key)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                    recurrence === r.key
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${recurrence === r.key
                       ? 'border-[#C2185B]/40 bg-[#C2185B]/10 text-[#C2185B]'
                       : 'border-white/10 text-[#F2EBE3]/30 hover:border-white/20'
-                  }`}>
+                    }`}>
                   {r.label}
                 </button>
               ))}
@@ -201,7 +205,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
         </div>
 
         {/* Footer — always visible at bottom */}
-        <div className="flex-shrink-0 p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex-shrink-0 p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3 sticky bottom-0 bg-inherit backdrop-blur-xl">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[#F2EBE3]/40 text-sm hover:bg-white/5 transition-colors">Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
             className="px-6 py-2.5 rounded-xl bg-[#C2185B] text-white font-bold text-sm hover:shadow-[0_0_20px_rgba(194,24,91,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed">
@@ -457,8 +461,8 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
           <Circle size={20} className={clsx(
             'transition-colors',
             task.priority === 'high' ? 'text-red-400/60 hover:text-[#C2185B]' :
-            task.priority === 'medium' ? 'text-yellow-400/40 hover:text-[#C2185B]' :
-            'text-[#F2EBE3]/20 hover:text-[#C2185B]'
+              task.priority === 'medium' ? 'text-yellow-400/40 hover:text-[#C2185B]' :
+                'text-[#F2EBE3]/20 hover:text-[#C2185B]'
           )} />
         )}
       </button>
@@ -984,7 +988,7 @@ export default function MithraTasks() {
       {/* ── ADD TASK MODAL ── */}
       <AnimatePresence>
         {showAddModal && (
-          <AddTaskModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAdd} taskLists={taskLists} />
+          <AddTaskModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAdd} taskLists={taskLists} initialCategory={activeFilter} />
         )}
       </AnimatePresence>
     </motion.div>

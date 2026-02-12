@@ -3,6 +3,7 @@ import { format, addDays, startOfDay, setHours, setMinutes } from 'date-fns';
 import { scheduleNotification, isNative, requestNotificationPermission as nativeRequestPermission } from '../native';
 import { syncEngine } from '../services/syncEngine';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
+import { listGoogleEvents } from '../services/googleCalendar';
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED DATA CONTEXT
@@ -217,7 +218,7 @@ const saveToStorage = (key, value) => {
     const userId = (() => { try { const a = JSON.parse(localStorage.getItem('mithra-auth') || 'null'); return a?.id; } catch { return null; } })();
     const scopedKey = userId ? `mithra-${userId}-${key}` : `mithra-${key}`;
     localStorage.setItem(scopedKey, JSON.stringify(value));
-  } catch {}
+  } catch { }
 };
 
 /** Get user-scoped localStorage key — use this in pages that manage their own storage */
@@ -225,7 +226,7 @@ export const getUserScopedKey = (baseKey) => {
   try {
     const a = JSON.parse(localStorage.getItem('mithra-auth') || 'null');
     if (a?.id) return `mithra-${a.id}-${baseKey}`;
-  } catch {}
+  } catch { }
   return `mithra-${baseKey}`;
 };
 
@@ -252,7 +253,7 @@ export const loadUserStorage = (baseKey, fallback) => {
 export const saveUserStorage = (baseKey, value) => {
   try {
     localStorage.setItem(getUserScopedKey(baseKey), JSON.stringify(value));
-  } catch {}
+  } catch { }
 };
 
 /* ── initial tasks — empty for new users ── */
@@ -351,7 +352,35 @@ export function DataProvider({ children }) {
     syncTasksToCalendar: true,
     syncHabitsToCalendar: true,
     syncFocusToTracker: true,
+    syncGoogleCalendar: false, // User toggle for G-Cal
   }));
+
+  // Google Calendar Events State
+  const [googleEvents, setGoogleEvents] = useState([]);
+
+  const fetchGoogleEvents = useCallback(async () => {
+    if (!isSupabaseConfigured || !syncSettings.syncGoogleCalendar) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.provider_token) {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1); // 1 month back
+        const end = new Date(now.getFullYear(), now.getMonth() + 3, 1);   // 3 months forward
+        const events = await listGoogleEvents(session.provider_token, start, end);
+        setGoogleEvents(events);
+        console.log('[Mithra] Synced', events.length, 'Google Calendar events');
+      }
+    } catch (err) {
+      console.warn('[Mithra] Google Calendar sync failed:', err);
+    }
+  }, [syncSettings.syncGoogleCalendar]);
+
+  // Initial sync and poll
+  useEffect(() => {
+    fetchGoogleEvents();
+    const interval = setInterval(fetchGoogleEvents, 5 * 60 * 1000); // 5 mins
+    return () => clearInterval(interval);
+  }, [fetchGoogleEvents]);
 
   // Persist settings to localStorage whenever they change
   useEffect(() => { saveToStorage('theme', theme); }, [theme]);
@@ -810,15 +839,18 @@ export function DataProvider({ children }) {
   const toggleSyncFocus = useCallback(() => {
     setSyncSettings(prev => ({ ...prev, syncFocusToTracker: !prev.syncFocusToTracker }));
   }, []);
+  const toggleSyncGoogleCalendar = useCallback(() => {
+    setSyncSettings(prev => ({ ...prev, syncGoogleCalendar: !prev.syncGoogleCalendar }));
+  }, []);
 
   /* ── Export ALL data ── */
   const exportData = useCallback(() => {
     // Gather all user data from localStorage
     let events = [], journal = [], moodHistory = [], focusSessions = [];
-    try { events = JSON.parse(localStorage.getItem(getUserScopedKey('calendar-events')) || '[]'); } catch {}
-    try { journal = JSON.parse(localStorage.getItem(getUserScopedKey('journal')) || '[]'); } catch {}
-    try { moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]'); } catch {}
-    try { focusSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch {}
+    try { events = JSON.parse(localStorage.getItem(getUserScopedKey('calendar-events')) || '[]'); } catch { }
+    try { journal = JSON.parse(localStorage.getItem(getUserScopedKey('journal')) || '[]'); } catch { }
+    try { moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]'); } catch { }
+    try { focusSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch { }
 
     const data = {
       version: '1.0',
@@ -858,16 +890,17 @@ export function DataProvider({ children }) {
     // Notifications
     notificationSettings, updateNotificationSettings, requestNotificationPermission, REMINDER_OPTIONS,
     // Settings
-    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus,
+    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar,
+    googleEvents,
     // Export
     exportData,
   }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings,
-    theme, colorTheme, accentColor, notifications, focusSound, notificationSettings,
+    theme, colorTheme, accentColor, notifications, focusSound, notificationSettings, googleEvents,
     addTask, updateTask, deleteTask, toggleTask, starTask,
     addHabit, updateHabit, deleteHabit, toggleHabit,
     toggleTheme, changeColorTheme, toggleNotifications, toggleFocusSound,
     updateNotificationSettings, requestNotificationPermission,
-    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, exportData]);
+    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar, exportData]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

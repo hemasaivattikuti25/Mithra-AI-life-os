@@ -22,18 +22,18 @@ if (!isConfigured) {
 
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-        storage: localStorage,
-        storageKey: 'mithra-supabase-auth',
-      },
-      realtime: {
-        params: { eventsPerSecond: 2 },
-      },
-    })
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      storage: localStorage,
+      storageKey: 'mithra-supabase-auth',
+    },
+    realtime: {
+      params: { eventsPerSecond: 2 },
+    },
+  })
   : null;
 
 export const isSupabaseConfigured = isConfigured;
@@ -45,7 +45,7 @@ export const authService = {
   /** Sign up with email + password, stores fullName in metadata */
   async signUp(email, password, fullName) {
     if (!supabase) return null; // fall back to localStorage auth
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -64,7 +64,7 @@ export const authService = {
           email,
           password,
         });
-        
+
         if (signInData?.user) {
           // User exists, manually create profile
           await supabase
@@ -77,7 +77,7 @@ export const authService = {
               updated_at: new Date().toISOString(),
             }, { onConflict: 'id' })
             .select();
-          
+
           return { user: signInData.user, session: signInData.session };
         }
       }
@@ -138,7 +138,7 @@ export const authService = {
   /** Subscribe to auth state changes */
   onAuthStateChange(callback) {
     if (!supabase) {
-      return { data: { subscription: { unsubscribe: () => {} } } };
+      return { data: { subscription: { unsubscribe: () => { } } } };
     }
     return supabase.auth.onAuthStateChange(callback);
   },
@@ -150,6 +150,11 @@ export const authService = {
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
       },
     });
     if (error) throw error;
