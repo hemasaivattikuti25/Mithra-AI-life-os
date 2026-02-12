@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Layout as LayoutIcon, MessageSquare, Calendar as CalendarIcon, 
-  CheckSquare, BookOpen, Settings, User, Activity, Bot, Menu, X
+import {
+    Layout as LayoutIcon, MessageSquare, Calendar as CalendarIcon,
+    CheckSquare, BookOpen, Settings, User, Activity, Bot, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
@@ -28,11 +28,11 @@ const ProfileAvatar = ({ size = 'w-9 h-9' }) => {
     }
     return (
         <div className={`${size} rounded-full flex items-center justify-center text-xs font-bold ring-1`}
-          style={{
-            background: `linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))`,
-            color: 'white',
-            ringColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.1)',
-          }}>
+            style={{
+                background: `linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))`,
+                color: 'white',
+                ringColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.1)',
+            }}>
             {getInitials()}
         </div>
     );
@@ -47,7 +47,7 @@ const ProfileName = () => {
 
 /* ═══ NAV ITEMS ═══ */
 const navItems = [
-    { path: '/', label: 'Home', icon: LayoutIcon },
+    { path: '/dashboard', label: 'Home', icon: LayoutIcon },
     { path: '/habits', label: 'Habits', icon: Activity },
     { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
@@ -57,7 +57,7 @@ const navItems = [
 
 /* Bottom bar items (subset for mobile) — Settings moved to top-right */
 const bottomNavItems = [
-    { path: '/', label: 'Home', icon: LayoutIcon },
+    { path: '/dashboard', label: 'Home', icon: LayoutIcon },
     { path: '/habits', label: 'Habits', icon: Activity },
     { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
