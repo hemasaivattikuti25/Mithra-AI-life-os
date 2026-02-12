@@ -68,6 +68,8 @@ class Task(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     user_id: str
+    current_tasks: Optional[List[Dict[str, Any]]] = None
+    current_habits: Optional[List[Dict[str, Any]]] = None
 
 class ScheduleRequest(BaseModel):
     text: str
@@ -148,18 +150,34 @@ async def chat_with_dost(request: ChatRequest):
         message_embedding = await get_embedding(request.message)
         
         # 2. Recall (RAG)
-        # Note: We filter by user_id in retrieval ideally, but the simple RPC might need modification to accept user_id
-        # For now, we assume the RPC handles it or we're in single-user mode for MVP
         similar_memories = await search_similar_memories(message_embedding, request.user_id)
         
         context_str = ""
         if similar_memories:
             context_str = "\n".join([f"- {m['content']} (Similarity: {m['similarity']:.2f})" for m in similar_memories])
         
-        # 3. Generate
-        system_prompt = """You are Dost, a supportive, insightful, and slightly strict productivity companion. 
+        # 3. Contextual Data (Tasks/Habits)
+        task_context = ""
+        if request.current_tasks:
+            pending = [t for t in request.current_tasks if not t.get('completed')]
+            high_pri = [t for t in pending if t.get('priority') == 'high']
+            task_context = f"User has {len(pending)} pending tasks ({len(high_pri)} high priority)."
+            if high_pri:
+                task_context += f" Top priorities: {', '.join([t['title'] for t in high_pri[:3]])}."
+
+        habit_context = ""
+        if request.current_habits:
+            done = [h for h in request.current_habits if h.get('todayDone')]
+            habit_context = f"Habits done today: {len(done)}/{len(request.current_habits)}."
+
+        # 4. Generate
+        system_prompt = f"""You are Dost, a supportive, insightful, and slightly strict productivity companion. 
         Your goal is to help the user master their time and emotions.
         
+        [Current Status]:
+        {task_context}
+        {habit_context}
+
         Use the following Context (retrieved from the user's past journals) to inform your response.
         If the user refers to past events, check the context.
         Keep your response concise (under 100 words), conversational, and empathetic but action-oriented.
@@ -170,15 +188,13 @@ async def chat_with_dost(request: ChatRequest):
         response = model.generate_content(full_prompt)
         dost_reply = response.text
         
-        # 4. Save to Journal (Memory)
-        # We save the *user's* message to build the memory bank.
-        # Ideally, we also save the AI's reply or the conversation turn, but for now, we index the user's input/feelings.
+        # 5. Save to Journal (Memory)
         if supabase:
             supabase.table("journal_entries").insert({
-                "content": request.message, # In a real app, might want to categorize valid "memories" vs chatter
+                "content": request.message, 
                 "user_id": request.user_id,
                 "embedding": message_embedding,
-                "mood_score": 5 # Placeholder, or extract from text using Gemini
+                "mood_score": 5 
             }).execute()
 
         return {
@@ -198,16 +214,26 @@ async def parse_schedule(request: ScheduleRequest):
     try:
         # Define the schema we want back
         prompt = f"""
-        Extract schedule events from the following text: "{request.text}".
+        You are an expert scheduler. Extract schedule events from the following text: "{request.text}".
+        
+        Today is: {datetime.now().strftime("%A, %Y-%m-%d")}.
+        
+        - If the text says "Plan my week", generate a thoughtful schedule for the next 5-7 days based on any context provided or general productivity best practices (Work 9-5, Workout in morning, etc).
+        - If dates are implied (e.g., "next Friday"), calculate the exact ISO date.
         
         Return a JSON object with a list of "events". 
         Each event should have:
         - title: A short description.
-        - start_time: ISO 8601 string (assume today is {datetime.now().date()} if not specified).
-        - category: One of "Work", "Health", "Personal".
+        - start_time: ISO 8601 string (YYYY-MM-DDTHH:MM:SS) 
+        - category: One of "Work", "Health", "Personal", "Learning".
         - priority: "High" or "Medium".
         
-        If no time is mentioned, set start_time to null.
+        Example Output:
+        {{
+            "events": [
+                {{ "title": "Team Meeting", "start_time": "2024-02-14T10:00:00", "category": "Work", "priority": "High" }}
+            ]
+        }}
         """
         
         # Using Gemini 1.5 Flash's ability to output JSON
@@ -228,7 +254,6 @@ async def parse_schedule(request: ScheduleRequest):
             return data # Should match {"events": [...]} format
             
         except json.JSONDecodeError:
-             # Fallback parsing or re-prompting logic could go here
              print(f"Failed to parse JSON: {response.text}")
              raise HTTPException(status_code=500, detail="Failed to parse schedule from AI response")
 

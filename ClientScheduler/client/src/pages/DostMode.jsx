@@ -148,7 +148,7 @@ function parseFuzzyDate(text) {
   const today = new Date();
   if (lower === 'today') return today;
   if (lower === 'tomorrow') return addDays(today, 1);
-  const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayIdx = days.indexOf(lower);
   if (dayIdx >= 0) {
     const todayDay = today.getDay();
@@ -158,7 +158,7 @@ function parseFuzzyDate(text) {
   try {
     const parsed = parse(text, 'M/d', new Date());
     if (!isNaN(parsed)) return parsed;
-  } catch {}
+  } catch { }
   return today;
 }
 
@@ -197,7 +197,7 @@ function buildSummary(tasks, habits) {
       const last = todayMood[todayMood.length - 1];
       moodText = `${last.label} (logged at ${format(new Date(last.date), 'h:mm a')})`;
     }
-  } catch {}
+  } catch { }
 
   const droppedStreaks = habits.filter(h => h.bestStreak > 3 && h.streak === 0);
 
@@ -268,7 +268,7 @@ export default function DostMode() {
         const parsed = JSON.parse(stored);
         return parsed.length > 0 ? parsed : INITIAL_MSG;
       }
-    } catch {}
+    } catch { }
     return INITIAL_MSG;
   });
   const [input, setInput] = useState("");
@@ -309,8 +309,8 @@ export default function DostMode() {
     try {
       try {
         localStorage.setItem(getUserScopedKey('chat-history'), JSON.stringify(messages.slice(-80)));
-      } catch {}
-    } catch {}
+      } catch { }
+    } catch { }
   }, [messages]);
 
   // Auto-scroll to bottom
@@ -399,7 +399,7 @@ export default function DostMode() {
           const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-          
+
           if (jsonData.length === 0) {
             addAiMsg(`📄 The Excel file "${file.name}" appears to be empty.`);
           } else {
@@ -408,22 +408,22 @@ export default function DostMode() {
             const titleIdx = headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('name') || h.includes('item'));
             const priorityIdx = headers.findIndex(h => h.includes('priority'));
             const dateIdx = headers.findIndex(h => h.includes('date') || h.includes('due'));
-            
+
             const importedTasks = [];
             for (let i = 1; i < Math.min(jsonData.length, 101); i++) {
               const row = jsonData[i];
               if (!row || row.length === 0) continue;
-              
+
               // Use title column if found, otherwise use first non-empty cell
               let title = titleIdx >= 0 ? String(row[titleIdx] || '') : String(row[0] || '');
               title = title.trim();
               if (!title || title.length < 2) continue;
-              
-              const priority = priorityIdx >= 0 && row[priorityIdx] 
-                ? String(row[priorityIdx]).toLowerCase().includes('high') ? 'high' 
+
+              const priority = priorityIdx >= 0 && row[priorityIdx]
+                ? String(row[priorityIdx]).toLowerCase().includes('high') ? 'high'
                   : String(row[priorityIdx]).toLowerCase().includes('low') ? 'low' : 'medium'
                 : 'medium';
-              
+
               let dueDate = new Date();
               if (dateIdx >= 0 && row[dateIdx]) {
                 const excelDate = row[dateIdx];
@@ -431,10 +431,10 @@ export default function DostMode() {
                 if (typeof excelDate === 'number') {
                   dueDate = new Date((excelDate - 25569) * 86400 * 1000);
                 } else {
-                  try { dueDate = new Date(excelDate); } catch {}
+                  try { dueDate = new Date(excelDate); } catch { }
                 }
               }
-              
+
               importedTasks.push({
                 id: `import-${Date.now()}-${i}`,
                 title,
@@ -447,7 +447,7 @@ export default function DostMode() {
                 details: '',
               });
             }
-            
+
             if (importedTasks.length === 0) {
               addAiMsg(`📄 I couldn't find any tasks in "${file.name}". Make sure the first row has column headers like "Title" or "Task".`);
             } else {
@@ -666,7 +666,7 @@ export default function DostMode() {
           });
           const total = habits.length;
           const done = habits.filter(h => h.todayDone).length;
-          msg += `\n📊 Progress: ${done}/${total} done today (${Math.round(done/total*100)}%)`;
+          msg += `\n📊 Progress: ${done}/${total} done today (${Math.round(done / total * 100)}%)`;
           if (done === total) msg += '\n\n🎉 All habits done — incredible day!';
           else if (done >= total * 0.5) msg += '\n\nAlmost there — keep pushing! 💪';
           else msg += '\n\nStill time to knock these out! Start with one. 🚀';
@@ -733,6 +733,8 @@ export default function DostMode() {
               const res = await axios.post(`${API_BASE}/api/chat`, {
                 message: userInput,
                 user_id: 'default',
+                current_tasks: tasks.map(t => ({ title: t.title, priority: t.priority, completed: t.completed, dueDate: t.dueDate })),
+                current_habits: habits.map(h => ({ title: h.title, streak: h.streak, todayDone: h.todayDone })),
               }, { timeout: 30000 });
               addAiMsg(res.data?.reply || "That's interesting! Tell me more.");
             } catch {
@@ -806,7 +808,7 @@ export default function DostMode() {
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] text-mithra-merino relative overflow-hidden rounded-2xl border border-mithra-merino/5"
       style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.4)' : 'rgba(5,5,5,0.6)' }}>
-      
+
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => { handleFileImport(e); if (fileInputRef.current) fileInputRef.current.setAttribute('accept', '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp'); }} />
 
@@ -842,18 +844,18 @@ export default function DostMode() {
       {/* IMPORT MODAL */}
       <AnimatePresence>
         {showImportModal && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4"
             onClick={() => setShowImportModal(false)}
           >
-            <motion.div 
-              initial={{ scale: 0.95, y: 15 }} 
-              animate={{ scale: 1, y: 0 }} 
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              onClick={e => e.stopPropagation()} 
+              onClick={e => e.stopPropagation()}
               className="w-full max-w-sm rounded-2xl overflow-hidden"
               style={{
                 background: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(18,16,16,0.95)',
@@ -870,7 +872,7 @@ export default function DostMode() {
                   Choose a file type to import tasks or data:
                 </p>
                 {/* CSV Option */}
-                <button 
+                <button
                   onClick={() => { fileInputRef.current?.setAttribute('accept', '.csv,.txt'); fileInputRef.current?.click(); setShowImportModal(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
@@ -887,7 +889,7 @@ export default function DostMode() {
                   </div>
                 </button>
                 {/* Excel Option */}
-                <button 
+                <button
                   onClick={() => { fileInputRef.current?.setAttribute('accept', '.xlsx,.xls'); fileInputRef.current?.click(); setShowImportModal(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
@@ -904,7 +906,7 @@ export default function DostMode() {
                   </div>
                 </button>
                 {/* Image Option */}
-                <button 
+                <button
                   onClick={() => { fileInputRef.current?.setAttribute('accept', 'image/*'); fileInputRef.current?.click(); setShowImportModal(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
@@ -929,7 +931,7 @@ export default function DostMode() {
       {/* CHAT AREA */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 z-10 scrollbar-hide">
         {messages.map((msg) => (
-          <motion.div 
+          <motion.div
             key={msg.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -937,8 +939,8 @@ export default function DostMode() {
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[85%] md:max-w-md p-4 rounded-2xl relative overflow-hidden
-              ${msg.sender === 'user' 
-                ? 'border border-mithra-merino/10 text-white' 
+              ${msg.sender === 'user'
+                ? 'border border-mithra-merino/10 text-white'
                 : 'border border-accent-visor/20 text-mithra-merino'
               }`}
               style={
@@ -994,15 +996,15 @@ export default function DostMode() {
             </div>
           </motion.div>
         ))}
-        
+
         {/* Thinking Indicator */}
         {isThinking && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="border border-accent-visor/20 px-4 py-3 rounded-2xl flex items-center gap-2"
               style={{ background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(10,8,8,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{animationDelay: '0ms'}}/>
-              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{animationDelay: '150ms'}}/>
-              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{animationDelay: '300ms'}}/>
+              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               <span className="text-mithra-dim text-xs ml-2">Thinking...</span>
             </div>
           </motion.div>
@@ -1059,7 +1061,7 @@ export default function DostMode() {
                         const avg = recent.reduce((s, m) => s + m.mood, 0) / recent.length;
                         moodMsg += `\n📊 Average: ${avg.toFixed(1)}/5 ${avg >= 4 ? '— amazing vibes! 🌟' : avg >= 3 ? '— staying steady' : '— take care of yourself 💛'}`;
                       }
-                    } catch {}
+                    } catch { }
                     addAiMsg(moodMsg);
                   }
                   setIsThinking(false);
@@ -1078,19 +1080,19 @@ export default function DostMode() {
       <div className="p-4 md:p-6 border-t border-mithra-merino/10 z-20"
         style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(5,5,5,0.8)' }}>
         <div className="relative group flex items-center gap-2">
-          <input 
+          <input
             type="text"
             data-dost-input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files..."} 
+            placeholder={isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files..."}
             className={`w-full text-mithra-merino border rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:border-accent-visor focus:shadow-[0_0_20px_rgba(139,26,43,0.15)] transition-all placeholder-mithra-dim text-sm md:text-base ${isListening ? 'border-red-500/30' : 'border-mithra-merino/10'}`}
             style={{ background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(10,8,8,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
             {/* Import button (opens modal) */}
-            <button 
+            <button
               onClick={() => setShowImportModal(true)}
               className="p-2 rounded-full text-mithra-dim hover:text-accent-visor hover:bg-accent-visor/10 transition-all"
               title="Import files (CSV, Excel, Image)"
@@ -1098,7 +1100,7 @@ export default function DostMode() {
               <Plus size={18} />
             </button>
             {/* Mic Button */}
-            <button 
+            <button
               onClick={isListening ? stopListening : startListening}
               className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-mithra-dim hover:text-mithra-merino hover:bg-mithra-merino/5'}`}
               title={isListening ? 'Stop listening' : 'Voice input'}
@@ -1106,7 +1108,7 @@ export default function DostMode() {
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
             </button>
             {/* Send Button */}
-            <button 
+            <button
               onClick={handleSend}
               disabled={!input.trim()}
               className={`p-2 rounded-full text-white transition-all ${input.trim() ? 'bg-accent-visor hover:scale-105 active:scale-95' : 'bg-mithra-merino/10 text-mithra-merino/30'}`}
