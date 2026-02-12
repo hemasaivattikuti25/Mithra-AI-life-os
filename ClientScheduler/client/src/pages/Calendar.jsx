@@ -2,7 +2,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, X, Clock, MapPin,
-  Calendar as CalIcon, Trash2, GripVertical, Check, AlertTriangle
+  Calendar as CalIcon, Trash2, GripVertical, Check, AlertTriangle,
+  Download, ExternalLink
 } from 'lucide-react';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -43,6 +44,58 @@ const getEventDisplayColor = (evt) => {
   }
   const cat = getColor(evt.category);
   return { hex: cat.hex, isCustom: false, ...cat };
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   GOOGLE CALENDAR EXPORT UTILITIES
+   ═══════════════════════════════════════════════════════════════ */
+const toICSDate = (d) => {
+  const dt = new Date(d);
+  return dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+};
+
+const buildGoogleCalendarUrl = (evt) => {
+  const start = new Date(evt.start);
+  const end = new Date(evt.end || addHours(start, 1));
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: evt.title || 'Event',
+    dates: `${toICSDate(start)}/${toICSDate(end)}`,
+    ...(evt.location && { location: evt.location }),
+    ...(evt.description && { details: evt.description }),
+  });
+  return `https://www.google.com/calendar/render?${params}`;
+};
+
+const exportEventsAsICS = (events) => {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Mithra AI//Life OS//EN',
+    'CALSCALE:GREGORIAN',
+  ];
+  events.forEach(evt => {
+    const start = new Date(evt.start);
+    const end = new Date(evt.end || addHours(start, 1));
+    lines.push(
+      'BEGIN:VEVENT',
+      `DTSTART:${toICSDate(start)}`,
+      `DTEND:${toICSDate(end)}`,
+      `SUMMARY:${(evt.title || 'Event').replace(/[,;]/g, ' ')}`,
+      ...(evt.location ? [`LOCATION:${evt.location.replace(/[,;]/g, ' ')}`] : []),
+      ...(evt.description ? [`DESCRIPTION:${evt.description.replace(/\n/g, '\\n').replace(/[,;]/g, ' ')}`] : []),
+      `UID:${evt.id || Date.now()}@mithra.ai`,
+      'END:VEVENT',
+    );
+  });
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mithra-calendar.ics';
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1030,7 +1083,12 @@ const MithraCalendar = () => {
             </div>
             <h2 className="text-sm sm:text-xl font-light text-[#F2EBE3] tracking-tight truncate">{headerTitle}</h2>
           </div>
-          <div className="flex gap-1 rounded-lg p-0.5 sm:p-1 glass-card self-start sm:self-auto">
+          <div className="flex gap-1 items-center">
+            <button onClick={() => exportEventsAsICS(allEvents)} title="Export to .ics (Google Calendar, Apple Calendar)"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50 transition-colors mr-1" aria-label="Export calendar">
+              <Download size={16} />
+            </button>
+            <div className="flex gap-1 rounded-lg p-0.5 sm:p-1 glass-card">
             {['day', 'week', 'month'].map(v => (
               <button
                 key={v}

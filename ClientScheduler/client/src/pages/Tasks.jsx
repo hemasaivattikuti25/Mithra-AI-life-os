@@ -75,11 +75,16 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
-        onClick={e => e.stopPropagation()} className="w-full max-w-md glass-heavy glass-shine rounded-2xl overflow-hidden">
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xl sm:p-4" onClick={onClose}>
+      <motion.div initial={{ y: '100%', opacity: 0.8 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={e => e.stopPropagation()} className="w-full sm:max-w-md max-h-[92vh] sm:max-h-[85vh] flex flex-col glass-heavy glass-shine rounded-t-2xl sm:rounded-2xl overflow-hidden">
+        {/* Drag handle for mobile */}
+        <div className="sm:hidden flex justify-center pt-2 pb-0">
+          <div className="w-10 h-1 rounded-full bg-[#F2EBE3]/20" />
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#F2EBE3]/5">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[#F2EBE3]/5">
           <h3 className="text-lg font-medium text-[#F2EBE3] flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#C2185B]/10 flex items-center justify-center">
               <CheckCircle2 size={18} className="text-[#C2185B]" />
@@ -89,7 +94,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><X size={20} /></button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-5">
           {/* Task Title */}
           <div>
             <label className="text-xs text-[#F2EBE3]/60 uppercase tracking-wider font-bold mb-2 block">Task Title</label>
@@ -195,8 +200,8 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists }) => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3">
+        {/* Footer — always visible at bottom */}
+        <div className="flex-shrink-0 p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[#F2EBE3]/40 text-sm hover:bg-white/5 transition-colors">Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
             className="px-6 py-2.5 rounded-xl bg-[#C2185B] text-white font-bold text-sm hover:shadow-[0_0_20px_rgba(194,24,91,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed">

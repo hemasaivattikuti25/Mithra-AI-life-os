@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DataProvider } from './context/DataContext';
@@ -6,16 +6,25 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import SearchDialog from './components/SearchDialog';
-import Dashboard from './pages/Dashboard';
-import MithraCalendar from './pages/Calendar';
-import MithraTasks from './pages/Tasks';
-import MithraJournal from './pages/Journal';
-import DostMode from './pages/DostMode';
-import Settings from './pages/Settings';
-import HabitFocusHub from './pages/HabitFocusHub';
 import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
+
+/* Lazy-load heavy page components for faster initial paint */
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const MithraCalendar = lazy(() => import('./pages/Calendar'));
+const MithraTasks = lazy(() => import('./pages/Tasks'));
+const MithraJournal = lazy(() => import('./pages/Journal'));
+const DostMode = lazy(() => import('./pages/DostMode'));
+const Settings = lazy(() => import('./pages/Settings'));
+const HabitFocusHub = lazy(() => import('./pages/HabitFocusHub'));
+
+/* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
+const PageLoader = () => (
+  <div className="h-full w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
+    <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #C2185B)', borderTopColor: 'transparent' }} />
+  </div>
+);
 
 /* Guard: redirect to /login if not authenticated */
 const ProtectedRoute = ({ children }) => {
@@ -23,9 +32,17 @@ const ProtectedRoute = ({ children }) => {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('mithra-onboarding-done');
   });
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Safety timeout — if auth loading takes longer than 6s, stop waiting
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => setTimedOut(true), 6000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Wait for Supabase session to be checked (OAuth callback, token refresh, etc.)
-  if (loading) {
+  if (loading && !timedOut) {
     return (
       <div className="h-screen w-screen flex items-center justify-center" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>
         <div className="flex flex-col items-center gap-4">
@@ -90,13 +107,13 @@ function AppRoutes() {
         <Route path="/reset-password" element={<AuthPage isPasswordReset={true} />} />
 
         {/* Protected app routes */}
-        <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-        <Route path="/dost" element={<ProtectedRoute><Layout><DostMode /></Layout></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute><Layout><MithraCalendar /></Layout></ProtectedRoute>} />
-        <Route path="/tasks" element={<ProtectedRoute><Layout><MithraTasks /></Layout></ProtectedRoute>} />
-        <Route path="/habits" element={<ProtectedRoute><Layout><HabitFocusHub /></Layout></ProtectedRoute>} />
-        <Route path="/journal" element={<ProtectedRoute><Layout><MithraJournal /></Layout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/dost" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><DostMode /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraCalendar /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraTasks /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/habits" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><HabitFocusHub /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/journal" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraJournal /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Settings /></Suspense></Layout></ProtectedRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

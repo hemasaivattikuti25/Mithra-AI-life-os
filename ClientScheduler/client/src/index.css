@@ -545,3 +545,19 @@ input[type="range"].reminder-slider::-moz-range-track {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ═══════════════════════════════════════
+   MOBILE PERFORMANCE — reduce GPU overhead
+   ═══════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Reduce heavy blur on mobile for snappier scrolling */
+  .backdrop-blur-xl { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .backdrop-blur-2xl { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+  body::before { display: none; } /* disable noise overlay on mobile — saves a compositing layer */
+  * { -webkit-tap-highlight-color: transparent; } /* remove tap flash */
+}
+
+/* Safe-area bottom padding for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}
