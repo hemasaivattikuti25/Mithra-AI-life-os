@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ChevronLeft, Check, AlertCircle, Loader2, Sparkles, Shield, Zap, BarChart3, Brain, Calendar, Flame, Bot } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ChevronLeft, Check, AlertCircle, Loader2, Sparkles, Shield, Zap, Calendar, Heart, Brain, Bot, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 /* ═══════════════════════════════════════════════════════════════
-   MITHRA AUTH — Redesigned split-screen premium auth experience
+   MITHRA AUTH — Premium Dark/Cyan Aesthetic
    ═══════════════════════════════════════════════════════════════ */
 
 const heroParticles = Array.from({ length: 30 }, (_, i) => ({
@@ -24,15 +24,15 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
 
   return (
     <div className="relative group">
-      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2 ring-[var(--accent-color)]/40' : 'ring-1 ring-white/[0.08]'
+      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2 ring-cyan-500/50' : 'ring-1 ring-white/[0.08]'
         }`}
         style={{
-          background: focused ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+          background: focused ? 'rgba(34, 211, 238, 0.05)' : 'rgba(255,255,255,0.03)',
           backdropFilter: 'blur(12px)',
         }}
       >
         <div className="pl-4 pr-2 py-4">
-          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? 'var(--accent-color)' : 'rgba(255,255,255,0.3)' }} />
+          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? '#22d3ee' : 'rgba(255,255,255,0.3)' }} />
         </div>
         <input
           type={isPassword ? (showPw ? 'text' : 'password') : type}
@@ -43,7 +43,7 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
           onBlur={() => setFocused(false)}
           autoFocus={autoFocus}
           autoComplete={isPassword ? 'current-password' : type === 'email' ? 'email' : 'off'}
-          className="flex-1 bg-transparent py-4 pr-4 text-sm text-white placeholder:text-white/25 outline-none"
+          className="flex-1 bg-transparent py-4 pr-4 text-sm text-white placeholder:text-white/25 outline-none font-medium"
         />
         {isPassword && (
           <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
@@ -53,14 +53,13 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
         )}
       </div>
       <motion.div
-        className="absolute bottom-0 left-1/2 h-[2px] rounded-full -translate-x-1/2"
-        style={{ background: 'var(--accent-color)' }}
+        className="absolute bottom-0 left-1/2 h-[2px] rounded-full -translate-x-1/2 bg-cyan-400"
         animate={{ width: focused ? '60%' : '0%', opacity: focused ? 1 : 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       />
       {error && (
         <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-1.5 text-xs text-red-400 mt-2 pl-1">
+          className="flex items-center gap-1.5 text-xs text-red-400 mt-2 pl-1 font-medium">
           <AlertCircle size={12} /> {error}
         </motion.p>
       )}
@@ -81,7 +80,7 @@ const PasswordStrength = ({ password }) => {
   };
   const strength = getStrength(password);
   const labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
-  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4'];
+  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#22d3ee'];
   if (!password) return null;
   return (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 px-1">
@@ -235,26 +234,22 @@ export default function AuthPage({ isPasswordReset = false }) {
     <div className="min-h-screen w-full flex relative overflow-hidden" style={{ background: '#050505' }}>
 
       {/* ══════════ LEFT PANEL — Hero / Branding (desktop only) ══════════ */}
-      <div className="hidden lg:flex w-[52%] relative flex-col items-center justify-center p-12 overflow-hidden">
+      <div className="hidden lg:flex w-[52%] relative flex-col items-center justify-center p-12 overflow-hidden bg-[#0A0A0A]">
         {/* Mesh gradient background */}
         <div className="absolute inset-0">
           <motion.div className="absolute w-[800px] h-[800px] rounded-full blur-[250px]"
-            style={{ background: 'var(--accent-color)', opacity: 0.12, top: '-30%', left: '-20%' }}
+            style={{ background: '#22d3ee', opacity: 0.12, top: '-30%', left: '-20%' }}
             animate={{ x: [0, 80, 0], y: [0, -50, 0], scale: [1, 1.1, 1] }}
             transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }} />
           <motion.div className="absolute w-[600px] h-[600px] rounded-full blur-[200px]"
-            style={{ background: 'var(--accent-soft, #8B1A2B)', opacity: 0.08, bottom: '-20%', right: '-10%' }}
+            style={{ background: '#3b82f6', opacity: 0.08, bottom: '-20%', right: '-10%' }}
             animate={{ x: [0, -60, 0], y: [0, 60, 0] }}
             transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute w-[350px] h-[350px] rounded-full blur-[180px]"
-            style={{ background: 'var(--accent-secondary, #D4AF37)', opacity: 0.05, top: '50%', left: '60%' }}
-            animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
-            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} />
           {heroParticles.map(p => (
             <motion.div key={p.id} className="absolute rounded-full"
               style={{
                 width: p.size, height: p.size, left: `${p.x}%`, top: `${p.y}%`,
-                background: p.id % 3 === 0 ? 'var(--accent-color)' : 'rgba(255,255,255,0.12)'
+                background: p.id % 3 === 0 ? '#22d3ee' : 'rgba(255,255,255,0.12)'
               }}
               animate={{ y: [0, -80, 0], opacity: [0.08, 0.5, 0.08] }}
               transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }} />
@@ -267,15 +262,15 @@ export default function AuthPage({ isPasswordReset = false }) {
         <div className="relative z-10 max-w-lg text-center">
           <motion.div className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-8 relative"
             style={{
-              background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-              boxShadow: '0 20px 60px var(--accent-glow), 0 0 120px var(--accent-glow)'
+              background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+              boxShadow: '0 20px 60px rgba(34,211,238,0.3)'
             }}
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
             <Sparkles className="w-11 h-11 text-white" />
             <div className="absolute inset-0 rounded-3xl border border-white/10" />
             <motion.div className="absolute -inset-1 rounded-[28px]"
-              style={{ border: '1px solid var(--accent-color)' }}
+              style={{ border: '1px solid rgba(34,211,238,0.5)' }}
               animate={{ opacity: [0.4, 0, 0.4], scale: [1, 1.08, 1] }}
               transition={{ duration: 3, repeat: Infinity }} />
           </motion.div>
@@ -286,8 +281,7 @@ export default function AuthPage({ isPasswordReset = false }) {
           <motion.p className="text-lg text-white/50 font-light mb-3"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.8 }}>Your AI-Powered Life Operating System</motion.p>
-          <motion.div className="w-16 h-[2px] mx-auto rounded-full mb-10"
-            style={{ background: 'var(--accent-color)' }}
+          <motion.div className="w-16 h-[2px] mx-auto rounded-full mb-10 bg-cyan-500"
             initial={{ width: 0 }} animate={{ width: 64 }}
             transition={{ delay: 0.5, duration: 0.6 }} />
 
@@ -297,8 +291,8 @@ export default function AuthPage({ isPasswordReset = false }) {
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-                whileHover={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)' }}>
-                <f.icon size={20} className="mb-2.5 transition-colors" style={{ color: 'var(--accent-color)' }} />
+                whileHover={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                <f.icon size={20} className="mb-2.5 transition-colors text-cyan-400 group-hover:text-cyan-300" />
                 <h3 className="text-sm font-semibold text-white/90 mb-1">{f.title}</h3>
                 <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
               </motion.div>
@@ -308,7 +302,7 @@ export default function AuthPage({ isPasswordReset = false }) {
 
         <div className="absolute bottom-6 left-0 right-0 text-center">
           <p className="text-[11px] text-white/40 tracking-[0.2em] uppercase font-medium">
-            Developed by Hema Sai Vattikuti
+            Developed by Hemasai Vattikuti
           </p>
         </div>
       </div>
@@ -317,7 +311,7 @@ export default function AuthPage({ isPasswordReset = false }) {
       <div className="flex-1 flex items-center justify-center relative p-6 lg:p-12">
         <div className="absolute inset-0">
           <motion.div className="absolute w-[500px] h-[500px] rounded-full blur-[200px]"
-            style={{ background: 'var(--accent-color)', opacity: 0.04, top: '20%', right: '-20%' }}
+            style={{ background: '#0e7490', opacity: 0.1, top: '20%', right: '-20%' }}
             animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
             transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }} />
           <div className="absolute inset-0 opacity-[0.01]"
@@ -335,8 +329,8 @@ export default function AuthPage({ isPasswordReset = false }) {
           <div className="lg:hidden text-center mb-8">
             <motion.div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 relative"
               style={{
-                background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                boxShadow: '0 8px 32px var(--accent-glow)'
+                background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                boxShadow: '0 8px 32px rgba(34,211,238,0.3)'
               }}>
               <Sparkles className="w-7 h-7 text-white" />
             </motion.div>
@@ -347,14 +341,11 @@ export default function AuthPage({ isPasswordReset = false }) {
           {/* Glass card */}
           <div className="relative rounded-3xl overflow-hidden"
             style={{
-              background: 'rgba(12,10,10,0.55)', backdropFilter: 'blur(40px) saturate(1.4)',
+              background: 'rgba(12,10,10,0.6)', backdropFilter: 'blur(40px) saturate(1.4)',
               border: '1px solid rgba(255,255,255,0.06)',
               boxShadow: '0 0 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)'
             }}>
-            <div className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 50%, transparent)' }} />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[2px] rounded-full"
-              style={{ background: 'var(--accent-color)', opacity: 0.5 }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[2px] rounded-full bg-cyan-500 opacity-50" />
 
             <div className="p-8 pt-10 pb-10">
               {/* Header */}
@@ -409,16 +400,15 @@ export default function AuthPage({ isPasswordReset = false }) {
                       value={password} onChange={e => setPassword(e.target.value)} error={fieldErrors.password} />
                     <div className="flex justify-end">
                       <button type="button" onClick={() => switchView('forgot')}
-                        className="text-xs font-medium transition-colors hover:underline underline-offset-4"
-                        style={{ color: 'var(--accent-color)' }}>Forgot password?</button>
+                        className="text-xs font-medium transition-colors hover:underline underline-offset-4 text-cyan-400">Forgot password?</button>
                     </div>
                     <motion.button type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -455,8 +445,7 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <p className="text-center text-sm text-white/30 pt-2">
                       Don't have an account?{' '}
                       <button type="button" onClick={() => switchView('signup')}
-                        className="font-semibold transition-colors hover:underline underline-offset-4"
-                        style={{ color: 'var(--accent-color)' }}>Sign up</button>
+                        className="font-semibold transition-colors hover:underline underline-offset-4 text-cyan-400">Sign up</button>
                     </p>
                   </motion.form>
                 )}
@@ -482,14 +471,14 @@ export default function AuthPage({ isPasswordReset = false }) {
                       <button type="button" onClick={() => setAgreeTerms(!agreeTerms)}
                         className="w-5 h-5 mt-0.5 rounded-md border flex items-center justify-center shrink-0 transition-all"
                         style={{
-                          borderColor: fieldErrors.terms ? 'rgba(239,68,68,0.5)' : agreeTerms ? 'var(--accent-color)' : 'rgba(255,255,255,0.12)',
-                          background: agreeTerms ? 'var(--accent-color)' : 'transparent'
+                          borderColor: fieldErrors.terms ? 'rgba(239,68,68,0.5)' : agreeTerms ? '#22d3ee' : 'rgba(255,255,255,0.12)',
+                          background: agreeTerms ? '#22d3ee' : 'transparent'
                         }}>
-                        {agreeTerms && <Check size={12} className="text-white" strokeWidth={3} />}
+                        {agreeTerms && <Check size={12} className="text-black" strokeWidth={3} />}
                       </button>
                       <span className="text-xs text-white/40 leading-relaxed">
-                        I agree to the <span style={{ color: 'var(--accent-color)' }} className="cursor-pointer hover:underline">Terms of Service</span> and{' '}
-                        <span style={{ color: 'var(--accent-color)' }} className="cursor-pointer hover:underline">Privacy Policy</span>
+                        I agree to the <span className="cursor-pointer hover:underline text-cyan-400">Terms of Service</span> and{' '}
+                        <span className="cursor-pointer hover:underline text-cyan-400">Privacy Policy</span>
                       </span>
                     </label>
                     {fieldErrors.terms && (
@@ -500,10 +489,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <motion.button type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -540,8 +529,7 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <p className="text-center text-sm text-white/30 pt-2">
                       Already have an account?{' '}
                       <button type="button" onClick={() => switchView('login')}
-                        className="font-semibold transition-colors hover:underline underline-offset-4"
-                        style={{ color: 'var(--accent-color)' }}>Sign in</button>
+                        className="font-semibold transition-colors hover:underline underline-offset-4 text-cyan-400">Sign in</button>
                     </p>
                   </motion.form>
                 )}
@@ -560,10 +548,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <motion.button type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -596,10 +584,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <motion.button type="button" onClick={() => setView('resetNew')}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -632,10 +620,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <motion.button type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -668,10 +656,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                     <motion.button type="button" onClick={() => switchView('login')}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group"
                       style={{
-                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))',
-                        boxShadow: '0 4px 24px var(--accent-glow)'
+                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
+                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -692,7 +680,7 @@ export default function AuthPage({ isPasswordReset = false }) {
               <a href="#/terms" className="hover:text-white/70 transition-colors">Terms of Service</a>
             </div>
             <p className="text-[11px] text-white/40 tracking-wide">
-              Developed by <span className="text-white/60 font-medium">Hema Sai Vattikuti</span>
+              Developed by <span className="text-white/60 font-medium">Hemasai Vattikuti</span>
             </p>
           </div>
 
