@@ -74,7 +74,7 @@ export default function LandingPage() {
             icon: Brain,
             title: 'Dost - AI Assistant',
             tagline: 'AI That Knows You',
-            description: 'Context-aware AI powered by Google Gemini',
+            description: 'Context-aware AI powered by a proprietary NLP model',
             details: [
                 'Ask "Plan my week" and get a personalized schedule',
                 'Dost knows your current tasks, habits, and mood',
@@ -167,7 +167,7 @@ export default function LandingPage() {
         },
         {
             q: 'How does the AI work? Is my data private?',
-            a: 'Dost uses Google Gemini AI with your tasks/habits/journal as context. Your data is encrypted and stored locally in your browser and Supabase. We never sell your information.'
+            a: 'Dost uses a proprietary NLP model with your tasks/habits/journal as context. Your data is encrypted and stored locally in your browser and Supabase. We never sell your information.'
         },
         {
             q: 'Can I import my data from Todoist/Notion?',
@@ -665,7 +665,7 @@ export default function LandingPage() {
                                         <span className="font-semibold">Tech Stack</span>
                                     </div>
                                     <p className="text-sm text-gray-400">
-                                        React • FastAPI • Supabase • Google Gemini AI • Framer Motion
+                                        React • FastAPI • Supabase • Proprietary NLP • Framer Motion
                                     </p>
                                 </div>
                             </div>
