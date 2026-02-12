@@ -185,7 +185,7 @@ export default function LandingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] via-[#111111] to-[#0A0A0A] text-white overflow-x-hidden">
-            {/* Animated background orbs */}
+            {/* Animated background orbs - Refined for "Aesthetic Tech" look */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <motion.div
                     animate={{
@@ -193,7 +193,7 @@ export default function LandingPage() {
                         y: [0, -100, 0],
                     }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full filter blur-[128px]"
+                    className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-900/10 to-transparent rounded-full filter blur-[150px]"
                 />
                 <motion.div
                     animate={{
@@ -201,15 +201,15 @@ export default function LandingPage() {
                         y: [0, 100, 0],
                     }}
                     transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-full filter blur-[128px]"
+                    className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-gradient-to-r from-cyan-900/10 to-transparent rounded-full filter blur-[150px]"
                 />
                 <motion.div
                     animate={{
-                        x: [0, 50, 0],
-                        y: [0, -50, 0],
+                        x: [100, 0, 100],
+                        y: [100, 0, 100],
                     }}
                     transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-r from-teal-500/15 to-cyan-500/15 rounded-full filter blur-[128px]"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full filter blur-[180px]"
                 />
             </div>
 
@@ -224,7 +224,7 @@ export default function LandingPage() {
                         <motion.div
                             whileHover={{ rotate: 180, scale: 1.1 }}
                             transition={{ duration: 0.3 }}
-                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center cursor-pointer"
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center cursor-pointer"
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         >
                             <Sparkles className="w-6 h-6" />
@@ -254,7 +254,7 @@ export default function LandingPage() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate('/auth')}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-purple-600/20 transition-all font-medium text-sm"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-lg hover:shadow-purple-600/20 transition-all font-medium text-sm"
                         >
                             Start Free
                         </motion.button>
@@ -305,7 +305,7 @@ export default function LandingPage() {
                                 whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(168, 85, 247, 0.4)' }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/auth')}
-                                className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-2xl transition-all font-semibold text-lg flex items-center justify-center gap-2 group"
+                                className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-2xl transition-all font-semibold text-lg flex items-center justify-center gap-2 group"
                             >
                                 Get Mithra Free
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -409,7 +409,7 @@ export default function LandingPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setActiveFeature(i)}
                                 className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all ${activeFeature === i
-                                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-purple-600/20'
+                                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-purple-600/20'
                                     : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                     }`}
                             >
@@ -600,10 +600,10 @@ export default function LandingPage() {
                     >
                         <div className="flex flex-col md:flex-row gap-8 items-start">
                             <div className="flex-shrink-0">
-                                {/* TODO: Replace with actual photo - upload hemasai-photo.jpg to /public folder */}
-                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-6xl overflow-hidden">
-                                    <img src="/hemasai-photo.jpg" alt="Hemasai Vattikuti" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-6xl" style={{ display: 'none' }}>
+                                {/* TODO: Replace with actual photo - upload hemasai-photo.png to /public folder */}
+                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-6xl overflow-hidden">
+                                    <img src="/hemasai-photo.png" alt="Hemasai Vattikuti" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-6xl" style={{ display: 'none' }}>
                                         👨‍💻
                                     </div>
                                 </div>
@@ -743,7 +743,7 @@ export default function LandingPage() {
                             whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(168, 85, 247, 0.4)' }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate('/auth')}
-                            className="px-10 py-5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-2xl transition-all font-bold text-lg inline-flex items-center gap-2 group mb-4"
+                            className="px-10 py-5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-2xl transition-all font-bold text-lg inline-flex items-center gap-2 group mb-4"
                         >
                             Get Started Free
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -757,7 +757,7 @@ export default function LandingPage() {
             <footer className="py-8 px-4 sm:px-6 border-t border-white/5">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <span className="font-semibold">Mithra AI</span>
