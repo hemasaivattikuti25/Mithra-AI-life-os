@@ -163,10 +163,6 @@ export function AuthProvider({ children }) {
             }
           } catch {}
 
-          // If the URL hash still has OAuth tokens (shouldn't normally), clean it
-          if (window.location.hash.includes('access_token')) {
-            window.location.hash = '#/';
-          }
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
