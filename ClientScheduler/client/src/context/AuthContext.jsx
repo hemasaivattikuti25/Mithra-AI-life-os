@@ -443,14 +443,25 @@ export function AuthProvider({ children }) {
 
     try {
       localStorage.removeItem('mithra-auth');
-      // We might want to keep some persistent settings like theme, but clear user-specific data?
-      // For now, adhering to existing logic of clearing auth token only from this specific key
+      // Aggressively clear other keys to ensure no stale state
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('mithra-') && !key.includes('theme')) {
+          localStorage.removeItem(key);
+        }
+      });
     } catch { }
 
     // 2. Background server cleanup
     if (isSupabaseConfigured) {
-      authService.signOut().catch(err => console.warn('Background signout error:', err));
+      try {
+        await authService.signOut();
+      } catch (err) {
+        console.warn('Background signout error:', err);
+      }
     }
+
+    // 3. Force Hard Reload to clear all React state and memory
+    window.location.href = '/';
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
