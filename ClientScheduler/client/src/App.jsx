@@ -19,10 +19,23 @@ import { setupBackButton, isNative } from './native';
 
 /* Guard: redirect to /login if not authenticated */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('mithra-onboarding-done');
   });
+
+  // Wait for Supabase session to be checked (OAuth callback, token refresh, etc.)
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #C2185B)', borderTopColor: 'transparent' }} />
+          <p className="text-sm" style={{ color: 'var(--text-dim, #888)' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (showOnboarding) return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   return children;
@@ -30,7 +43,9 @@ const ProtectedRoute = ({ children }) => {
 
 /* Guard: redirect to / if already authenticated */
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  // While loading, show the auth page (don't redirect yet)
+  if (loading) return children;
   if (isAuthenticated) return <Navigate to="/" replace />;
   return children;
 };

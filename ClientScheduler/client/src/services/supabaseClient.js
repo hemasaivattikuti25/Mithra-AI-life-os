@@ -13,6 +13,26 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const isConfigured = !!(supabaseUrl && supabaseAnonKey);
 
+/* ═══════════════════════════════════════════════════════════════
+   OAUTH CALLBACK — HashRouter compatibility fix
+   
+   When Google OAuth redirects back, Supabase appends tokens to the URL hash:
+     https://example.com/#access_token=xxx&refresh_token=xxx
+   But with HashRouter the URL might be:
+     https://example.com/#/access_token=xxx  (from redirectTo ending in /#/)
+   Supabase's detectSessionInUrl can't parse "#/access_token", so we
+   strip the leading "/" from the hash before createClient runs.
+   ═══════════════════════════════════════════════════════════════ */
+if (typeof window !== 'undefined') {
+  const hash = window.location.hash;
+  // OAuth tokens in hash: #/access_token=... → #access_token=...
+  if (hash && hash.startsWith('#/') && (hash.includes('access_token') || hash.includes('refresh_token') || hash.includes('error_description'))) {
+    const cleaned = '#' + hash.substring(2);
+    window.history.replaceState(null, '', window.location.pathname + window.location.search + cleaned);
+  }
+  // OAuth PKCE code in query params — leave as-is, Supabase handles it
+}
+
 if (!isConfigured) {
   console.warn(
     '[Mithra] Supabase credentials missing — running in offline mode.\n' +
@@ -148,7 +168,7 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/#/`,
+        redirectTo: window.location.origin,
       },
     });
     if (error) throw error;

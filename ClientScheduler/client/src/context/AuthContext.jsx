@@ -136,6 +136,38 @@ export function AuthProvider({ children }) {
             provider: 'supabase',
           };
           setUser(supaUser);
+
+          // Pull profile for OAuth users (Google sign-in)
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            if (profileData) {
+              setProfile(prev => ({
+                ...prev,
+                fullName: profileData.full_name || session.user.user_metadata?.full_name || prev.fullName,
+                email: session.user.email,
+                avatarUrl: profileData.avatar_url || session.user.user_metadata?.avatar_url || prev.avatarUrl,
+                dateJoined: profileData.created_at || prev.dateJoined,
+              }));
+            } else {
+              // New OAuth user — set profile from Google metadata
+              setProfile(prev => ({
+                ...prev,
+                fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
+                email: session.user.email,
+                avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+              }));
+            }
+          } catch {}
+
+          // If the URL hash still has OAuth tokens (shouldn't normally), clean it
+          if (window.location.hash.includes('access_token')) {
+            window.location.hash = '#/';
+          }
+          setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
         }
