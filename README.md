@@ -127,3 +127,27 @@ Contributions are what make the open-source community such an amazing place to l
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/hemasaivattikuti25">Hemasai Vattikuti</a></p>
 </div>
+
+## 📬 Contact
+
+<div align="center">
+  <img src="ClientScheduler/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="150" height="150" style="border-radius: 50%; border: 4px solid #06b6d4;">
+  
+  ### Hemasai Vattikuti
+  
+  **Software Engineer | Data Scientist | Full Stack Developer**
+  
+  <a href="https://www.linkedin.com/in/hemsaivattikuti">
+    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+  </a>
+  <a href="https://github.com/hemasaivattikuti25">
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+  </a>
+  <a href="mailto:hemasaivattikuti25@gmail.com">
+    <img src="https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail" />
+  </a>
+
+  <p align="center">
+    Built with ❤️ by a student dev at VIT-AP University.
+  </p>
+</div>
