@@ -193,7 +193,7 @@ export default function LandingPage() {
                         y: [0, -100, 0],
                     }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full filter blur-[128px]"
+                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full filter blur-[128px]"
                 />
                 <motion.div
                     animate={{
@@ -201,7 +201,15 @@ export default function LandingPage() {
                         y: [0, 100, 0],
                     }}
                     transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full filter blur-[128px]"
+                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-full filter blur-[128px]"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, 50, 0],
+                        y: [0, -50, 0],
+                    }}
+                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-r from-teal-500/15 to-cyan-500/15 rounded-full filter blur-[128px]"
                 />
             </div>
 
@@ -216,7 +224,7 @@ export default function LandingPage() {
                         <motion.div
                             whileHover={{ rotate: 180, scale: 1.1 }}
                             transition={{ duration: 0.3 }}
-                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center cursor-pointer"
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center cursor-pointer"
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         >
                             <Sparkles className="w-6 h-6" />
@@ -246,7 +254,7 @@ export default function LandingPage() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate('/auth')}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-lg hover:shadow-purple-600/20 transition-all font-medium text-sm"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-purple-600/20 transition-all font-medium text-sm"
                         >
                             Start Free
                         </motion.button>
@@ -271,7 +279,7 @@ export default function LandingPage() {
                             transition={{ duration: 0.5 }}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6"
                         >
-                            <Heart className="w-4 h-4 text-purple-400" />
+                            <Heart className="w-4 h-4 text-cyan-400" />
                             <span className="text-sm">Built by a student, for everyone</span>
                         </motion.div>
 
@@ -297,7 +305,7 @@ export default function LandingPage() {
                                 whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(168, 85, 247, 0.4)' }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/auth')}
-                                className="px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-2xl transition-all font-semibold text-lg flex items-center justify-center gap-2 group"
+                                className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-2xl transition-all font-semibold text-lg flex items-center justify-center gap-2 group"
                             >
                                 Get Mithra Free
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -325,8 +333,8 @@ export default function LandingPage() {
                                     className="text-center p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/30 transition-all cursor-pointer"
                                 >
                                     <div className="flex items-center justify-center gap-2 mb-2">
-                                        <stat.icon className="w-5 h-5 text-purple-400" />
-                                        <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{stat.value}</div>
+                                        <stat.icon className="w-5 h-5 text-cyan-400" />
+                                        <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">{stat.value}</div>
                                     </div>
                                     <div className="text-sm font-semibold text-gray-300">{stat.label}</div>
                                     <div className="text-xs text-gray-500 mt-1">{stat.subtext}</div>
@@ -370,8 +378,8 @@ export default function LandingPage() {
                                 whileHover={{ y: -10, scale: 1.05 }}
                                 className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 hover:border-purple-500/30 transition-all text-center"
                             >
-                                <item.icon className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                                <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">{item.metric}</div>
+                                <item.icon className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
+                                <div className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-2">{item.metric}</div>
                                 <p className="text-gray-300 text-sm">{item.description}</p>
                             </motion.div>
                         ))}
@@ -401,8 +409,8 @@ export default function LandingPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setActiveFeature(i)}
                                 className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all ${activeFeature === i
-                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-600/20'
-                                        : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-purple-600/20'
+                                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                     }`}
                             >
                                 <feature.icon className="w-5 h-5" />
@@ -422,18 +430,18 @@ export default function LandingPage() {
                         >
                             <div className="flex items-start gap-6 mb-8">
                                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/20 to-pink-600/20 flex items-center justify-center flex-shrink-0">
-                                    {React.createElement(features[activeFeature].icon, { className: 'w-8 h-8 text-purple-400' })}
+                                    {React.createElement(features[activeFeature].icon, { className: 'w-8 h-8 text-cyan-400' })}
                                 </div>
                                 <div>
                                     <h3 className="text-3xl font-bold mb-2">{features[activeFeature].title}</h3>
-                                    <p className="text-xl text-purple-400 font-semibold mb-3">{features[activeFeature].tagline}</p>
+                                    <p className="text-xl text-cyan-400 font-semibold mb-3">{features[activeFeature].tagline}</p>
                                     <p className="text-gray-300 text-lg">{features[activeFeature].description}</p>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Sparkles className="w-5 h-5 text-purple-400" />
+                                    <Sparkles className="w-5 h-5 text-cyan-400" />
                                     What you can do:
                                 </h4>
                                 <ul className="space-y-3">
@@ -445,7 +453,7 @@ export default function LandingPage() {
                                             transition={{ delay: i * 0.1 }}
                                             className="flex items-start gap-3 text-gray-300"
                                         >
-                                            <Check className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                            <Check className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                                             <span>{detail}</span>
                                         </motion.li>
                                     ))}
@@ -453,7 +461,7 @@ export default function LandingPage() {
                             </div>
 
                             <div className="p-6 rounded-xl bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/20">
-                                <p className="text-sm font-semibold text-purple-400 mb-2">📈 Real Impact:</p>
+                                <p className="text-sm font-semibold text-cyan-400 mb-2">📈 Real Impact:</p>
                                 <p className="text-white font-semibold text-lg">{features[activeFeature].impact}</p>
                             </div>
                         </motion.div>
@@ -481,7 +489,7 @@ export default function LandingPage() {
                                     <th className="text-left p-4 text-gray-400 font-medium">Feature</th>
                                     <th className="p-4 text-center">
                                         <div className="flex flex-col items-center gap-2">
-                                            <Sparkles className="w-6 h-6 text-purple-400" />
+                                            <Sparkles className="w-6 h-6 text-cyan-400" />
                                             <span className="font-bold text-white">Mithra AI</span>
                                             <span className="text-xs text-green-500">FREE</span>
                                         </div>
@@ -564,7 +572,7 @@ export default function LandingPage() {
                     >
                         <p className="text-lg font-semibold mb-2">💰 The Math:</p>
                         <p className="text-gray-300">
-                            Motion ($34) + Sunsama ($20) + Habitica ($5) = <span className="text-white font-bold">$59/month</span> or <span className="text-purple-400 font-bold text-xl">$708/year</span>
+                            Motion ($34) + Sunsama ($20) + Habitica ($5) = <span className="text-white font-bold">$59/month</span> or <span className="text-cyan-400 font-bold text-xl">$708/year</span>
                         </p>
                         <p className="text-2xl font-bold text-green-500 mt-2">Mithra AI: $0 Forever</p>
                     </motion.div>
@@ -593,16 +601,16 @@ export default function LandingPage() {
                         <div className="flex flex-col md:flex-row gap-8 items-start">
                             <div className="flex-shrink-0">
                                 {/* TODO: Replace with actual photo - upload hemasai-photo.jpg to /public folder */}
-                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-6xl overflow-hidden">
+                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-6xl overflow-hidden">
                                     <img src="/hemasai-photo.jpg" alt="Hemasai Vattikuti" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-6xl" style={{ display: 'none' }}>
+                                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-6xl" style={{ display: 'none' }}>
                                         👨‍💻
                                     </div>
                                 </div>
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-2xl font-bold mb-2">Hemasai Vattikuti</h3>
-                                <p className="text-purple-400 font-semibold mb-4">CSE Student • ML Enthusiast • Builder</p>
+                                <p className="text-cyan-400 font-semibold mb-4">CSE Student • ML Enthusiast • Builder</p>
 
                                 <div className="space-y-4 text-gray-300 mb-6">
                                     <p>
@@ -656,7 +664,7 @@ export default function LandingPage() {
 
                                 <div className="mt-6 p-4 rounded-xl bg-black/20 border border-white/10">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Code className="w-5 h-5 text-purple-400" />
+                                        <Code className="w-5 h-5 text-cyan-400" />
                                         <span className="font-semibold">Tech Stack</span>
                                     </div>
                                     <p className="text-sm text-gray-400">
@@ -735,7 +743,7 @@ export default function LandingPage() {
                             whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(168, 85, 247, 0.4)' }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate('/auth')}
-                            className="px-10 py-5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-2xl transition-all font-bold text-lg inline-flex items-center gap-2 group mb-4"
+                            className="px-10 py-5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-2xl transition-all font-bold text-lg inline-flex items-center gap-2 group mb-4"
                         >
                             Get Started Free
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -749,7 +757,7 @@ export default function LandingPage() {
             <footer className="py-8 px-4 sm:px-6 border-t border-white/5">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <span className="font-semibold">Mithra AI</span>
