@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/ClientScheduler/client/public/hemasai.jpg" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
+  <img src="ClientScheduler/client/public/hemasai.jpg" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
 </p>
 
 <h1 align="center">Mithra AI</h1>
@@ -164,7 +164,7 @@ Mithra AI is a **community-first, open-source project**. If this tool helps you 
 ## 👨‍💻 About the Creator
 
 <p align="left">
-  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/ClientScheduler/client/public/hemasai.jpg" align="right" alt="Hemasai Vattikuti" width="150" style="border-radius: 12px; margin: 10px;">
+  <img src="ClientScheduler/client/public/hemasai.jpg" align="right" alt="Hemasai Vattikuti" width="150" style="border-radius: 12px; margin: 10px;">
   
   **Hemasai Vattikuti**  
   CSE Student • ML Enthusiast • Builder  
