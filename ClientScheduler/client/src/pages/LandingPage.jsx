@@ -302,7 +302,7 @@ export default function LandingPage() {
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 px-4">
                             <motion.button
-                                whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(168, 85, 247, 0.4)' }}
+                                whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(6, 182, 212, 0.2)' }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/auth')}
                                 className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-2xl transition-all font-semibold text-lg flex items-center justify-center gap-2 group"
@@ -310,15 +310,17 @@ export default function LandingPage() {
                                 Get Mithra Free
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </motion.button>
-                            <motion.button
+                            <motion.a
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
+                                href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold text-lg flex items-center justify-center gap-2"
                             >
-                                <Play className="w-5 h-5" />
-                                See How It Works
-                            </motion.button>
+                                <Github className="w-5 h-5" />
+                                Star on GitHub
+                            </motion.a>
                         </div>
 
                         {/* Stats */}
@@ -352,6 +354,63 @@ export default function LandingPage() {
                 >
                     <ChevronDown className="w-8 h-8 text-gray-500" />
                 </motion.div>
+            </section>
+
+            {/* Platform Preview Section */}
+            <section id="preview" className="py-20 px-4 sm:px-6">
+                <div className="max-w-7xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-3xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">The Precision OS in Action</h2>
+                        <p className="text-gray-400 text-lg">Experience the next generation of productivity</p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                            <motion.div
+                                key={num}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                whileHover={{ y: -10, scale: 1.02 }}
+                                className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10"
+                            >
+                                <img
+                                    src={`/demo/demo${num}.png`}
+                                    alt={`Mithra AI Demo ${num}`}
+                                    className="w-full h-full object-cover aspect-video group-hover:scale-110 transition-transform duration-500"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                                    <div className="text-white text-sm font-medium">Platform Insight 0{num}</div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mt-16 text-center"
+                    >
+                        <p className="text-gray-400 mb-6 italic">Built with performance in mind. Zero lag. High aesthetic.</p>
+                        <motion.a
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-medium"
+                        >
+                            <Target className="w-5 h-5 text-cyan-400" />
+                            Help us build the future on GitHub
+                        </motion.a>
+                    </motion.div>
+                </div>
             </section>
 
             {/* Real Impact Section */}
