@@ -192,16 +192,8 @@ const makeEvent = (id, title, dayOffset, startH, startM, endH, endM, category) =
   description: '',
 });
 
-const INITIAL_EVENTS = [
-  makeEvent('1', 'Deep Work Session', 0, 9, 0, 11, 0, 'Focus'),
-  makeEvent('2', 'Team Standup', 0, 11, 30, 12, 0, 'Meeting'),
-  makeEvent('3', 'Client Review', 0, 14, 0, 15, 30, 'Work'),
-  makeEvent('4', 'Gym', 0, 17, 0, 18, 0, 'Health'),
-  makeEvent('5', 'Design Sprint', 1, 10, 0, 12, 0, 'Work'),
-  makeEvent('6', 'Lunch w/ Sam', 1, 13, 0, 14, 0, 'Personal'),
-  makeEvent('7', 'Weekly Review', 2, 9, 0, 10, 0, 'Meeting'),
-  makeEvent('8', 'Reading Block', -1, 20, 0, 21, 0, 'Personal'),
-];
+/* No mock events — start with empty calendar */
+const INITIAL_EVENTS = [];
 
 /* ═══════════════════════════════════════════════════════════════
    HOUR LABELS (6AM - 11PM)

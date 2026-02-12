@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Mic, Book, TrendingUp, Heart, Feather,
   Sparkles, ChevronDown, Pencil, Trash2
 } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
 
@@ -32,67 +32,7 @@ const moodBorder = (score, isLight) => {
   return isLight ? 'border-[#333]/8 hover:border-[#333]/15' : 'border-[#F2EBE3]/8 hover:border-[#F2EBE3]/15';
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   MOCK ENTRIES
-   ═══════════════════════════════════════════════════════════════ */
-const today = new Date();
-
-const ENTRIES = [
-  {
-    id: 1,
-    title: 'Great breakthrough at work',
-    body: 'Finally solved the API issue that has been bugging the team for weeks. It turned out to be a race condition in the database layer. Felt amazing to deploy the fix. The team celebrated with coffee and high-fives.',
-    mood: 9,
-    tags: ['#Work', '#Win', '#Code'],
-    date: today,
-    color: '#C2185B',
-  },
-  {
-    id: 2,
-    title: 'Feeling drained',
-    body: 'Too many meetings today. Could not find time for deep work. Need silence and maybe a long walk. The noise in my head needs to settle.',
-    mood: 3,
-    tags: ['#Burnout', '#Meetings'],
-    date: subDays(today, 1),
-    color: '#4A0404',
-  },
-  {
-    id: 3,
-    title: 'New PR at the Gym',
-    body: 'Hit a new PR on deadlifts! 120kg for 5 reps. The consistency is finally paying off. Sleep and nutrition have been dialed in.',
-    mood: 8,
-    tags: ['#Health', '#Gym', '#PR'],
-    date: subDays(today, 2),
-    color: '#C2185B',
-  },
-  {
-    id: 4,
-    title: 'Quiet Morning',
-    body: 'Woke up early, drank coffee, and watched the sunrise. No phone for the first hour. The world felt still and beautiful.',
-    mood: 7,
-    tags: ['#Morning', '#Peace', '#Gratitude'],
-    date: subDays(today, 3),
-    color: '#F2EBE3',
-  },
-  {
-    id: 5,
-    title: 'Anxiety about deadline',
-    body: 'Upcoming deadline is stressing me out. Not sure if we can deliver on time. Need to break the work into smaller chunks and breathe.',
-    mood: 2,
-    tags: ['#Anxiety', '#Deadline', '#Stress'],
-    date: subDays(today, 4),
-    color: '#4A0404',
-  },
-  {
-    id: 6,
-    title: 'Meditated for 20 minutes',
-    body: 'Sat with my thoughts and just breathed. The anxiety from yesterday began to dissolve. Stillness is a superpower.',
-    mood: 6,
-    tags: ['#Meditation', '#Calm'],
-    date: subDays(today, 5),
-    color: '#F2EBE3',
-  },
-];
+/* No mock entries — start with empty journal */
 
 /* ═══════════════════════════════════════════════════════════════
    ZEN EDITOR (Full-screen composing experience)
@@ -330,7 +270,7 @@ export default function MithraJournal() {
         return parsed.map(e => ({ ...e, date: new Date(e.date) }));
       }
     } catch {}
-    return ENTRIES;
+    return [];
   });
   const [isEditorOpen, setEditorOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -573,18 +513,22 @@ export default function MithraJournal() {
           <div>
             <h4 style={{ color: isLight ? 'rgba(26,26,26,0.3)' : 'rgba(242,235,227,0.3)' }} className="text-xs uppercase tracking-wider font-bold mb-4">Mind Patterns</h4>
             <div className="flex flex-wrap gap-2">
-              {['Work', 'Peace', 'Gym', 'Anxiety', 'Code', 'Gratitude', 'Calm', 'Meetings', 'Win'].map((word, i) => (
-                <span
-                  key={word}
-                  className={clsx(
-                    'text-xs px-2.5 py-1 rounded-full border transition-colors cursor-default',
-                  i % 3 === 0 ? 'border-accent-visor/20 text-accent-visor/60 hover:bg-accent-visor/5' :
-                    isLight ? 'border-[#333]/10 text-[#333]/40 hover:bg-black/5' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/40 hover:bg-white/5'
-                  )}
-                >
-                  {word}
-                </span>
-              ))}
+              {entries.length > 0 ? (
+                [...new Set(entries.flatMap(e => (e.tags || []).map(t => t.replace('#', ''))))].slice(0, 12).map((word, i) => (
+                  <span
+                    key={word}
+                    className={clsx(
+                      'text-xs px-2.5 py-1 rounded-full border transition-colors cursor-default',
+                    i % 3 === 0 ? 'border-accent-visor/20 text-accent-visor/60 hover:bg-accent-visor/5' :
+                      isLight ? 'border-[#333]/10 text-[#333]/40 hover:bg-black/5' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/40 hover:bg-white/5'
+                    )}
+                  >
+                    {word}
+                  </span>
+                ))
+              ) : (
+                <p style={{ color: isLight ? 'rgba(26,26,26,0.2)' : 'rgba(242,235,227,0.2)' }} className="text-xs">No tags yet</p>
+              )}
             </div>
           </div>
 
@@ -600,7 +544,7 @@ export default function MithraJournal() {
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: isLight ? 'rgba(26,26,26,0.3)' : 'rgba(242,235,227,0.3)' }}>Best Day</span>
-              <span style={{ color: isLight ? 'rgba(26,26,26,0.6)' : 'rgba(242,235,227,0.6)' }}>🌟 9/10</span>
+              <span style={{ color: isLight ? 'rgba(26,26,26,0.6)' : 'rgba(242,235,227,0.6)' }}>{entries.length > 0 ? `${moodEmoji(Math.max(...entries.map(e => e.mood)))} ${Math.max(...entries.map(e => e.mood))}/10` : '—'}</span>
             </div>
           </div>
         </div>

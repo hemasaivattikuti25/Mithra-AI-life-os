@@ -1,13 +1,3 @@
--- ═══════════════════════════════════════════════════════════════
--- MITHRA — Supabase Database Schema
--- ═══════════════════════════════════════════════════════════════
--- How to use:
---   1. Go to https://supabase.com → Your Project → SQL Editor
---   2. Paste this entire file
---   3. Click "Run"
---   4. Copy your Project URL + anon key from Settings → API
---   5. Paste into ClientScheduler/client/.env
--- ═══════════════════════════════════════════════════════════════
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

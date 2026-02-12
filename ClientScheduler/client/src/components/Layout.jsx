@@ -82,7 +82,7 @@ const DesktopSidebar = () => {
                 <div className="hidden lg:block ml-3">
                     <h1 className="font-sans font-bold text-lg tracking-wide" style={{ color: 'var(--text-primary)' }}>Mithra</h1>
                     <p className="text-[10px] font-medium -mt-0.5 tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Life OS</p>
-                    <p className="text-[8px] mt-0.5 tracking-wide" style={{ color: 'var(--text-dim)', opacity: 0.45 }}>Developed by Hema Sai Vartikotti</p>
+
                 </div>
             </div>
 
@@ -192,9 +192,7 @@ const MobileTopBar = () => {
                                     </div>
                                 </NavLink>
                             </div>
-                            <div className="pt-3 text-center">
-                                <p className="text-[9px] tracking-wide" style={{ color: 'var(--text-dim)', opacity: 0.4 }}>Developed by Hema Sai Vartikotti</p>
-                            </div>
+
                         </motion.div>
                     </motion.div>
                 )}

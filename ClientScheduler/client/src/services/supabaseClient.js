@@ -142,11 +142,25 @@ export const authService = {
     return supabase.auth.onAuthStateChange(callback);
   },
 
+  /** Sign in with Google OAuth */
+  async signInWithGoogle() {
+    if (!supabase) return null;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/#/`,
+      },
+    });
+    if (error) throw error;
+    return data;
+  },
+
   /** Reset password (sends email) */
   async resetPassword(email) {
     if (!supabase) return null;
+    const siteUrl = 'https://mithra-life-os.vercel.app';
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/#/reset-password`,
+      redirectTo: `${siteUrl}/#/reset-password`,
     });
     if (error) throw error;
     return true;

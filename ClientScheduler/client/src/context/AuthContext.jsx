@@ -3,6 +3,9 @@ import { authService, isSupabaseConfigured, supabase } from '../services/supabas
 
 const AuthContext = createContext(null);
 
+/* Google icon SVG as a component */
+const GOOGLE_PROVIDER = 'google';
+
 /* ── SHA-256 hashing with salt (Web Crypto API) — used for offline/fallback auth ── */
 const generateSalt = () => {
   const array = new Uint8Array(16);
@@ -347,6 +350,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
+     SIGN IN WITH GOOGLE (OAuth)
+     ═══════════════════════════════════════════════════════════ */
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Google sign-in requires Supabase to be configured. Please set up your Supabase credentials.');
+    }
+    return await authService.signInWithGoogle();
+  }, []);
+
+  /* ══════════════════════════════════════════════════════════════
      PASSWORD RESET
      ═══════════════════════════════════════════════════════════ */
   const resetPassword = useCallback(async (email) => {
@@ -459,12 +472,13 @@ export function AuthProvider({ children }) {
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     resetPassword,
     confirmResetPassword,
     updateProfile,
     updatePassword,
-  }), [user, profile, isAuthenticated, loading, signUp, signIn, signOut, resetPassword, confirmResetPassword, updateProfile, updatePassword]);
+  }), [user, profile, isAuthenticated, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, confirmResetPassword, updateProfile, updatePassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

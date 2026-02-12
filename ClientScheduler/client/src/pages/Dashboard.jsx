@@ -31,7 +31,7 @@ const getGreeting = () => {
   return { text: 'Good Evening', icon: Moon, period: 'evening' };
 };
 
-/* ───── mock data ───── */
+/* ───── config data ───── */
 const CATEGORY_COLORS = {
   Work: '#3b82f6',
   Health: '#f97316',
@@ -40,14 +40,6 @@ const CATEGORY_COLORS = {
   Social: '#FACC15',
   default: '#C2185B',
 };
-
-const PRIORITY_TASKS = [
-  { id: 1, title: 'Finish project proposal', priority: 'HIGH', done: false, starred: true },
-  { id: 2, title: 'Review pull requests', priority: 'HIGH', done: false, starred: false },
-  { id: 3, title: 'Update documentation', priority: 'MED', done: true, starred: false },
-  { id: 4, title: 'Prepare presentation slides', priority: 'HIGH', done: false, starred: true },
-  { id: 5, title: 'Send weekly report', priority: 'MED', done: false, starred: false },
-];
 
 const MOOD_EMOJIS = [
   { emoji: '😊', label: 'Happy', value: 5, message: "You're radiating positivity! Keep spreading that joy — the world needs your light. ✨" },
