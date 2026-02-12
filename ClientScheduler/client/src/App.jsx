@@ -11,6 +11,7 @@ import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 
 /* Lazy-load heavy page components for faster initial paint */
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MithraCalendar = lazy(() => import('./pages/Calendar'));
 const MithraTasks = lazy(() => import('./pages/Tasks'));
@@ -28,7 +29,7 @@ const PageLoader = () => (
   </div>
 );
 
-/* Guard: redirect to /login if not authenticated */
+/* Guard: redirect to /auth if not authenticated */
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -55,17 +56,17 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
   if (showOnboarding) return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   return children;
 };
 
-/* Guard: redirect to / if already authenticated */
+/* Guard: redirect to /dashboard if already authenticated */
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   // While loading, show the auth page (don't redirect yet)
   if (loading) return children;
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -104,12 +105,16 @@ function AppRoutes() {
       <BackButtonHandler />
       <GlobalSearch />
       <Routes>
+        {/* Public Landing Page */}
+        <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
+
         {/* Auth routes — no sidebar/layout */}
-        <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
+        <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+        <Route path="/login" element={<Navigate to="/auth" replace />} />
         <Route path="/reset-password" element={<AuthPage isPasswordReset={true} />} />
 
         {/* Protected app routes */}
-        <Route path="/" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></Layout></ProtectedRoute>} />
         <Route path="/dost" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><DostMode /></Suspense></Layout></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraCalendar /></Suspense></Layout></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraTasks /></Suspense></Layout></ProtectedRoute>} />
