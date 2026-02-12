@@ -1149,7 +1149,7 @@ const MithraCalendar = () => {
         event={editingEvent}
         selectedDate={selectedSlotDate}
       />
-    </motion.div>
+    {/* End main container */}
   );
 };
 
