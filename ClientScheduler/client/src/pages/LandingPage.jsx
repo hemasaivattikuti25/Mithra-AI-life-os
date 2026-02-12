@@ -370,9 +370,16 @@ export default function LandingPage() {
                     </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                        {[
+                            { id: 'dashboard', name: 'Mission Control' },
+                            { id: 'tasks', name: 'Proprietary Tasks' },
+                            { id: 'calendar', name: 'Unified Calendar' },
+                            { id: 'journal', name: 'Mood & Journal' },
+                            { id: 'habits', name: 'Consistency Hub' },
+                            { id: 'dost-ai', name: 'Dost AI Mode' }
+                        ].map((preview) => (
                             <motion.div
-                                key={num}
+                                key={preview.id}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true }}
@@ -380,12 +387,12 @@ export default function LandingPage() {
                                 className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10"
                             >
                                 <img
-                                    src={`/demo/demo${num}.png`}
-                                    alt={`Mithra AI Demo ${num}`}
+                                    src={`/demo/${preview.id}.png`}
+                                    alt={`Mithra AI ${preview.name}`}
                                     className="w-full h-full object-cover aspect-video group-hover:scale-110 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                                    <div className="text-white text-sm font-medium">Platform Insight 0{num}</div>
+                                    <div className="text-white text-sm font-medium">{preview.name}</div>
                                 </div>
                             </motion.div>
                         ))}
