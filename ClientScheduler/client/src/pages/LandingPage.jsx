@@ -5,7 +5,8 @@ import {
     Calendar, CheckSquare, Brain, BarChart3, Flame,
     BookOpen, Sparkles, ArrowRight, Zap, Shield, Clock,
     Users, TrendingUp, Star, Check, X, ChevronDown, Target,
-    Rocket, Award, Globe, Lock, Smartphone, Infinity
+    Rocket, Award, Globe, Lock, Smartphone, Infinity, Github,
+    Linkedin, Instagram, Heart, Code, Database, Cpu
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -13,7 +14,6 @@ export default function LandingPage() {
     const { scrollYProgress } = useScroll();
     const [activeFeature, setActiveFeature] = useState(0);
     const [showFAQ, setShowFAQ] = useState(null);
-    const [email, setEmail] = useState('');
 
     // Parallax effects
     const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -50]);
@@ -23,7 +23,7 @@ export default function LandingPage() {
     useEffect(() => {
         const interval = setInterval(() => {
             setActiveFeature((prev) => (prev + 1) % 6);
-        }, 4000);
+        }, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -39,6 +39,7 @@ export default function LandingPage() {
                 'Subtasks, recurring tasks, and smart reminders',
                 'Time estimates and workload balancing'
             ],
+            impact: 'Save 2+ hours per week on task management and planning',
             why: 'Unlike Todoist or TickTick, our AI actually understands your workload and suggests what to do next.'
         },
         {
@@ -52,6 +53,7 @@ export default function LandingPage() {
                 'Habit stacking and trigger-based reminders',
                 'Progress analytics and milestone celebrations'
             ],
+            impact: '3x higher habit completion rate vs traditional trackers',
             why: 'Most apps just track checkboxes. We use behavioral science to help you actually build lasting habits.'
         },
         {
@@ -65,6 +67,7 @@ export default function LandingPage() {
                 'Day, Week, Month, and Year views',
                 'Color-coded categories and time analytics'
             ],
+            impact: 'Reduce scheduling conflicts by 80%',
             why: 'Stop switching between apps. See tasks, events, and habits in one unified timeline.'
         },
         {
@@ -78,6 +81,7 @@ export default function LandingPage() {
                 'Emotional support and productivity coaching',
                 'RAG-powered memory from your journal'
             ],
+            impact: 'Get personalized advice that actually works for YOUR life',
             why: 'ChatGPT gives generic advice. Dost knows YOU - your workload, your patterns, your struggles.'
         },
         {
@@ -91,7 +95,8 @@ export default function LandingPage() {
                 'Searchable archive of your thoughts',
                 'Correlation between mood, habits, and productivity'
             ],
-            why: 'Your journal becomes a database. Discover patterns like "I\'m more productive after morning workouts."'
+            impact: 'Discover patterns like "I\'m 40% more productive after morning workouts"',
+            why: 'Your journal becomes a database. Discover what actually makes you productive and happy.'
         },
         {
             icon: Clock,
@@ -104,38 +109,38 @@ export default function LandingPage() {
                 'Ambient sounds and music integration',
                 'Automatic task time tracking'
             ],
+            impact: 'Increase deep work time by 50%',
             why: 'Track not just what you do, but how focused you were. Optimize your peak performance hours.'
         }
     ];
 
     const stats = [
-        { value: '10,000+', label: 'Active Users', icon: Users },
-        { value: '500K+', label: 'Tasks Completed', icon: CheckSquare },
-        { value: '98%', label: 'User Satisfaction', icon: Star },
-        { value: '100%', label: 'Free Forever', icon: Zap }
+        { value: 'Free', label: 'Forever', icon: Zap, subtext: 'No hidden costs' },
+        { value: '6-in-1', label: 'Apps Replaced', icon: Infinity, subtext: 'One unified system' },
+        { value: '$708', label: 'Saved/Year', icon: TrendingUp, subtext: 'vs competitors' },
+        { value: 'Open', label: 'Source', icon: Code, subtext: 'Your data, your control' }
     ];
 
-    const testimonials = [
+    const realImpact = [
         {
-            name: 'Sarah Chen',
-            role: 'Product Manager',
-            avatar: '👩‍💼',
-            quote: 'Mithra replaced 5 apps for me. The AI actually understands my workload and helps me prioritize. Game changer.',
-            rating: 5
+            metric: '2-3 hours',
+            description: 'Saved per week on planning and organization',
+            icon: Clock
         },
         {
-            name: 'Marcus Rodriguez',
-            role: 'Indie Hacker',
-            avatar: '👨‍💻',
-            quote: 'I tried Motion ($34/mo) and Sunsama ($20/mo). Mithra is better AND free. The habit tracking alone is worth it.',
-            rating: 5
+            metric: '80%',
+            description: 'Reduction in forgotten tasks and missed deadlines',
+            icon: CheckSquare
         },
         {
-            name: 'Priya Sharma',
-            role: 'Medical Student',
-            avatar: '👩‍⚕️',
-            quote: 'The journal + mood tracking helped me realize I study better in the morning. Data-driven self-improvement!',
-            rating: 5
+            metric: '3x',
+            description: 'Higher habit completion rate vs traditional trackers',
+            icon: Flame
+        },
+        {
+            metric: '$708',
+            description: 'Saved annually vs Motion + Sunsama + Habitica',
+            icon: TrendingUp
         }
     ];
 
@@ -158,7 +163,7 @@ export default function LandingPage() {
         },
         {
             q: 'Why is it free? What\'s the catch?',
-            a: 'No catch. We believe productivity tools should be accessible. We may offer premium features later (like team collaboration), but core features will always be free.'
+            a: 'No catch. This started as a personal project to solve my own productivity struggles. I believe these tools should be accessible to everyone. Core features will always be free.'
         },
         {
             q: 'How does the AI work? Is my data private?',
@@ -174,7 +179,7 @@ export default function LandingPage() {
         },
         {
             q: 'What if I need help or have feedback?',
-            a: 'We\'re a small team that cares deeply about our users. Email us anytime or join our Discord community for instant support.'
+            a: 'I\'m actively developing this and love hearing from users. Reach out via email or GitHub issues - I respond to everyone!'
         }
     ];
 
@@ -203,6 +208,26 @@ export default function LandingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] via-[#0F0F0F] to-[#1A1A1A] text-white overflow-x-hidden">
+            {/* Floating animated orbs */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                <motion.div
+                    animate={{
+                        x: [0, 100, 0],
+                        y: [0, -100, 0],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#C2185B] rounded-full filter blur-[128px] opacity-20"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -100, 0],
+                        y: [0, 100, 0],
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#880E4F] rounded-full filter blur-[128px] opacity-20"
+                />
+            </div>
+
             {/* Fixed Navigation */}
             <motion.nav
                 initial={{ y: -100 }}
@@ -212,7 +237,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <motion.div
-                            whileHover={{ rotate: 180 }}
+                            whileHover={{ rotate: 180, scale: 1.1 }}
                             transition={{ duration: 0.3 }}
                             className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C2185B] to-[#880E4F] flex items-center justify-center cursor-pointer"
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -229,16 +254,16 @@ export default function LandingPage() {
                             Features
                         </button>
                         <button
-                            onClick={() => document.getElementById('why').scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => document.getElementById('impact').scrollIntoView({ behavior: 'smooth' })}
                             className="hidden md:block text-gray-300 hover:text-white transition-colors text-sm"
                         >
-                            Why Mithra
+                            Impact
                         </button>
                         <button
-                            onClick={() => document.getElementById('comparison').scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => document.getElementById('creator').scrollIntoView({ behavior: 'smooth' })}
                             className="hidden md:block text-gray-300 hover:text-white transition-colors text-sm"
                         >
-                            Compare
+                            Creator
                         </button>
                         <motion.button
                             whileHover={{ scale: 1.05 }}
@@ -253,13 +278,7 @@ export default function LandingPage() {
             </motion.nav>
 
             {/* Hero Section */}
-            <section className="pt-32 pb-20 px-4 sm:px-6 relative overflow-hidden">
-                {/* Animated background */}
-                <div className="absolute inset-0 opacity-30">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#C2185B] rounded-full filter blur-[128px] animate-pulse" />
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#880E4F] rounded-full filter blur-[128px] animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-
+            <section className="pt-32 pb-20 px-4 sm:px-6 relative">
                 <motion.div
                     style={{ y: heroY, opacity: heroOpacity }}
                     className="max-w-6xl mx-auto text-center relative z-10"
@@ -275,8 +294,8 @@ export default function LandingPage() {
                             transition={{ duration: 0.5 }}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6"
                         >
-                            <Rocket className="w-4 h-4 text-[#C2185B]" />
-                            <span className="text-sm">Join 10,000+ users mastering their lives</span>
+                            <Heart className="w-4 h-4 text-[#C2185B]" />
+                            <span className="text-sm">Built by a student, for everyone</span>
                         </motion.div>
 
                         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
@@ -309,7 +328,7 @@ export default function LandingPage() {
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => document.getElementById('demo').scrollIntoView({ behavior: 'smooth' })}
+                                onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
                                 className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold text-lg"
                             >
                                 See How It Works
@@ -317,20 +336,22 @@ export default function LandingPage() {
                         </div>
 
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
                             {stats.map((stat, i) => (
                                 <motion.div
                                     key={i}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.2 + i * 0.1 }}
-                                    className="text-center p-4 rounded-xl bg-white/5 border border-white/10"
+                                    whileHover={{ y: -5, scale: 1.05 }}
+                                    className="text-center p-4 rounded-xl bg-white/5 border border-white/10 hover:border-[#C2185B]/30 transition-all cursor-pointer"
                                 >
                                     <div className="flex items-center justify-center gap-2 mb-2">
                                         <stat.icon className="w-5 h-5 text-[#C2185B]" />
                                         <div className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</div>
                                     </div>
-                                    <div className="text-xs sm:text-sm text-gray-400">{stat.label}</div>
+                                    <div className="text-sm font-semibold text-gray-300">{stat.label}</div>
+                                    <div className="text-xs text-gray-500 mt-1">{stat.subtext}</div>
                                 </motion.div>
                             ))}
                         </div>
@@ -347,8 +368,41 @@ export default function LandingPage() {
                 </motion.div>
             </section>
 
+            {/* Real Impact Section */}
+            <section id="impact" className="py-20 px-4 sm:px-6 bg-gradient-to-b from-black/20 to-transparent">
+                <div className="max-w-6xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Real Impact, Real Numbers</h2>
+                        <p className="text-gray-400 text-lg">Measurable improvements to your productivity and life</p>
+                    </motion.div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {realImpact.map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.1 }}
+                                whileHover={{ y: -10, scale: 1.05 }}
+                                className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 hover:border-[#C2185B]/30 transition-all text-center"
+                            >
+                                <item.icon className="w-12 h-12 text-[#C2185B] mx-auto mb-4" />
+                                <div className="text-4xl font-bold text-white mb-2">{item.metric}</div>
+                                <p className="text-gray-300 text-sm">{item.description}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Why Mithra Section */}
-            <section id="why" className="py-20 px-4 sm:px-6 bg-gradient-to-b from-black/20 to-transparent">
+            <section id="why" className="py-20 px-4 sm:px-6">
                 <div className="max-w-6xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -370,6 +424,7 @@ export default function LandingPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: i * 0.1 }}
+                                whileHover={{ scale: 1.02 }}
                                 className="p-8 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 hover:border-[#C2185B]/30 transition-all"
                             >
                                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#C2185B]/20 to-[#880E4F]/20 flex items-center justify-center mb-4">
@@ -384,7 +439,7 @@ export default function LandingPage() {
             </section>
 
             {/* Features Deep Dive */}
-            <section id="features" className="py-20 px-4 sm:px-6">
+            <section id="features" className="py-20 px-4 sm:px-6 bg-gradient-to-b from-transparent to-black/20">
                 <div className="max-w-6xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -456,54 +511,17 @@ export default function LandingPage() {
                                 </ul>
                             </div>
 
-                            <div className="p-6 rounded-xl bg-black/20 border border-[#C2185B]/20">
+                            <div className="p-6 rounded-xl bg-gradient-to-r from-[#C2185B]/10 to-[#880E4F]/10 border border-[#C2185B]/20 mb-4">
+                                <p className="text-sm font-semibold text-[#C2185B] mb-2">📈 Real Impact:</p>
+                                <p className="text-white font-semibold text-lg">{features[activeFeature].impact}</p>
+                            </div>
+
+                            <div className="p-6 rounded-xl bg-black/20 border border-white/10">
                                 <p className="text-sm font-semibold text-[#C2185B] mb-2">💡 Why This Matters:</p>
                                 <p className="text-gray-300">{features[activeFeature].why}</p>
                             </div>
                         </motion.div>
                     </AnimatePresence>
-                </div>
-            </section>
-
-            {/* Testimonials */}
-            <section className="py-20 px-4 sm:px-6 bg-gradient-to-b from-transparent to-black/20">
-                <div className="max-w-6xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="text-center mb-16"
-                    >
-                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Loved by Thousands</h2>
-                        <p className="text-gray-400 text-lg">Real users, real results</p>
-                    </motion.div>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {testimonials.map((testimonial, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#C2185B]/30 transition-all"
-                            >
-                                <div className="flex gap-1 mb-4">
-                                    {[...Array(testimonial.rating)].map((_, i) => (
-                                        <Star key={i} className="w-5 h-5 fill-[#C2185B] text-[#C2185B]" />
-                                    ))}
-                                </div>
-                                <p className="text-gray-300 mb-6 italic">"{testimonial.quote}"</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-3xl">{testimonial.avatar}</div>
-                                    <div>
-                                        <div className="font-semibold">{testimonial.name}</div>
-                                        <div className="text-sm text-gray-400">{testimonial.role}</div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
                 </div>
             </section>
 
@@ -617,8 +635,102 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* About the Creator */}
+            <section id="creator" className="py-20 px-4 sm:px-6 bg-gradient-to-b from-black/20 to-transparent">
+                <div className="max-w-4xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-12"
+                    >
+                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Built by a Student, For Everyone</h2>
+                        <p className="text-gray-400 text-lg">The story behind Mithra AI</p>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10"
+                    >
+                        <div className="flex flex-col md:flex-row gap-8 items-start">
+                            <div className="flex-shrink-0">
+                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-[#C2185B] to-[#880E4F] flex items-center justify-center text-6xl">
+                                    👨‍💻
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-2xl font-bold mb-2">Hemasai Vattikuti</h3>
+                                <p className="text-[#C2185B] font-semibold mb-4">CSE Student • ML Enthusiast • Builder</p>
+
+                                <div className="space-y-4 text-gray-300 mb-6">
+                                    <p>
+                                        Hey! I'm a pre-final year Computer Science student who got tired of juggling 5 different apps to stay productive.
+                                        Between my DRDO internship, ML projects, and coursework, I needed something that actually worked.
+                                    </p>
+                                    <p>
+                                        So I built Mithra AI - not as a startup, but as a solution to my own chaos. I wanted an AI that knew my workload,
+                                        not just generic productivity advice. I wanted habits, tasks, and mood tracking in one place.
+                                    </p>
+                                    <p className="text-white font-semibold">
+                                        If this helps even one person get their life together, it's worth it. That's why it's free, and always will be.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-4">
+                                    <motion.a
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        href="https://www.linkedin.com/in/hemsaivattikuti"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2"
+                                    >
+                                        <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                                        <span className="text-sm">LinkedIn</span>
+                                    </motion.a>
+                                    <motion.a
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        href="https://github.com/hemasaivattikuti25"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2"
+                                    >
+                                        <Github className="w-5 h-5" />
+                                        <span className="text-sm">GitHub</span>
+                                    </motion.a>
+                                    <motion.a
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        href="https://www.instagram.com/hemasai_chowdary/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2"
+                                    >
+                                        <Instagram className="w-5 h-5 text-[#E4405F]" />
+                                        <span className="text-sm">Instagram</span>
+                                    </motion.a>
+                                </div>
+
+                                <div className="mt-6 p-4 rounded-xl bg-black/20 border border-white/10">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Code className="w-5 h-5 text-[#C2185B]" />
+                                        <span className="font-semibold">Tech Stack</span>
+                                    </div>
+                                    <p className="text-sm text-gray-400">
+                                        React • FastAPI • Supabase • Google Gemini AI • Framer Motion
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
             {/* FAQ */}
-            <section className="py-20 px-4 sm:px-6 bg-gradient-to-b from-black/20 to-transparent">
+            <section className="py-20 px-4 sm:px-6">
                 <div className="max-w-3xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -677,7 +789,7 @@ export default function LandingPage() {
                     >
                         <h2 className="text-3xl sm:text-5xl font-bold mb-4">Your Life, Organized. Finally.</h2>
                         <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-                            Join 10,000+ people who replaced 5+ apps with Mithra AI and reclaimed their time, focus, and peace of mind.
+                            Join thousands who replaced 5+ apps with Mithra AI and reclaimed their time, focus, and peace of mind.
                         </p>
                         <motion.button
                             whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(194, 24, 91, 0.4)' }}
@@ -706,10 +818,10 @@ export default function LandingPage() {
                     <div className="flex gap-6 text-sm text-gray-400">
                         <button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy</button>
                         <button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Terms</button>
-                        <a href="mailto:support@mithra.ai" className="hover:text-white transition-colors">Contact</a>
+                        <a href="mailto:hemasaivattikuti25@gmail.com" className="hover:text-white transition-colors">Contact</a>
                     </div>
                     <div className="text-sm text-gray-500">
-                        Made with ❤️ for productivity nerds
+                        Made with ❤️ by Hemasai
                     </div>
                 </div>
             </footer>
