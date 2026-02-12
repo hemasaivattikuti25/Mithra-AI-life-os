@@ -84,6 +84,60 @@ export function AuthProvider({ children }) {
     // Check for existing session on mount
     const initSession = async () => {
       try {
+        // PKCE OAuth callback: if ?code= is in the URL, exchange it for a session first
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+          try {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            // Clean the URL (remove ?code= param) so it doesn't get reused
+            window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+            
+            if (data?.session?.user) {
+              const supaUser = {
+                id: data.session.user.id,
+                email: data.session.user.email,
+                provider: 'supabase',
+              };
+              setUser(supaUser);
+              
+              // Pull profile
+              try {
+                const { data: profileData } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', data.session.user.id)
+                  .single();
+                if (profileData) {
+                  setProfile(prev => ({
+                    ...prev,
+                    fullName: profileData.full_name || data.session.user.user_metadata?.full_name || prev.fullName,
+                    email: data.session.user.email,
+                    avatarUrl: profileData.avatar_url || data.session.user.user_metadata?.avatar_url || prev.avatarUrl,
+                    dateJoined: profileData.created_at || prev.dateJoined,
+                  }));
+                } else {
+                  setProfile(prev => ({
+                    ...prev,
+                    fullName: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || prev.fullName,
+                    email: data.session.user.email,
+                    avatarUrl: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || prev.avatarUrl,
+                  }));
+                }
+              } catch {}
+              
+              setLoading(false);
+              return; // Done — don't fall through to getSession
+            }
+            if (error) console.warn('PKCE code exchange failed:', error.message);
+          } catch (err) {
+            console.warn('PKCE code exchange error:', err);
+            window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+          }
+        }
+
+        // Normal session restore (no ?code= in URL)
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const supaUser = {
