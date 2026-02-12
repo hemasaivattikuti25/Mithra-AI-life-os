@@ -1,187 +1,129 @@
-<p align="center">
-  <img src="ClientScheduler/attached_assets/logo.png" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
-</p>
 
-<h1 align="center">Mithra AI</h1>
+<div align="center">
+  <img src="ClientScheduler/client/public/assets/logo.png" alt="Mithra AI Logo" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
 
-<p align="center">
-  <strong>The Ultimate Life Operating System — Precision Built for High Performance.</strong>
-</p>
+  <h1 style="font-size: 3rem; margin-top: 20px;">Mithra AI</h1>
 
-<p align="center">
-  Mithra AI is a world-class, all-in-one productivity platform designed to eliminate chaos and empower users to "Start Living." Built with a sleek <strong>Midnight & Cyan</strong> aesthetic, Mithra combines tasks, habits, calendar, journal, focus timer, and a proprietary NLP-powered AI assistant into one seamless experience.
-</p>
+  <p style="font-size: 1.2rem; max-width: 600px;">
+    <strong>The Ultimate Life Operating System — Precision Built for High Performance.</strong>
+  </p>
 
-<p align="center">
-  <a href="https://mithra-life-os.vercel.app">🌐 Live Demo</a> • 
-  <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues">🚀 Report Bug</a> •
-  <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/pulls">🤝 Contribute</a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&logo=github&color=06b6d4" alt="GitHub stars">
-  <img src="https://img.shields.io/github/forks/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&logo=github&color=0891b2" alt="GitHub forks">
-  <img src="https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=0e7490" alt="License">
-</p>
-
----
-
-## 📦 Table of Contents
-- [✨ Core Philosophy](#-core-philosophy)
-- [🚀 Features](#-features)
-- [📸 System Preview](#-system-preview)
-- [🛠️ Tech Stack](#-tech-stack)
-- [🏗️ Project Architecture](#-project-architecture)
-- [💻 Getting Started](#-getting-started)
-- [🤝 Support the Project](#-support-the-project)
-- [👨‍💻 About the Creator](#-about-the-creator)
+  <p>
+    <a href="https://mithra-life-os.vercel.app">
+      <img src="https://img.shields.io/badge/Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
+    </a>
+    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues">
+      <img src="https://img.shields.io/github/issues/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fa5252" alt="Issues">
+    </a>
+    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers">
+      <img src="https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fab005" alt="Stars">
+    </a>
+    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=228be6" alt="License">
+    </a>
+  </p>
+</div>
 
 ---
 
-## ✨ Core Philosophy
-Mithra isn't just a productivity app; it's a **Life OS**. It was built to solve the frustration of juggling 5+ different apps just to stay organized. Everything in Mithra is interconnected—your habits feed into your daily planning, and your journal entries provide context for your AI assistant, **Dost**.
+## 🚀 About The Project
 
----
+**Mithra AI** is not just another productivity app; it's a comprehensive **Life Operating System** designed to eliminate chaos. It seamlessly integrates tasks, habits, calendar, journaling, and a focus timer into one unified, aesthetically pleasing workspace.
 
-## 🚀 Features
+Powered by a proprietary NLP model ("Dost"), Mithra understands your workload and helps you plan your day with a single sentence.
 
-### 🎯 Precision Task Management
-- **Intelligent Prioritization**: Rank tasks by impact and urgency.
-- **Deep Hierarchies**: Subtasks, categories, and smart filtering.
-- **AI Planning**: Dost suggests what to work on next based on your current load.
+<div align="center">
+  <img src="ClientScheduler/client/public/assets/home_1.png" alt="Mithra AI Dashboard" width="100%" style="border-radius: 12px; border: 1px solid #333;">
+</div>
 
-### 📅 Unified Schedule
-- **Time Blocking**: Drag-and-drop management for your entire day.
-- **Global Visibility**: Seamlessly switch between Day, Week, Month, and Year views.
-- **Proprietary Sync**: Export to `.ics` to keep your external calendars aligned.
+### ✨ Key Features
 
-### 🔥 Habit & Focus Hub
-- **GitHub-style Streaks**: Visualize your consistency over time.
-- **Deep Work Mode**: Pomodoro-based focus timer with detailed analytics.
-- **Milestone Tracking**: Celebrate every win, no matter how small.
-
-### 🤖 Dost Mode (Proprietary NLP AI)
-- **Natural Language Parsing**: Create your whole day's tasks with a single sentence.
-- **Context-Aware Insights**: AI that knows your mood, load, and history.
-- **Privacy First**: No external Google APIs. Your data, your rules.
-
----
-
-## 📸 System Preview
-
-<p align="center">
-  <img src="docs/assets/dashboard.png" alt="Mithra AI Dashboard" width="900">
-  <br><em>The Dashboard — Your mission control for the day.</em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/tasks.png" alt="Task Management" width="440">
-  <img src="docs/assets/calendar.png" alt="Smart Calendar" width="440">
-  <br><em>Proprietary Task Management and Unified Calendar views.</em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/journal.png" alt="Journal & Mood" width="440">
-  <img src="docs/assets/habits.png" alt="Habit Tracking" width="440">
-  <br><em>Emotional analytics and consistent habit tracking.</em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/dost-ai.png" alt="Dost Mode - AI" width="900">
-  <br><em>Dost Mode — Your proprietary NLP companion.</em>
-</p>
+| Feature | Description | Preview |
+| :--- | :--- | :--- |
+| **Unified Workspace** | A central dashboard giving you a bird's-eye view of your entire life. Tasks, habits, and mood—all in one place. | <img src="ClientScheduler/client/public/assets/home_2.png" width="200"> |
+| **Smart Tasks** | Create tasks with deep hierarchies, priorities, and deadlines. Filter by category and let AI suggest your next move. | <img src="ClientScheduler/client/public/assets/tasks.png" width="200"> |
+| **Consistency Hub** | Track your habits with GitHub-style streak graphs. Visualize your progress and stay motivated. | <img src="ClientScheduler/client/public/assets/habbits.png" width="200"> |
+| **Mood Journal** | Log your thoughts and track your emotional well-being over time. Discover what makes you happy. | <img src="ClientScheduler/client/public/assets/journals.png" width="200"> |
+| **Focus Timer** | A built-in Pomodoro timer to help you enter deep work states. Track your focus sessions and efficiency. | <img src="ClientScheduler/client/public/assets/focus_timer.png" width="200"> |
+| **Dost AI** | Your personal AI companion. Chat with Dost to organize your day, get advice, and clear your mind. | <img src="ClientScheduler/client/public/assets/dosth(ai).png" width="200"> |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Frontend** | React 18.3 | High-performance UI library |
-| **Styling** | Tailwind CSS | Utility-first "Aesthetic Tech" design |
-| **Motion** | Framer Motion | Fluid, world-class animations |
-| **AI/NLP** | Proprietary Model | Privacy-focused context understanding |
-| **Backend** | FastAPI + Python | Robust API and NLP processing |
-| **Database** | Supabase | Secure PostgreSQL & Real-time storage |
-| **Deployment**| Vercel | Scalable, high-speed hosting |
+This project is built using the following technologies:
 
----
-
-## 🏗️ Project Architecture
-
-```mermaid
-graph TD
-    A[User Interface - React] --> B[Sync Engine]
-    B --> C[Proprietary NLP Model]
-    B --> D[Supabase DB / Auth]
-    C --> E[FastAPI Backend]
-    E --> D
-```
+| Category | Technology |
+| :--- | :--- |
+| **Frontend** | ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white) |
+| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi) ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white) |
+| **Database** | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) |
+| **Deployment** | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) |
 
 ---
 
 ## 💻 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.10+
-- Supabase account
+
+*   **Node.js** (v18 or higher)
+*   **Python** (v3.10 or higher)
+*   **Supabase Account**
 
 ### Installation
 
-1. **Clone the Repo**
-   ```bash
-   git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
-   cd Mithra-AI-life-os
-   ```
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
+    cd Mithra-AI-life-os
+    ```
 
-2. **Frontend Setup**
-   ```bash
-   cd ClientScheduler/client
-   npm install
-   npm run dev
-   ```
+2.  **Frontend Setup**
+    ```bash
+    cd ClientScheduler/client
+    npm install
+    npm run dev
+    ```
 
-3. **Backend Setup** (Optional for NLP)
-   ```bash
-   cd ../../server
-   pip install -r requirements.txt
-   python main.py
-   ```
-
----
-
-## 🤝 Support the Project
-
-Mithra AI is a **community-first, open-source project**. If this tool helps you organize your life, please consider supporting us:
-
-- **Star this repository** to help others find it! ⭐
-- **Report bugs** or suggest features via issues.
-- **Contribute** to the code and help us build the future.
+3.  **Backend Setup** (Optional for local AI)
+    ```bash
+    cd ../../server
+    pip install -r requirements.txt
+    python main.py
+    ```
 
 ---
 
-## 👨‍💻 About the Creator
+## 🤝 Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+---
+
+## 📬 Contact
+
+**Hemasai Vattikuti** - Founder & Developer
 
 <p align="left">
-  <img src="ClientScheduler/client/public/hemasai.jpg" align="right" alt="Hemasai Vattikuti" width="150" style="border-radius: 12px; margin: 10px;">
-  
-  **Hemasai Vattikuti**  
-  CSE Student • ML Enthusiast • Builder  
-  
-  Hey! I'm a pre-final year Computer Science student who got tired of juggling 5 different apps just to stay productive. Between my DRDO internship, machine learning projects, and intensive coursework, I built Mithra AI to solve my own chaos.
-  
-  If this helps even one person get their life together, it's worth it.
-</p>
-
-<p align="left">
-  <a href="https://www.linkedin.com/in/hemsaivattikuti"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
-  <a href="https://github.com/hemasaivattikuti25"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
-  <a href="https://www.instagram.com/hemasai_chowdary/"><img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"></a>
+  <a href="https://www.linkedin.com/in/hemsaivattikuti">
+    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
+  </a>
+  <a href="https://github.com/hemasaivattikuti25">
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
+  </a>
+  <a href="https://www.instagram.com/hemasai_chowdary/">
+    <img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram">
+  </a>
 </p>
 
 ---
 
-<p align="center">
-  Built with ❤️ by Hemasai Vattikuti
-</p>
+<div align="center">
+  <p>Made with ❤️ by <a href="https://github.com/hemasaivattikuti25">Hemasai Vattikuti</a></p>
+</div>
