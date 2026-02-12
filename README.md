@@ -1,244 +1,187 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/ClientScheduler/client/public/icon-512.svg" alt="Mithra AI" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/ClientScheduler/client/public/hemasai.jpg" alt="Mithra AI" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
 </p>
 
 <h1 align="center">Mithra AI</h1>
 
 <p align="center">
-  <strong>AI-Powered Life Operating System</strong>
+  <strong>The Ultimate Life Operating System — Precision Built for High Performance.</strong>
 </p>
 
 <p align="center">
-  Mithra is a comprehensive productivity platform designed to revolutionize how you manage your life. Built with React, this app provides a seamless, user-friendly platform to manage tasks, track habits, schedule events, journal your thoughts, and interact with an AI assistant.
+  Mithra AI is a world-class, all-in-one productivity platform designed to eliminate chaos and empower users to "Start Living." Built with a sleek <strong>Midnight & Cyan</strong> aesthetic, Mithra combines tasks, habits, calendar, journal, focus timer, and a proprietary NLP-powered AI assistant into one seamless experience.
 </p>
 
 <p align="center">
-  <a href="https://mithra-life-os.vercel.app">🌐 Live Demo</a>
+  <a href="https://mithra-life-os.vercel.app">🌐 Live Demo</a> • 
+  <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues">🚀 Report Bug</a> •
+  <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/pulls">🤝 Contribute</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=white" alt="React">
-  <img src="https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white" alt="Vite">
-  <img src="https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind">
-  <img src="https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&logo=github&color=06b6d4" alt="GitHub stars">
+  <img src="https://img.shields.io/github/forks/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&logo=github&color=0891b2" alt="GitHub forks">
+  <img src="https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=0e7490" alt="License">
 </p>
 
 ---
 
 ## 📦 Table of Contents
+- [✨ Core Philosophy](#-core-philosophy)
+- [🚀 Features](#-features)
+- [📸 System Preview](#-system-preview)
+- [🛠️ Tech Stack](#-tech-stack)
+- [🏗️ Project Architecture](#-project-architecture)
+- [💻 Getting Started](#-getting-started)
+- [🤝 Support the Project](#-support-the-project)
+- [👨‍💻 About the Creator](#-about-the-creator)
 
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Installation](#-installation)
-- [Project Structure](#-project-structure)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [License](#-license)
-- [Contact](#-contact)
+---
+
+## ✨ Core Philosophy
+Mithra isn't just a productivity app; it's a **Life OS**. It was built to solve the frustration of juggling 5+ different apps just to stay organized. Everything in Mithra is interconnected—your habits feed into your daily planning, and your journal entries provide context for your AI assistant, **Dost**.
 
 ---
 
 ## 🚀 Features
 
-### 🎯 Task Management
-- Priority-based task organization
-- Subtasks and due dates
-- Category filtering (Work, Personal, etc.)
-- Completion analytics and progress tracking
+### 🎯 Precision Task Management
+- **Intelligent Prioritization**: Rank tasks by impact and urgency.
+- **Deep Hierarchies**: Subtasks, categories, and smart filtering.
+- **AI Planning**: Dost suggests what to work on next based on your current load.
 
-### 📅 Smart Calendar
-- Day, Week, and Month views
-- Drag-and-drop event management
-- Color-coded categories
-- Event reminders and notifications
+### 📅 Unified Schedule
+- **Time Blocking**: Drag-and-drop management for your entire day.
+- **Global Visibility**: Seamlessly switch between Day, Week, Month, and Year views.
+- **Proprietary Sync**: Export to `.ics` to keep your external calendars aligned.
 
-### 🔥 Habit Tracking
-- GitHub-style consistency heatmap
-- Streak counters and statistics
-- Focus timer with Pomodoro technique
-- Custom session durations
+### 🔥 Habit & Focus Hub
+- **GitHub-style Streaks**: Visualize your consistency over time.
+- **Deep Work Mode**: Pomodoro-based focus timer with detailed analytics.
+- **Milestone Tracking**: Celebrate every win, no matter how small.
 
-### 📓 Journal
-- Mood tracking with emoji indicators
-- Rich text entries with tags
-- AI-powered mood analysis
-- Writing streak tracking
-
-### 🤖 Dost Mode (AI Assistant)
-- Natural language task creation
-- Smart daily summaries
-- Mood history insights
-- Conversational interface
-
-### 🎨 User Experience
-- 6 beautiful color themes (Sakura, Sunset, Forest, Ocean, Lavender, Electric)
-- Dark and Light mode
-- Responsive design for all devices
-- Offline-first with sync when online
-- PWA + Native Android support
+### 🤖 Dost Mode (Proprietary NLP AI)
+- **Natural Language Parsing**: Create your whole day's tasks with a single sentence.
+- **Context-Aware Insights**: AI that knows your mood, load, and history.
+- **Privacy First**: No external Google APIs. Your data, your rules.
 
 ---
 
-## � Screenshots
+## 📸 System Preview
 
 <p align="center">
-  <img src="ClientScheduler/client/docs/screenshots/dost-mode.png" alt="Dost Mode - AI Assistant" width="800">
+  <img src="docs/assets/dashboard.png" alt="Mithra AI Dashboard" width="900">
+  <br><em>The Dashboard — Your mission control for the day.</em>
 </p>
-<p align="center"><em>Dost Mode — AI-powered companion for mood tracking, daily summaries, and natural conversation</em></p>
 
 <p align="center">
-  <img src="ClientScheduler/client/docs/screenshots/settings-profile.png" alt="Settings - Profile & Themes" width="800">
+  <img src="docs/assets/tasks.png" alt="Task Management" width="440">
+  <img src="docs/assets/calendar.png" alt="Smart Calendar" width="440">
+  <br><em>Proprietary Task Management and Unified Calendar views.</em>
 </p>
-<p align="center"><em>Settings — Profile management, dark mode toggle, and 6 beautiful color themes</em></p>
 
 <p align="center">
-  <img src="ClientScheduler/client/docs/screenshots/settings-notifications.png" alt="Settings - Notifications" width="800">
+  <img src="docs/assets/journal.png" alt="Journal & Mood" width="440">
+  <img src="docs/assets/habits.png" alt="Habit Tracking" width="440">
+  <br><em>Emotional analytics and consistent habit tracking.</em>
 </p>
-<p align="center"><em>Settings — Smart notifications, reminder timing, and sync preferences</em></p>
 
----
-
-## �💻 Installation
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Supabase account (for backend)
-
-### Setup Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
-   cd Mithra-AI-life-os/ClientScheduler/client
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Add your Supabase credentials
-   ```
-
-4. **Run the app**
-   ```bash
-   npm run dev
-   ```
-
----
-
-## 🏗️ Project Structure
-
-```
-Mithra-AI-life-os/
-│
-├── ClientScheduler/
-│   └── client/
-│       ├── public/
-│       │   ├── icon-192.svg
-│       │   ├── icon-512.svg
-│       │   └── manifest.json
-│       │
-│       ├── src/
-│       │   ├── components/
-│       │   │   ├── Layout.jsx
-│       │   │   └── ClockPicker.jsx
-│       │   │
-│       │   ├── context/
-│       │   │   ├── AuthContext.jsx
-│       │   │   └── DataContext.jsx
-│       │   │
-│       │   ├── pages/
-│       │   │   ├── Dashboard.jsx
-│       │   │   ├── Tasks.jsx
-│       │   │   ├── Calendar.jsx
-│       │   │   ├── HabitFocusHub.jsx
-│       │   │   ├── Journal.jsx
-│       │   │   ├── DostMode.jsx
-│       │   │   ├── Settings.jsx
-│       │   │   └── AuthPage.jsx
-│       │   │
-│       │   ├── services/
-│       │   │   └── supabaseClient.js
-│       │   │
-│       │   ├── App.jsx
-│       │   └── main.jsx
-│       │
-│       └── android/          # Native Android app (Capacitor)
-│
-└── README.md
-```
+<p align="center">
+  <img src="docs/assets/dost-ai.png" alt="Dost Mode - AI" width="900">
+  <br><em>Dost Mode — Your proprietary NLP companion.</em>
+</p>
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| **Framework** | React 18.3 |
-| **Build Tool** | Vite 5.4 |
-| **Styling** | Tailwind CSS 3.4 |
-| **Animations** | Framer Motion 11 |
-| **Backend** | Supabase (PostgreSQL + Auth) |
-| **Mobile** | Capacitor 6 |
-| **Deployment** | Vercel |
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Frontend** | React 18.3 | High-performance UI library |
+| **Styling** | Tailwind CSS | Utility-first "Aesthetic Tech" design |
+| **Motion** | Framer Motion | Fluid, world-class animations |
+| **AI/NLP** | Proprietary Model | Privacy-focused context understanding |
+| **Backend** | FastAPI + Python | Robust API and NLP processing |
+| **Database** | Supabase | Secure PostgreSQL & Real-time storage |
+| **Deployment**| Vercel | Scalable, high-speed hosting |
 
 ---
 
-## 🔌 Architecture
+## 🏗️ Project Architecture
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                      REACT FRONTEND                      │
-│         Components · Context API · Local State           │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│                      SYNC ENGINE                         │
-│    Offline Queue · Conflict Resolution · Real-time      │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│                       SUPABASE                           │
-│      PostgreSQL · Row Level Security · Auth · API        │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[User Interface - React] --> B[Sync Engine]
+    B --> C[Proprietary NLP Model]
+    B --> D[Supabase DB / Auth]
+    C --> E[FastAPI Backend]
+    E --> D
 ```
 
 ---
 
-## 💖 Support the Project
+## 💻 Getting Started
 
-If you find this project helpful, consider starring the GitHub repository — it really helps! ⭐
+### Prerequisites
+- Node.js 18+
+- Python 3.10+
+- Supabase account
+
+### Installation
+
+1. **Clone the Repo**
+   ```bash
+   git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
+   cd Mithra-AI-life-os
+   ```
+
+2. **Frontend Setup**
+   ```bash
+   cd ClientScheduler/client
+   npm install
+   npm run dev
+   ```
+
+3. **Backend Setup** (Optional for NLP)
+   ```bash
+   cd ../../server
+   pip install -r requirements.txt
+   python main.py
+   ```
 
 ---
 
-## 📄 License
+## 🤝 Support the Project
 
-Distributed under MIT License. See `LICENSE` for more information.
+Mithra AI is a **community-first, open-source project**. If this tool helps you organize your life, please consider supporting us:
+
+- **Star this repository** to help others find it! ⭐
+- **Report bugs** or suggest features via issues.
+- **Contribute** to the code and help us build the future.
 
 ---
 
-## Crafted with by  -Hemasai Vattikuti
+## 👨‍💻 About the Creator
 
+<p align="left">
+  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/ClientScheduler/client/public/hemasai.jpg" align="right" alt="Hemasai Vattikuti" width="150" style="border-radius: 12px; margin: 10px;">
+  
+  **Hemasai Vattikuti**  
+  CSE Student • ML Enthusiast • Builder  
+  
+  Hey! I'm a pre-final year Computer Science student who got tired of juggling 5 different apps just to stay productive. Between my DRDO internship, machine learning projects, and intensive coursework, I built Mithra AI to solve my own chaos.
+  
+  If this helps even one person get their life together, it's worth it.
+</p>
 
-**GitHub-https://github.com/hemasaivattikuti25**
-
-**Linkedin-https://www.linkedin.com/in/hemsaivattikuti**
-
-**Instagram-https://www.instagram.com/hemasai_chowdary**
-
-**Mail Id -hemasaivattikuti2727@gmail.com**
+<p align="left">
+  <a href="https://www.linkedin.com/in/hemsaivattikuti"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+  <a href="https://github.com/hemasaivattikuti25"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://www.instagram.com/hemasai_chowdary/"><img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"></a>
+</p>
 
 ---
 
 <p align="center">
-  Give a ⭐ to support the project!
+  Built with ❤️ by Hemasai Vattikuti
 </p>
