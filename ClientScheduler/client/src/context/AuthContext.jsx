@@ -424,11 +424,33 @@ export function AuthProvider({ children }) {
   /* ══════════════════════════════════════════════════════════════
      SIGN OUT
      ═══════════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════════
+     SIGN OUT
+     ═══════════════════════════════════════════════════════════ */
   const signOut = useCallback(async () => {
-    if (isSupabaseConfigured) {
-      try { await authService.signOut(); } catch { }
-    }
+    // 1. Immediate local cleanup (Optimistic UI)
     setUser(null);
+    setProfile({
+      fullName: '',
+      email: '',
+      phone: '',
+      bio: '',
+      avatarUrl: '',
+      location: '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      dateJoined: new Date().toISOString(),
+    });
+
+    try {
+      localStorage.removeItem('mithra-auth');
+      // We might want to keep some persistent settings like theme, but clear user-specific data?
+      // For now, adhering to existing logic of clearing auth token only from this specific key
+    } catch { }
+
+    // 2. Background server cleanup
+    if (isSupabaseConfigured) {
+      authService.signOut().catch(err => console.warn('Background signout error:', err));
+    }
   }, []);
 
   /* ══════════════════════════════════════════════════════════════

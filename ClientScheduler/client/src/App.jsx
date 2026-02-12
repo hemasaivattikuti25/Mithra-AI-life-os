@@ -18,6 +18,8 @@ const MithraJournal = lazy(() => import('./pages/Journal'));
 const DostMode = lazy(() => import('./pages/DostMode'));
 const Settings = lazy(() => import('./pages/Settings'));
 const HabitFocusHub = lazy(() => import('./pages/HabitFocusHub'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
 const PageLoader = () => (
@@ -114,6 +116,10 @@ function AppRoutes() {
         <Route path="/habits" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><HabitFocusHub /></Suspense></Layout></ProtectedRoute>} />
         <Route path="/journal" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraJournal /></Suspense></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Settings /></Suspense></Layout></ProtectedRoute>} />
+
+        {/* Public Pages */}
+        <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
+        <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Terms /></Suspense>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
