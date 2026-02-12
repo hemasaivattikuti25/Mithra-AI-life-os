@@ -287,8 +287,8 @@ export default function LandingPage() {
                             <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                                 One app.<br />
                             </span>
-                            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-                                Zero chaos.
+                            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                                Start Living.
                             </span>
                         </h1>
 
@@ -601,11 +601,8 @@ export default function LandingPage() {
                         <div className="flex flex-col md:flex-row gap-8 items-start">
                             <div className="flex-shrink-0">
                                 {/* TODO: Replace with actual photo - upload hemasai-photo.png to /public folder */}
-                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-6xl overflow-hidden">
-                                    <img src="/hemasai-photo.png" alt="Hemasai Vattikuti" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-6xl" style={{ display: 'none' }}>
-                                        👨‍💻
-                                    </div>
+                                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center overflow-hidden border-2 border-white/10 shadow-2xl">
+                                    <img src="/hemasai-photo.png" alt="Hemasai Vattikuti" className="w-full h-full object-cover" />
                                 </div>
                             </div>
                             <div className="flex-1">
