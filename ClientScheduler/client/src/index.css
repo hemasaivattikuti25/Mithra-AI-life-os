@@ -62,8 +62,8 @@
   /* Seamless */
   --glass-border-hover: rgba(34, 211, 238, 0.1);
   /* Subtle hover hint */
-  --glass-blur: 8px;
-  --glass-blur-heavy: 12px;
+  --glass-blur: 16px;
+  --glass-blur-heavy: 32px;
 
   /* Glows */
   --merino-glow: rgba(242, 235, 227, 0.02);

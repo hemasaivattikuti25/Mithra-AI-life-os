@@ -78,9 +78,9 @@ const DesktopSidebar = () => {
             style={{
                 background: 'var(--nav-bg)',
                 backdropFilter: 'blur(20px)',
-                borderRight: '1px solid var(--glass-border)'
+                borderRight: 'none'
             }}>
-            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b border-[var(--glass-border)]">
+            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7">
                 <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)] shadow-[0_0_15px_var(--accent-glow)]">
                     <Bot className="w-5 h-5 text-[var(--accent-color)]" />
                     <div className="absolute inset-0 rounded-xl border border-[var(--accent-glow)] animate-pulse opacity-50" />
@@ -106,7 +106,7 @@ const DesktopSidebar = () => {
                 })}
             </nav>
 
-            <div className="p-3 border-t border-[var(--glass-border)] space-y-1">
+            <div className="p-3 space-y-1">
                 <NavLink to="/settings" className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
                     <Settings size={20} className="relative z-10 transition-all duration-300 text-[var(--text-dim)] group-hover:text-[var(--text-primary)]" />
                     <span className="hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 font-medium text-[var(--text-dim)] group-hover:text-[var(--text-primary)]">Settings</span>
@@ -146,7 +146,7 @@ const MobileTopBar = () => {
                     height: 'calc(56px + env(safe-area-inset-top, 0px))',
                     background: 'var(--nav-bg)',
                     backdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid var(--glass-border)'
+                    borderBottom: 'none'
                 }}>
                 <div className="flex items-center gap-3">
                     <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)]">
@@ -176,7 +176,7 @@ const MobileTopBar = () => {
                             className="absolute right-0 top-0 bottom-0 w-72 p-6 pt-20 space-y-2"
                             style={{
                                 background: 'var(--body-bg)',
-                                borderLeft: '1px solid var(--glass-border)'
+                                borderLeft: 'none'
                             }}
                             onClick={e => e.stopPropagation()}>
                             {navItems.map(item => {
@@ -190,7 +190,7 @@ const MobileTopBar = () => {
                                     </NavLink>
                                 );
                             })}
-                            <div className="pt-4 border-t border-[var(--glass-border)]">
+                            <div className="pt-4">
                                 <NavLink to="/settings" onClick={() => setDrawerOpen(false)}
                                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[var(--glass-bg-hover)]">
                                     <ProfileAvatar size="w-8 h-8" />
@@ -224,7 +224,7 @@ const MobileBottomNav = () => {
                 paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
                 background: 'var(--nav-bg)',
                 backdropFilter: 'blur(20px)',
-                borderTop: '1px solid var(--glass-border)'
+                borderTop: 'none'
             }}>
             <div className="flex items-center justify-around px-2 py-1">
                 {bottomNavItems.map(item => {

@@ -859,11 +859,10 @@ export default function DostMode() {
               className="w-full max-w-sm rounded-2xl overflow-hidden"
               style={{
                 background: 'var(--body-bg)',
-                border: '1px solid var(--glass-border)',
                 backdropFilter: 'blur(40px)',
               }}
             >
-              <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+              <div className="flex items-center justify-between p-5">
                 <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Import Files</h3>
                 <button onClick={() => setShowImportModal(false)} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
               </div>
@@ -877,7 +876,7 @@ export default function DostMode() {
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
                     background: isLight ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.1)',
-                    border: '1px solid rgba(34,197,94,0.2)',
+                    border: 'none',
                   }}
                 >
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-500/20">
@@ -894,7 +893,7 @@ export default function DostMode() {
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
                     background: isLight ? 'rgb(var(--color-accent) / 0.08)' : 'rgb(var(--color-accent) / 0.1)',
-                    border: '1px solid rgb(var(--color-accent) / 0.2)',
+                    border: 'none',
                   }}
                 >
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent-glow">
@@ -911,7 +910,7 @@ export default function DostMode() {
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
                     background: isLight ? 'rgba(168,85,247,0.08)' : 'rgba(168,85,247,0.1)',
-                    border: '1px solid rgba(168,85,247,0.2)',
+                    border: 'none',
                   }}
                 >
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-cyan-600/20">
@@ -961,7 +960,7 @@ export default function DostMode() {
               {msg.type === 'task_created' && msg.taskData && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                   className="mt-3 p-3 rounded-lg flex items-center gap-3"
-                  style={{ background: isLight ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  style={{ background: isLight ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.1)' }}>
                   <Plus size={16} className="text-green-500" />
                   <span className="text-sm font-medium">{msg.taskData.title}</span>
                   <span className="ml-auto text-[10px] text-green-400 font-bold uppercase">Added</span>
@@ -972,7 +971,7 @@ export default function DostMode() {
               {msg.type === 'habit_created' && msg.habitData && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                   className="mt-3 p-3 rounded-lg flex items-center gap-3"
-                  style={{ background: isLight ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                  style={{ background: isLight ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.1)' }}>
                   <Flame size={16} className="text-orange-500" />
                   <span className="text-sm font-medium">{msg.habitData.title}</span>
                   <span className="ml-auto text-[10px] text-accent-visor font-bold uppercase">New Habit</span>
@@ -982,7 +981,7 @@ export default function DostMode() {
               {/* WIDGET: Action Feedback (Deleted) */}
               {msg.type === 'action' && msg.actionData && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-lg flex items-center gap-3">
+                  className="mt-3 p-3 bg-red-900/20 rounded-lg flex items-center gap-3">
                   <Trash2 size={16} className="text-red-500" />
                   <span className="text-sm text-red-200 line-through">{msg.actionData.task}</span>
                   <span className="ml-auto text-xs text-red-400 font-bold uppercase">Removed</span>
@@ -1068,7 +1067,7 @@ export default function DostMode() {
                 }, 50);
               }
             }}
-            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full border border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:border-accent-visor/30 hover:bg-accent-visor/5 transition-all flex-shrink-0 font-medium"
+            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-accent-visor/5 transition-all flex-shrink-0 font-medium"
             style={{ background: 'var(--glass-bg)' }}
           >
             {q.label}

@@ -85,7 +85,6 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         style={{
           marginBottom: 'env(safe-area-inset-bottom)',
           background: 'var(--body-bg)',
-          border: '1px solid var(--glass-border)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
@@ -94,7 +93,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
           <div className="w-12 h-1.5 rounded-full bg-[var(--text-dim)] opacity-20" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/5">
+        <div className="flex-shrink-0 flex items-center justify-between p-5">
           <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-color)' }}>
               <CheckCircle2 size={18} style={{ color: 'var(--accent-color)' }} />
@@ -137,7 +136,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             <AnimatePresence>
               {showCatDropdown && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl border border-[var(--glass-border)] overflow-hidden z-20">
+                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl overflow-hidden z-20 shadow-lg">
                   {TASK_CATEGORIES.map(cat => (
                     <button key={cat.id} onClick={() => { setCategory(cat.id); setShowCatDropdown(false); }}
                       className={clsx('w-full px-4 py-3 flex items-center gap-2.5 text-sm transition-all',
@@ -210,7 +209,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         </div>
 
         {/* Footer — always visible at bottom */}
-        <div className="flex-shrink-0 p-5 border-t border-[var(--glass-border)] flex justify-end gap-3 sticky bottom-0 bg-inherit backdrop-blur-xl">
+        <div className="flex-shrink-0 p-5 flex justify-end gap-3 sticky bottom-0 bg-inherit backdrop-blur-xl">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm hover:bg-[var(--glass-bg-hover)] transition-colors opacity-60">Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
             className="px-6 py-2.5 rounded-xl bg-[var(--accent-color)] text-white font-bold text-sm hover:shadow-[0_0_20px_var(--accent-glow)] transition-all disabled:opacity-30 disabled:cursor-not-allowed">
@@ -292,11 +291,11 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="w-[380px] flex-shrink-0 border-l border-[var(--glass-border)] flex flex-col h-full"
+      className="w-[380px] flex-shrink-0 flex flex-col h-full shadow-2xl"
       style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/5">
+      <div className="flex items-center justify-between p-4">
         <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] transition-colors"><X size={20} /></button>
         <div className="flex gap-1">
           <button onClick={cyclePriority}
@@ -443,7 +442,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
         task.completed && 'opacity-45'
       )}
       style={{
-        borderLeft: `3px solid ${task.completed ? `color-mix(in srgb, ${listColor}, transparent 70%)` : `color-mix(in srgb, ${listColor}, transparent 50%)`}`,
+        borderLeft: `3px solid ${task.completed ? `color-mix(in srgb, ${listColor}, transparent 80%)` : `color-mix(in srgb, ${listColor}, transparent 60%)`}`,
         background: isSelected
           ? `color-mix(in srgb, ${listColor}, transparent 92%)`
           : task.priority === 'high'
@@ -677,7 +676,7 @@ export default function MithraTasks() {
       {/* ── MAIN TASK LIST ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header with filter chips */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5 flex-shrink-0 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
             <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[var(--text-primary)] flex-shrink-0">Tasks</h2>
             {/* Filter chips */}
@@ -739,7 +738,7 @@ export default function MithraTasks() {
         </div>
 
         {/* Add Task Button — opens rich modal */}
-        <div className="px-5 py-3 border-b border-white/5 flex-shrink-0 flex items-center gap-3">
+        <div className="px-5 py-3 flex-shrink-0 flex items-center gap-3">
           <button onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-glow)] border border-[var(--accent-color)]/25 text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/40 transition-all">
             <Plus size={16} /> New Task
@@ -754,7 +753,7 @@ export default function MithraTasks() {
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden border-b border-[var(--glass-border)]"
+              className="overflow-hidden"
             >
               <div className="p-5 space-y-4">
                 {/* Completion Rate + Quick Stats */}
