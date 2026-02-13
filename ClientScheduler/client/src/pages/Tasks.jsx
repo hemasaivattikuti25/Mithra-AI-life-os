@@ -443,9 +443,9 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
         task.completed && 'opacity-45'
       )}
       style={{
-        borderLeft: `3px solid ${listColor}${task.completed ? '30' : '50'}`,
+        borderLeft: `3px solid ${task.completed ? `color-mix(in srgb, ${listColor}, transparent 70%)` : `color-mix(in srgb, ${listColor}, transparent 50%)`}`,
         background: isSelected
-          ? `${listColor}08`
+          ? `color-mix(in srgb, ${listColor}, transparent 92%)`
           : task.priority === 'high'
             ? 'rgba(239,68,68,0.06)'
             : task.priority === 'medium'
@@ -535,7 +535,6 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
 export default function MithraTasks() {
   const { tasks, taskLists, addTask, updateTask, deleteTask, toggleTask, starTask, theme, accentColor } = useData();
   const { addToast } = useToast();
-  const isLight = theme === 'light';
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedTask, setSelectedTask] = useState(null);
@@ -706,7 +705,7 @@ export default function MithraTasks() {
                         ? 'bg-[var(--glass-bg-hover)] text-[var(--text-primary)] font-semibold'
                         : 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-60 hover:opacity-100'
                     )}
-                    style={activeFilter === list.id ? { borderColor: list.color + '50' } : {}}
+                    style={activeFilter === list.id ? { borderColor: `color-mix(in srgb, ${list.color}, transparent 50%)` } : {}}
                   >
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: list.color }} />
                     {list.name}
@@ -763,35 +762,35 @@ export default function MithraTasks() {
                   <div className="rounded-xl p-3 border border-[var(--glass-border)] cursor-default" style={{ background: 'var(--glass-bg)' }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <TrendingUp size={12} className="text-accent-visor" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>Completion</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Completion</span>
                     </div>
                     <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.completionRate}%</span>
-                    <span className="text-[10px] ml-1.5" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>{analytics.completedCount}/{analytics.totalTasks}</span>
+                    <span className="text-[10px] ml-1.5" style={{ color: 'var(--text-dim)' }}>{analytics.completedCount}/{analytics.totalTasks}</span>
                   </div>
                   <div onClick={() => setAnalyticsFilter(f => f === 'overdue' ? null : 'overdue')}
                     className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'overdue' ? 'ring-1 ring-red-400/50' : '')}
-                    style={{ background: analytics.overdue > 0 ? 'rgba(239,68,68,0.06)' : isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderColor: analyticsFilter === 'overdue' ? 'rgba(239,68,68,0.3)' : 'rgba(242,235,227,0.06)' }}>
+                    style={{ background: analytics.overdue > 0 ? 'rgba(239,68,68,0.06)' : 'var(--glass-bg)', borderColor: analyticsFilter === 'overdue' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Clock size={12} className={analytics.overdue > 0 ? 'text-red-400' : 'text-accent-visor'} />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>Overdue</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Overdue</span>
                     </div>
                     <span className={clsx('text-xl font-bold', analytics.overdue > 0 ? 'text-red-400' : '')} style={analytics.overdue === 0 ? { color: 'var(--text-primary)' } : {}}>{analytics.overdue}</span>
                   </div>
                   <div onClick={() => setAnalyticsFilter(f => f === 'high' ? null : 'high')}
                     className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'high' ? 'ring-1 ring-red-400/50' : '')}
-                    style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderColor: analyticsFilter === 'high' ? 'rgba(239,68,68,0.3)' : 'rgba(242,235,227,0.06)' }}>
+                    style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'high' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Flag size={12} className="text-red-400" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>High</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>High</span>
                     </div>
                     <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.highP}</span>
                   </div>
                   <div onClick={() => setAnalyticsFilter(f => f === 'pending' ? null : 'pending')}
                     className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'pending' ? 'ring-1 ring-accent-visor/50' : '')}
-                    style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderColor: analyticsFilter === 'pending' ? 'var(--accent-color)' : 'rgba(242,235,227,0.06)' }}>
+                    style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'pending' ? 'var(--accent-color)' : 'var(--glass-border)' }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Zap size={12} className="text-accent-visor" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>Pending</span>
+                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Pending</span>
                     </div>
                     <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.totalTasks - analytics.completedCount}</span>
                   </div>

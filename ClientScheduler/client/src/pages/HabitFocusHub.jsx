@@ -269,14 +269,14 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={() => onToggle(habit.id)}
-          className={clsx('w-9 h-9 rounded-full flex items-center justify-center transition-all border ml-1')}
+          className={clsx('w-9 h-9 rounded-full flex items-center justify-center transition-all border ml-1',
+            habit.todayDone ? 'border-transparent' : 'border-[var(--glass-border)]'
+          )}
           style={habit.todayDone ? {
             backgroundColor: habitColor,
-            borderColor: habitColor,
             color: 'var(--body-bg)',
-            boxShadow: `0 0 12px ${habitColor}`, // Hex with opacity removed, assuming solid shadow or let it be
+            boxShadow: `0 0 12px ${habitColor}`,
           } : {
-            borderColor: 'var(--glass-border)',
             color: 'var(--text-dim)',
           }}>
           {habit.todayDone ? <CheckCircle2 size={18} /> : <Circle size={18} />}

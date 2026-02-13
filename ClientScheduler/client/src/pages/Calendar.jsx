@@ -912,7 +912,7 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
         <div className="flex relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
           <div className="w-10 sm:w-16 flex-shrink-0 relative">
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-xs text-[#F2EBE3]/30 -mt-2" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px` }}>
+              <div key={hour} className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-xs text-[var(--text-dim)] opacity-30 -mt-2" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px` }}>
                 {hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}
               </div>
             ))}

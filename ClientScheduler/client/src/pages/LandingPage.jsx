@@ -83,7 +83,7 @@ export default function LandingPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+        <div className="min-h-screen bg-[var(--body-bg)] text-white font-sans selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
 
             {/* Ambient Background Glows */}
             <div className="fixed inset-0 pointer-events-none">
@@ -93,7 +93,7 @@ export default function LandingPage() {
             </div>
 
             {/* Navbar */}
-            <nav className="fixed top-0 w-full bg-[#050505]/80 backdrop-blur-xl z-50 border-b border-white/5">
+            <nav className="fixed top-0 w-full bg-[var(--nav-bg)] backdrop-blur-xl z-50 border-b border-white/5">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="relative">
@@ -134,7 +134,7 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="fixed inset-0 top-16 bg-[#0A0A0A] z-40 p-6 md:hidden border-t border-white/10"
+                        className="fixed inset-0 top-16 bg-[var(--surface-bg)] z-40 p-6 md:hidden border-t border-white/10"
                     >
                         <div className="flex flex-col gap-6 text-lg font-medium text-gray-300">
                             <a href="#features" onClick={() => setIsMenuOpen(false)} className="hover:text-cyan-400">Product</a>
@@ -211,7 +211,7 @@ export default function LandingPage() {
                     className="relative"
                 >
                     <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-cyan-800 rounded-2xl blur-lg opacity-30"></div>
-                    <div className="relative rounded-xl border border-white/10 shadow-2xl overflow-hidden bg-[#0A0A0A]">
+                    <div className="relative rounded-xl border border-white/10 shadow-2xl overflow-hidden bg-[var(--surface-bg)]">
                         <img
                             src="/assets/home_1.png"
                             alt="Mithra Dashboard"
@@ -219,7 +219,7 @@ export default function LandingPage() {
                             loading="eager"
                         />
                         {/* Overlay Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-60"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--body-bg)] via-transparent to-transparent opacity-60"></div>
                     </div>
                 </motion.div>
             </header>
@@ -258,7 +258,7 @@ export default function LandingPage() {
                             transition={{ delay: idx * 0.1 }}
                             className="group relative p-1 rounded-2xl bg-gradient-to-br from-white/10 to-transparent hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all duration-500"
                         >
-                            <div className="bg-[#0A0A0A] h-full rounded-xl p-6 overflow-hidden relative">
+                            <div className="bg-[var(--surface-bg)] h-full rounded-xl p-6 overflow-hidden relative">
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <feature.icon className="w-24 h-24 text-white" />
                                 </div>
@@ -394,7 +394,7 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 px-6 border-t border-white/10 bg-[#050505]">
+            <footer className="py-12 px-6 border-t border-white/10 bg-[var(--body-bg)]">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-2">
                         <img src="/assets/logo.png" alt="Mithra" className="w-6 h-6 rounded grayscale hover:grayscale-0 transition-all" />

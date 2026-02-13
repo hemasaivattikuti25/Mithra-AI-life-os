@@ -4,6 +4,7 @@ import { Bot, CheckCircle2, Activity, Calendar, Sparkles, ArrowRight, ChevronLef
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
+/* ═══════════ ONBOARDING SLIDES — Clean & Minimal ═══════════ */
 const SLIDES = [
   {
     icon: Bot,
@@ -66,8 +67,11 @@ export default function Onboarding({ onComplete }) {
     onComplete();
   };
 
+  /* Helper to handle colors that might be CSS vars or Hex */
+  const getSlideColor = (c) => c.startsWith('var') ? c : c;
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#050505' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'var(--body-bg)' }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
@@ -83,20 +87,23 @@ export default function Onboarding({ onComplete }) {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
             className="w-24 h-24 rounded-3xl mx-auto flex items-center justify-center"
-            style={{ background: `${slide.color}15`, border: `1px solid ${slide.color}30` }}
+            style={{
+              background: slide.color.startsWith('var') ? `color-mix(in srgb, ${slide.color}, transparent 90%)` : `${slide.color}15`,
+              border: `1px solid ${slide.color.startsWith('var') ? `color-mix(in srgb, ${slide.color}, transparent 70%)` : `${slide.color}30`}`
+            }}
           >
-            <Icon size={40} style={{ color: slide.color }} />
+            <Icon size={40} style={{ color: getSlideColor(slide.color) }} />
           </motion.div>
 
           {/* Text */}
           <div className="space-y-3">
-            <h1 className="text-3xl font-light text-white tracking-tight">
+            <h1 className="text-3xl font-light tracking-tight" style={{ color: 'var(--text-primary)' }}>
               {slide.title}
             </h1>
-            <p className="text-sm font-semibold tracking-wide uppercase" style={{ color: slide.color }}>
+            <p className="text-sm font-semibold tracking-wide uppercase" style={{ color: getSlideColor(slide.color) }}>
               {slide.subtitle}
             </p>
-            <p className="text-white/60 text-sm leading-relaxed max-w-xs mx-auto">
+            <p className="text-sm leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-dim)', opacity: 0.8 }}>
               {slide.description}
             </p>
           </div>
@@ -110,7 +117,7 @@ export default function Onboarding({ onComplete }) {
                 style={{
                   width: i === current ? 24 : 8,
                   height: 8,
-                  background: i === current ? slide.color : 'rgba(242,235,227,0.15)',
+                  background: i === current ? getSlideColor(slide.color) : 'var(--glass-border)',
                 }}
                 layout
               />
@@ -124,14 +131,16 @@ export default function Onboarding({ onComplete }) {
         {current > 0 ? (
           <button
             onClick={handleBack}
-            className="flex items-center gap-1 text-white/50 text-sm hover:text-white/80 transition-colors"
+            className="flex items-center gap-1 text-sm transition-colors"
+            style={{ color: 'var(--text-dim)', opacity: 0.5 }}
           >
             <ChevronLeft size={16} /> Back
           </button>
         ) : (
           <button
             onClick={handleSkip}
-            className="text-white/50 text-sm hover:text-white/80 transition-colors"
+            className="text-sm transition-colors"
+            style={{ color: 'var(--text-dim)', opacity: 0.5 }}
           >
             Skip
           </button>
@@ -141,7 +150,10 @@ export default function Onboarding({ onComplete }) {
           whileTap={{ scale: 0.95 }}
           onClick={handleNext}
           className="flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-semibold text-sm transition-all"
-          style={{ background: slide.color, boxShadow: `0 0 20px ${slide.color}33` }}
+          style={{
+            background: getSlideColor(slide.color),
+            boxShadow: `0 0 20px ${slide.color.startsWith('var') ? 'var(--accent-glow)' : `${slide.color}33`}`
+          }}
         >
           {isLast ? 'Get Started' : 'Next'}
           {isLast ? <Sparkles size={16} /> : <ArrowRight size={16} />}
