@@ -64,10 +64,10 @@ const ProtectedRoute = ({ children }) => {
   });
   const [timedOut, setTimedOut] = useState(false);
 
-  // Safety timeout — if auth loading takes longer than 6s, stop waiting
+  // Safety timeout — if auth loading takes longer than 10s, stop waiting
   useEffect(() => {
     if (!loading) return;
-    const timer = setTimeout(() => setTimedOut(true), 6000);
+    const timer = setTimeout(() => setTimedOut(true), 10000);
     return () => clearTimeout(timer);
   }, [loading]);
 

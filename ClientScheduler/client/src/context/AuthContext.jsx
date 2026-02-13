@@ -84,59 +84,67 @@ export function AuthProvider({ children }) {
     // Check for existing session on mount
     const initSession = async () => {
       try {
-        // PKCE OAuth callback: if ?code= is in the URL, exchange it for a session first
+        // PKCE OAuth callback: if ?code= is in the URL, let Supabase's 
+        // detectSessionInUrl handle the exchange automatically.
+        // We just clean the URL and wait for onAuthStateChange to fire.
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
 
         if (code) {
-          try {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-            // Clean the URL (remove ?code= param) and redirect to dashboard
-            window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
+          // Don't clear URL yet — Supabase's detectSessionInUrl may still need it.
+          // Try getSession with retries until the auto-exchange completes.
+          let session = null;
 
-            if (data?.session?.user) {
-              const supaUser = {
-                id: data.session.user.id,
-                email: data.session.user.email,
-                provider: 'supabase',
-              };
-              setUser(supaUser);
-
-              // Pull profile
-              try {
-                const { data: profileData } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', data.session.user.id)
-                  .single();
-                if (profileData) {
-                  setProfile(prev => ({
-                    ...prev,
-                    fullName: profileData.full_name || data.session.user.user_metadata?.full_name || prev.fullName,
-                    email: data.session.user.email,
-                    avatarUrl: profileData.avatar_url || data.session.user.user_metadata?.avatar_url || prev.avatarUrl,
-                    dateJoined: profileData.created_at || prev.dateJoined,
-                  }));
-                } else {
-                  setProfile(prev => ({
-                    ...prev,
-                    fullName: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || prev.fullName,
-                    email: data.session.user.email,
-                    avatarUrl: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || prev.avatarUrl,
-                  }));
-                }
-              } catch { }
-
-              setLoading(false);
-              // Force navigate to dashboard after successful OAuth
-              window.location.hash = '#/dashboard';
-              return; // Done — don't fall through to getSession
-            }
-            if (error) console.warn('PKCE code exchange failed:', error.message);
-          } catch (err) {
-            console.warn('PKCE code exchange error:', err);
-            window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+            try {
+              const result = await supabase.auth.getSession();
+              session = result.data?.session;
+              if (session) break;
+            } catch { }
           }
+
+          // Clean URL now (code has been consumed or is stale)
+          window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
+
+          if (session?.user) {
+            const supaUser = {
+              id: session.user.id,
+              email: session.user.email,
+              provider: 'supabase',
+            };
+            setUser(supaUser);
+
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+              if (profileData) {
+                setProfile(prev => ({
+                  ...prev,
+                  fullName: profileData.full_name || session.user.user_metadata?.full_name || prev.fullName,
+                  email: session.user.email,
+                  avatarUrl: profileData.avatar_url || session.user.user_metadata?.avatar_url || prev.avatarUrl,
+                  dateJoined: profileData.created_at || prev.dateJoined,
+                }));
+              } else {
+                setProfile(prev => ({
+                  ...prev,
+                  fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
+                  email: session.user.email,
+                  avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+                }));
+              }
+            } catch { }
+
+            setLoading(false);
+            window.location.hash = '#/dashboard';
+            return;
+          }
+          // All retries exhausted — let onAuthStateChange handle it
+          return;
         }
 
         // Normal session restore (no ?code= in URL)
