@@ -84,9 +84,27 @@ export function AuthProvider({ children }) {
     // Check for existing session on mount
     const initSession = async () => {
       try {
-        // Just get the session. Supabase handles the OAuth code exchange automatically
-        // because detectSessionInUrl is true in the client config.
-        const { data: { session } } = await supabase.auth.getSession();
+        // If we have an OAuth code, we need to wait for Supabase's auto-exchange 
+        // (which happens async) before we declare 'loading' over.
+        const hasCode = new URLSearchParams(window.location.search).has('code');
+
+        let session = null;
+
+        if (hasCode) {
+          // Poll for session - give auto-exchange time to complete
+          for (let i = 0; i < 5; i++) {
+            const { data } = await supabase.auth.getSession();
+            if (data?.session) {
+              session = data.session;
+              break;
+            }
+            await new Promise(r => setTimeout(r, 800)); // wait 800ms between checks
+          }
+        } else {
+          // Normal load
+          const { data } = await supabase.auth.getSession();
+          session = data?.session;
+        }
 
         if (session?.user) {
           const supaUser = {
