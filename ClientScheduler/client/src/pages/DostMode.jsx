@@ -806,7 +806,7 @@ export default function DostMode() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl border border-[var(--glass-border)]"
+    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl shadow-2xl"
       style={{ backgroundColor: 'var(--glass-bg)', color: 'var(--text-primary)' }}>
 
       {/* Hidden file input */}
@@ -817,7 +817,7 @@ export default function DostMode() {
         style={{ background: isLight ? 'rgb(var(--color-visor) / 0.05)' : 'rgb(var(--color-visor) / 0.08)' }} />
 
       {/* HEADER */}
-      <header className="p-4 md:p-6 border-b border-[var(--glass-border)] flex items-center justify-between z-10 backdrop-blur-md"
+      <header className="p-4 md:p-6 flex items-center justify-between z-10 backdrop-blur-md"
         style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
         <div className="flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full transition-all ${isThinking ? 'bg-accent-visor animate-ping' : isListening ? 'bg-red-500 animate-pulse' : isOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
@@ -938,10 +938,10 @@ export default function DostMode() {
             transition={{ duration: 0.3 }}
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] md:max-w-md p-4 rounded-2xl relative overflow-hidden
+            <div className={`max-w-[85%] md:max-w-md p-4 rounded-2xl relative overflow-hidden shadow-sm
               ${msg.sender === 'user'
-                ? 'border border-[var(--glass-border)]'
-                : 'border border-[var(--accent-color)]/20 text-[var(--text-primary)]'
+                ? ''
+                : 'text-[var(--text-primary)]'
               }`}
               style={
                 msg.sender === 'user'
@@ -1000,7 +1000,7 @@ export default function DostMode() {
         {/* Thinking Indicator */}
         {isThinking && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-            <div className="border border-[var(--accent-color)]/20 px-4 py-3 rounded-2xl flex items-center gap-2"
+            <div className="px-4 py-3 rounded-2xl flex items-center gap-2 shadow-sm"
               style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
               <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1013,7 +1013,7 @@ export default function DostMode() {
       </div>
 
       {/* ─── QUICK ACTIONS BAR ─── */}
-      <div className="px-4 md:px-6 py-2.5 border-t border-[var(--glass-border)] flex gap-2 overflow-x-auto scrollbar-hide z-10"
+      <div className="px-4 md:px-6 py-2.5 flex gap-2 overflow-x-auto scrollbar-hide z-10"
         style={{ backgroundColor: 'var(--glass-bg)' }}>
         {[
           { label: '📊 Summary', cmd: 'Summarize my day' },
@@ -1077,7 +1077,7 @@ export default function DostMode() {
       </div>
 
       {/* INPUT AREA */}
-      <div className="p-4 md:p-6 border-t border-[var(--glass-border)] z-20"
+      <div className="p-4 md:p-6 z-20"
         style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
         <div className="relative group flex items-center gap-2">
           <input
@@ -1087,7 +1087,7 @@ export default function DostMode() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files..."}
-            className={`w-full text-[var(--text-primary)] border rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:border-accent-visor focus:shadow-[0_0_20px_var(--accent-glow)] transition-all placeholder-[var(--text-dim)] text-sm md:text-base ${isListening ? 'border-red-500/30' : 'border-[var(--glass-border)]'}`}
+            className={`w-full text-[var(--text-primary)] rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:shadow-[0_0_20px_var(--accent-glow)] transition-all placeholder-[var(--text-dim)] text-sm md:text-base shadow-inner bg-black/5`}
             style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px) saturate(180%)' }}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">

@@ -94,7 +94,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
           <div className="w-12 h-1.5 rounded-full bg-[var(--text-dim)] opacity-20" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[var(--glass-border)]">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/5">
           <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-color)' }}>
               <CheckCircle2 size={18} style={{ color: 'var(--accent-color)' }} />
@@ -296,7 +296,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
       style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[var(--glass-border)]">
+      <div className="flex items-center justify-between p-4 border-b border-white/5">
         <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] transition-colors"><X size={20} /></button>
         <div className="flex gap-1">
           <button onClick={cyclePriority}
@@ -436,9 +436,9 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       exit={{ opacity: 0, x: -20, transition: { duration: 0.25 } }}
       onClick={() => onSelect(task)}
       className={clsx(
-        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-[var(--glass-border)]',
+        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all rounded-lg mb-1',
         isSelected
-          ? 'bg-[var(--accent-glow)]'
+          ? 'bg-[var(--accent-glow)] shadow-sm'
           : 'hover:bg-[var(--glass-bg-hover)]',
         task.completed && 'opacity-45'
       )}
@@ -677,7 +677,7 @@ export default function MithraTasks() {
       {/* ── MAIN TASK LIST ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header with filter chips */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--glass-border)] flex-shrink-0 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5 flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
             <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[var(--text-primary)] flex-shrink-0">Tasks</h2>
             {/* Filter chips */}
@@ -739,7 +739,7 @@ export default function MithraTasks() {
         </div>
 
         {/* Add Task Button — opens rich modal */}
-        <div className="px-5 py-3 border-b border-[var(--glass-border)] flex-shrink-0 flex items-center gap-3">
+        <div className="px-5 py-3 border-b border-white/5 flex-shrink-0 flex items-center gap-3">
           <button onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-glow)] border border-[var(--accent-color)]/25 text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/40 transition-all">
             <Plus size={16} /> New Task
