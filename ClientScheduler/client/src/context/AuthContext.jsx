@@ -130,6 +130,14 @@ export function AuthProvider({ children }) {
                 avatarUrl: profileData.avatar_url || prev.avatarUrl,
                 dateJoined: profileData.created_at || prev.dateJoined,
               }));
+            } else {
+              // Fallback for new OAuth users where profile might not exist yet
+              setProfile(prev => ({
+                ...prev,
+                fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
+                email: session.user.email,
+                avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+              }));
             }
           } catch (err) {
             console.warn('[Mithra] Profile fetch warning:', err);

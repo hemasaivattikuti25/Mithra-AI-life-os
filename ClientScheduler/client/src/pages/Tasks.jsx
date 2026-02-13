@@ -533,6 +533,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
    ═══════════════════════════════════════════════════════════════ */
 export default function MithraTasks() {
   const { tasks, taskLists, addTask, updateTask, deleteTask, toggleTask, starTask, theme, accentColor } = useData();
+  const isLight = theme === 'light';
   const { addToast } = useToast();
 
   const [activeFilter, setActiveFilter] = useState('all');
