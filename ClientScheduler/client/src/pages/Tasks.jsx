@@ -18,8 +18,8 @@ import ClockPicker from '../components/ClockPicker';
    ═══════════════════════════════════════════════════════════════ */
 const PRIORITY_CONFIG = {
   high: { color: 'text-red-400', bg: 'bg-red-500/10', label: 'High', icon: '!' },
-  medium: { color: 'text-yellow-400', bg: 'bg-yellow-500/10', label: 'Med' },
-  low: { color: 'text-[#F2EBE3]/40', bg: 'bg-white/5', label: 'Low' },
+  medium: { color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Med' },
+  low: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Low' },
 };
 
 const TASK_CATEGORIES = [
@@ -81,18 +81,23 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
       <motion.div initial={{ y: '100%', opacity: 0.8 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-md max-h-[85dvh] flex flex-col glass-heavy glass-shine rounded-t-2xl sm:rounded-2xl overflow-hidden"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="w-full sm:max-w-md max-h-[85dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        style={{
+          marginBottom: 'env(safe-area-inset-bottom)',
+          background: '#0A0A0A',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        }}
       >
         {/* Drag handle for mobile */}
         <div className="sm:hidden flex justify-center pt-3 pb-1" onClick={onClose}>
           <div className="w-12 h-1.5 rounded-full bg-[#F2EBE3]/20" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[#F2EBE3]/5">
-          <h3 className="text-lg font-medium text-[#F2EBE3] flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#C2185B]/10 flex items-center justify-center">
-              <CheckCircle2 size={18} className="text-[#C2185B]" />
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/5">
+          <h3 className="text-lg font-medium text-white flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+              <CheckCircle2 size={18} className="text-cyan-400" />
             </div>
             Add New Task
           </h3>
@@ -102,10 +107,10 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-5">
           {/* Task Title */}
           <div>
-            <label className="text-xs text-[#F2EBE3]/60 uppercase tracking-wider font-bold mb-2 block">Task Title</label>
+            <label className="text-xs text-white/60 uppercase tracking-wider font-bold mb-2 block">Task Title</label>
             <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="What needs to be done?"
-              className="glass-input !border-[#C2185B]/20 focus:!border-[#C2185B]/40" />
+              className="glass-input !border-white/10 focus:!border-cyan-500/40 !bg-white/5 text-white placeholder:text-white/20" />
           </div>
 
           {/* Description */}
@@ -194,8 +199,8 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
               ].map(r => (
                 <button key={r.key} onClick={() => setRecurrence(r.key)}
                   className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${recurrence === r.key
-                      ? 'border-[#C2185B]/40 bg-[#C2185B]/10 text-[#C2185B]'
-                      : 'border-white/10 text-[#F2EBE3]/30 hover:border-white/20'
+                    ? 'border-[#C2185B]/40 bg-[#C2185B]/10 text-[#C2185B]'
+                    : 'border-white/10 text-[#F2EBE3]/30 hover:border-white/20'
                     }`}>
                   {r.label}
                 </button>
@@ -287,8 +292,8 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="w-[380px] flex-shrink-0 border-l border-[#F2EBE3]/5 flex flex-col h-full"
-      style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
+      className="w-[380px] flex-shrink-0 border-l border-white/5 flex flex-col h-full"
+      style={{ background: 'rgba(10, 10, 10, 0.6)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-[#F2EBE3]/5">
@@ -319,7 +324,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
           onChange={(e) => setTitle(e.target.value)}
           onBlur={saveChanges}
           onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-          className="w-full bg-transparent text-lg font-medium text-[#F2EBE3] border-none outline-none placeholder:text-[#F2EBE3]/20"
+          className="w-full bg-transparent text-lg font-medium text-white border-none outline-none placeholder:text-white/20"
           placeholder="Task title"
         />
 
@@ -431,9 +436,9 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       exit={{ opacity: 0, x: -20, transition: { duration: 0.25 } }}
       onClick={() => onSelect(task)}
       className={clsx(
-        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-[#F2EBE3]/[0.04]',
+        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-white/[0.04]',
         isSelected
-          ? 'bg-[#C2185B]/[0.04]'
+          ? 'bg-cyan-500/[0.08]'
           : 'hover:bg-white/[0.02]',
         task.completed && 'opacity-45'
       )}
@@ -471,7 +476,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       <div className="flex-1 min-w-0">
         <div className={clsx(
           'text-[14px] leading-snug transition-all',
-          task.completed ? 'line-through text-[#F2EBE3]/30' : 'text-[#F2EBE3]/90'
+          task.completed ? 'line-through text-white/30' : 'text-white/90 group-hover:text-white'
         )}>
           {task.title}
         </div>
@@ -668,14 +673,19 @@ export default function MithraTasks() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy glass-shine"
+      className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(30px)'
+      }}
     >
       {/* ── MAIN TASK LIST ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header with filter chips */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[#F2EBE3]/5 flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
-            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[#F2EBE3] flex-shrink-0">Tasks</h2>
+            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-white flex-shrink-0">Tasks</h2>
             {/* Filter chips */}
             <div className="flex gap-1.5 ml-2 sm:ml-4">
               <button
@@ -683,8 +693,8 @@ export default function MithraTasks() {
                 className={clsx(
                   'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
                   activeFilter === 'all'
-                    ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10'
-                    : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35 hover:border-[#F2EBE3]/20'
+                    ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+                    : 'border-white/10 text-white/35 hover:border-white/20'
                 )}
               >
                 All
@@ -698,8 +708,8 @@ export default function MithraTasks() {
                     className={clsx(
                       'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 whitespace-nowrap',
                       activeFilter === list.id
-                        ? 'bg-white/[0.08] text-[#F2EBE3] font-semibold'
-                        : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35 hover:border-[#F2EBE3]/20'
+                        ? 'bg-white/[0.08] text-white font-semibold'
+                        : 'border-white/10 text-white/35 hover:border-white/20'
                     )}
                     style={activeFilter === list.id ? { borderColor: list.color + '50' } : {}}
                   >
@@ -717,8 +727,8 @@ export default function MithraTasks() {
               className={clsx(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] border transition-all uppercase tracking-wider font-medium',
                 showAnalytics
-                  ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10'
-                  : 'border-[#C2185B]/15 text-[#C2185B]/70 bg-[#C2185B]/[0.04] hover:bg-[#C2185B]/10 hover:border-[#C2185B]/25'
+                  ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+                  : 'border-cyan-500/15 text-cyan-400/70 bg-cyan-500/[0.04] hover:bg-cyan-500/10 hover:border-cyan-500/25'
               )}
             >
               <BarChart3 size={13} />
@@ -726,7 +736,7 @@ export default function MithraTasks() {
             </button>
             <button
               onClick={() => setSortBy(s => s === 'date' ? 'priority' : s === 'priority' ? 'name' : 'date')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-[#F2EBE3]/35 hover:bg-white/5 border border-[#F2EBE3]/[0.06] transition-colors uppercase tracking-wider font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-white/35 hover:bg-white/5 border border-white/[0.06] transition-colors uppercase tracking-wider font-medium"
             >
               <SortAsc size={13} />
               {sortBy}
@@ -795,7 +805,7 @@ export default function MithraTasks() {
                 {/* Weekly Bar Chart + Priority Breakdown side-by-side */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Weekly Trend */}
-                  <div className="rounded-xl p-4 border border-[#F2EBE3]/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
                     <div className="flex items-center gap-1.5 mb-3">
                       <BarChart3 size={12} className="text-accent-visor" />
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>This Week</span>
@@ -823,7 +833,7 @@ export default function MithraTasks() {
                   </div>
 
                   {/* Priority Breakdown */}
-                  <div className="rounded-xl p-4 border border-[#F2EBE3]/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
                     <div className="flex items-center gap-1.5 mb-3">
                       <Target size={12} className="text-accent-visor" />
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Priority Breakdown</span>
@@ -862,7 +872,7 @@ export default function MithraTasks() {
 
                 {/* Category completion bars */}
                 {Object.keys(analytics.categories).length > 0 && (
-                  <div className="rounded-xl p-4 border border-[#F2EBE3]/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
                     <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>By Category</span>
                     <div className="space-y-2 mt-3">
                       {Object.entries(analytics.categories).map(([cat, data]) => {
@@ -924,9 +934,9 @@ export default function MithraTasks() {
 
           {sortedActive.length === 0 && (
             <div className="text-center py-20">
-              <ListTodo size={40} className="text-[#F2EBE3]/[0.06] mx-auto mb-4" />
-              <p className="text-[#F2EBE3]/25 text-sm font-medium">No tasks yet</p>
-              <p className="text-[#F2EBE3]/15 text-xs mt-1">Add one above to get started</p>
+              <ListTodo size={40} className="text-white/[0.06] mx-auto mb-4" />
+              <p className="text-white/25 text-sm font-medium">No tasks yet</p>
+              <p className="text-white/15 text-xs mt-1">Add one above to get started</p>
             </div>
           )}
 
@@ -935,7 +945,7 @@ export default function MithraTasks() {
             <div className="border-t border-[#F2EBE3]/5">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="flex items-center gap-2 px-5 py-3 text-[13px] text-[#F2EBE3]/30 hover:text-[#F2EBE3]/50 transition-colors w-full"
+                className="flex items-center gap-2 px-5 py-3 text-[13px] text-white/30 hover:text-white/50 transition-colors w-full"
               >
                 <motion.div animate={{ rotate: showCompleted ? 90 : 0 }} transition={{ duration: 0.2 }}>
                   <ChevronRight size={16} />

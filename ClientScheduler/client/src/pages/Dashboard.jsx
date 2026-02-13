@@ -51,10 +51,10 @@ const MOOD_EMOJIS = [
 
 /* ───── habit category config ───── */
 const HABIT_CATEGORY_CONFIG = {
-  Work:        { icon: Code, color: '#3b82f6' },
-  Health:      { icon: Dumbbell, color: '#f97316' },
-  Personal:    { icon: Heart, color: '#a855f7' },
-  Learning:    { icon: BookOpen, color: '#06b6d4' },
+  Work: { icon: Code, color: '#3b82f6' },
+  Health: { icon: Dumbbell, color: '#f97316' },
+  Personal: { icon: Heart, color: '#a855f7' },
+  Learning: { icon: BookOpen, color: '#06b6d4' },
   Mindfulness: { icon: Brain, color: '#C2185B' },
 };
 
@@ -201,7 +201,7 @@ export default function Dashboard() {
           });
         }
       });
-    } catch {}
+    } catch { }
     // Also add synced task events (skip duplicates)
     if (taskCalendarEvents) {
       taskCalendarEvents.forEach(evt => {
@@ -258,7 +258,7 @@ export default function Dashboard() {
       localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-30)));
     } catch (e) {
       // Quota exceeded — trim more aggressively
-      try { localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-10))); } catch {}
+      try { localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-10))); } catch { }
     }
     setTimeout(() => setMoodSaved(true), 600);
   };
@@ -331,31 +331,27 @@ export default function Dashboard() {
       {/* ════════════════════════════════════
           GREETING CARD — Hero glass panel
           ════════════════════════════════════ */}
+      {/* ════════════════════════════════════
+          GREETING CARD — Hero glass panel
+          ════════════════════════════════════ */}
       <motion.div
         custom={0}
         variants={sectionReveal}
         initial="hidden"
         animate="visible"
-        className="relative overflow-hidden rounded-3xl p-8 md:p-10 glass-shine"
+        className="relative overflow-hidden rounded-3xl p-8 md:p-10"
         style={{
-          background: isLight
-            ? 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(252,228,236,0.3) 50%, rgba(255,255,255,0.75) 100%)'
-            : 'linear-gradient(135deg, rgba(10,8,8,0.7) 0%, rgba(74,4,4,0.15) 50%, rgba(10,8,8,0.7) 100%)',
-          backdropFilter: 'blur(40px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-          border: isLight ? '1px solid rgba(107,21,37,0.1)' : '1px solid rgba(242,235,227,0.08)',
-          boxShadow: isLight
-            ? '0 8px 40px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)'
-            : '0 16px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(242,235,227,0.05)',
+          background: 'rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(40px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
         }}
       >
         {/* ambient glows inside the card */}
-        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.06]"
-          style={{ background: isLight ? 'radial-gradient(circle, var(--accent-soft, var(--accent-color)) 0%, transparent 70%)' : 'radial-gradient(circle, var(--accent-color) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-0 left-[20%] w-56 h-56 rounded-full opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%)' }} />
-        <div className="absolute top-1/2 right-[15%] w-40 h-40 rounded-full opacity-[0.04]"
-          style={{ background: isLight ? 'radial-gradient(circle, var(--accent-soft, var(--accent-color)) 0%, transparent 70%)' : 'radial-gradient(circle, var(--accent-color) 0%, transparent 70%)' }} />
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.1]"
+          style={{ background: 'radial-gradient(circle, #22d3ee 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-[20%] w-56 h-56 rounded-full opacity-[0.08]"
+          style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)' }} />
 
         <div className="relative flex items-center justify-between flex-wrap gap-5">
           <div>
@@ -365,51 +361,46 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{
-                  background: isLight ? 'rgb(var(--color-visor) / 0.08)' : 'rgb(var(--color-visor) / 0.12)',
-                  backdropFilter: 'blur(12px)',
-                  border: isLight ? '1px solid rgb(var(--color-visor) / 0.15)' : '1px solid rgb(var(--color-visor) / 0.2)',
-                }}>
-                <GreetingIcon className="w-5 h-5 text-mithra-merino/80" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
+                <GreetingIcon className="w-5 h-5 text-cyan-400" />
               </div>
-              <span className="text-mithra-merino/45 text-sm font-medium tracking-widest uppercase">
+              <span className="text-white/40 text-sm font-medium tracking-widest uppercase">
                 {format(today, 'EEEE')}
               </span>
             </motion.div>
 
             <motion.h1
-              className="text-3xl md:text-4xl font-light text-mithra-merino tracking-tight"
+              className="text-3xl md:text-4xl font-light text-white tracking-tight"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6, ease: luxuryEase }}
             >
               {greeting.text},&nbsp;
-              <span className="font-semibold bg-gradient-to-r from-mithra-merino to-mithra-merino/70 bg-clip-text text-transparent">
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-blue-400">
                 {profile?.fullName || 'there'}
               </span>
             </motion.h1>
 
             <motion.p
-              className="text-mithra-merino/35 text-base mt-2 font-light"
+              className="text-white/35 text-base mt-2 font-light"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.6, ease: luxuryEase }}
             >
               {format(today, 'MMMM d, yyyy')} &middot;&nbsp;
-              <span className="text-accent-visor/70">{pendingCount} tasks pending</span>
+              <span className="text-cyan-400/80">{pendingCount} tasks pending</span>
             </motion.p>
           </div>
 
           {/* Date badge — frosted glass */}
           <motion.div
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl glass-card"
+            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl border border-white/5 bg-white/[0.02]"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.45, duration: 0.5, ease: luxuryEase }}
           >
-            <span className="text-accent-visor text-2xl font-bold leading-none">{format(today, 'd')}</span>
-            <span className="text-mithra-merino/45 text-xs uppercase mt-1 tracking-wider">{format(today, 'MMM')}</span>
+            <span className="text-cyan-400 text-2xl font-bold leading-none">{format(today, 'd')}</span>
+            <span className="text-white/30 text-xs uppercase mt-1 tracking-wider">{format(today, 'MMM')}</span>
           </motion.div>
         </div>
       </motion.div>
@@ -420,14 +411,14 @@ export default function Dashboard() {
       <AnimatePresence>
         {streakAlerts.length > 0 && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} custom={0.5}>
-            <GlassCard custom={0.5} className="p-4 border-l-4 border-orange-500/60">
+            <GlassCard custom={0.5} className="p-4 border-l-4 border-orange-500/60 !bg-orange-500/05">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="text-mithra-merino text-sm font-semibold mb-1">Streak Alert!</h3>
+                  <h3 className="text-white text-sm font-semibold mb-1">Streak Alert!</h3>
                   <div className="space-y-1">
                     {streakAlerts.map(a => (
-                      <p key={a.id} className="text-mithra-merino/60 text-xs">
+                      <p key={a.id} className="text-white/60 text-xs">
                         <span className="font-medium text-orange-400">{a.title}</span> — streak dropped to {a.streak} {a.streak === 0 ? '(lost!)' : `from best of ${a.bestStreak}`}
                       </p>
                     ))}
@@ -445,20 +436,20 @@ export default function Dashboard() {
       <AnimatePresence>
         {overdueTasks.length > 0 && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <GlassCard custom={0.6} className="p-4 border-l-4 border-red-500/60">
+            <GlassCard custom={0.6} className="p-4 border-l-4 border-red-500/60 !bg-red-500/05">
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="text-mithra-merino text-sm font-semibold mb-1">Overdue Tasks</h3>
+                  <h3 className="text-white text-sm font-semibold mb-1">Overdue Tasks</h3>
                   <div className="space-y-1">
                     {overdueTasks.slice(0, 5).map(t => (
-                      <p key={t.id} className="text-mithra-merino/60 text-xs">
+                      <p key={t.id} className="text-white/60 text-xs">
                         <span className="font-medium text-red-400">{t.title}</span>
-                        <span className="text-mithra-merino/30"> — due {format(new Date(t.dueDate), 'MMM d')}</span>
+                        <span className="text-white/30"> — due {format(new Date(t.dueDate), 'MMM d')}</span>
                       </p>
                     ))}
                     {overdueTasks.length > 5 && (
-                      <p className="text-mithra-merino/40 text-xs">...and {overdueTasks.length - 5} more</p>
+                      <p className="text-white/40 text-xs">...and {overdueTasks.length - 5} more</p>
                     )}
                   </div>
                 </div>
@@ -477,10 +468,10 @@ export default function Dashboard() {
         <GlassCard custom={1} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <Calendar className="w-[18px] h-[18px] text-accent-visor" />
-              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Events</h2>
+              <Calendar className="w-[18px] h-[18px] text-cyan-400" />
+              <h2 className="text-white text-lg font-semibold tracking-tight">Events</h2>
             </div>
-            <button onClick={() => navigate('/calendar')} className="text-mithra-merino/45 text-xs font-semibold hover:text-accent-visor transition-colors">{todayEvents.length} today →</button>
+            <button onClick={() => navigate('/calendar')} className="text-white/40 text-xs font-semibold hover:text-cyan-400 transition-colors">{todayEvents.length} today →</button>
           </div>
 
           {todayEvents.length > 0 ? (
@@ -491,7 +482,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -15 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
-                  className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:bg-mithra-merino/[0.03]"
+                  className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:bg-white/[0.03] border border-transparent hover:border-white/5"
                   onClick={() => {
                     if (event.source === 'task') navigate('/tasks');
                     else if (event.source === 'habit') navigate('/habits');
@@ -501,23 +492,23 @@ export default function Dashboard() {
                   <div className="w-1 h-10 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: event.color, boxShadow: `0 0 8px ${event.color}33` }} />
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-mithra-merino/90 text-sm font-medium truncate group-hover:text-mithra-merino transition-colors duration-300">
+                    <p className="text-white/90 text-sm font-medium truncate group-hover:text-white transition-colors duration-300">
                       {event.title}
                     </p>
-                    <p className="text-mithra-merino/30 text-xs mt-0.5 flex items-center gap-1.5">
+                    <p className="text-white/30 text-xs mt-0.5 flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> {event.time}
                     </p>
                   </div>
 
-                  <ArrowRight className="w-4 h-4 text-mithra-merino/0 group-hover:text-mithra-merino/30 transition-all duration-300 -translate-x-1 group-hover:translate-x-0" />
+                  <ArrowRight className="w-4 h-4 text-white/0 group-hover:text-white/30 transition-all duration-300 -translate-x-1 group-hover:translate-x-0" />
                 </motion.div>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Inbox size={24} className="text-mithra-merino/20 mb-2" />
-              <p className="text-mithra-merino/40 text-sm">No events today</p>
-              <p className="text-mithra-merino/25 text-xs mt-1">Add events in Calendar</p>
+              <Inbox size={24} className="text-white/20 mb-2" />
+              <p className="text-white/40 text-sm">No events today</p>
+              <p className="text-white/25 text-xs mt-1">Add events in Calendar</p>
             </div>
           )}
         </GlassCard>
@@ -526,11 +517,10 @@ export default function Dashboard() {
         <GlassCard custom={2} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-[18px] h-[18px] text-accent-visor" />
-              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Tasks</h2>
+              <CheckCircle2 className="w-[18px] h-[18px] text-cyan-400" />
+              <h2 className="text-white text-lg font-semibold tracking-tight">Tasks</h2>
             </div>
-            <button onClick={() => navigate('/tasks')} className="text-mithra-merino/45 text-xs font-semibold hover:text-accent-visor transition-colors px-2 py-0.5 rounded-lg"
-              style={{ background: isLight ? 'rgb(var(--color-visor) / 0.06)' : 'rgb(var(--color-visor) / 0.1)' }}>
+            <button onClick={() => navigate('/tasks')} className="text-white/40 text-xs font-semibold hover:text-cyan-400 transition-colors px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10">
               {doneCount}/{dashTasks.length} →
             </button>
           </div>
@@ -542,14 +532,14 @@ export default function Dashboard() {
                 initial={{ opacity: 0, x: 15 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
-                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-mithra-merino/[0.03] transition-all duration-300"
+                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.03] transition-all duration-300 border border-transparent hover:border-white/5"
                 style={{
                   background: task.priority === 'HIGH'
-                    ? (isLight ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)')
+                    ? 'rgba(239,68,68,0.08)'
                     : task.priority === 'MED'
-                      ? (isLight ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.07)')
+                      ? 'rgba(245,158,11,0.07)'
                       : task.priority === 'LOW'
-                        ? (isLight ? 'rgba(34,197,94,0.05)' : 'rgba(34,197,94,0.06)')
+                        ? 'rgba(34,197,94,0.06)'
                         : 'transparent',
                 }}
               >
@@ -558,17 +548,17 @@ export default function Dashboard() {
                   className="flex-shrink-0 transition-transform duration-200 active:scale-90"
                 >
                   {task.done ? (
-                    <CheckCircle2 className="w-5 h-5 text-accent-visor drop-shadow-[0_0_4px_rgba(194,24,91,0.3)]" />
+                    <CheckCircle2 className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]" />
                   ) : (
-                    <Circle className="w-5 h-5 text-mithra-merino/20 group-hover:text-mithra-merino/45 transition-colors duration-300" />
+                    <Circle className="w-5 h-5 text-white/20 group-hover:text-white/45 transition-colors duration-300" />
                   )}
                 </button>
 
                 <span className={clsx(
                   'flex-1 text-sm transition-all duration-300 truncate',
                   task.done
-                    ? 'line-through text-mithra-merino/20'
-                    : 'text-mithra-merino/85 group-hover:text-mithra-merino'
+                    ? 'line-through text-white/20'
+                    : 'text-white/85 group-hover:text-white'
                 )}>
                   {task.title}
                 </span>
@@ -579,12 +569,8 @@ export default function Dashboard() {
 
                 <span className={clsx(
                   'text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 uppercase tracking-wider',
-                  task.priority === 'HIGH' ? 'text-red-400' : 'text-amber-400'
-                )}
-                  style={{
-                    background: task.priority === 'HIGH' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
-                  }}
-                >
+                  task.priority === 'HIGH' ? 'text-red-400 bg-red-500/10' : 'text-amber-400 bg-amber-500/10'
+                )}>
                   {task.priority}
                 </span>
               </motion.div>
@@ -596,11 +582,10 @@ export default function Dashboard() {
         <GlassCard custom={3} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <Flame className="w-[18px] h-[18px] text-accent-visor" />
-              <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">Habits</h2>
+              <Flame className="w-[18px] h-[18px] text-cyan-400" />
+              <h2 className="text-white text-lg font-semibold tracking-tight">Habits</h2>
             </div>
-            <button onClick={() => navigate('/habits')} className="text-mithra-merino/50 text-xs font-semibold hover:text-accent-visor transition-colors px-2 py-0.5 rounded-lg"
-              style={{ background: isLight ? 'rgb(var(--color-visor) / 0.06)' : 'rgb(var(--color-visor) / 0.1)' }}>
+            <button onClick={() => navigate('/habits')} className="text-white/50 text-xs font-semibold hover:text-cyan-400 transition-colors px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10">
               {habits ? habits.filter(h => h.todayDone).length : 0}/{habits ? habits.length : 0} →
             </button>
           </div>
@@ -617,12 +602,12 @@ export default function Dashboard() {
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
                   className={clsx(
                     'flex items-center gap-3 p-3 rounded-xl transition-all duration-300',
-                    habit.todayDone ? 'opacity-70' : 'hover:bg-mithra-merino/[0.03]'
+                    habit.todayDone ? 'opacity-70' : 'hover:bg-white/[0.03]'
                   )}
                   style={{
                     background: habit.todayDone
-                      ? (isLight ? `${habit.color || catConfig.color}08` : `${habit.color || catConfig.color}12`)
-                      : (isLight ? `${habit.color || catConfig.color}05` : `${habit.color || catConfig.color}08`),
+                      ? `${habit.color || catConfig.color}12`
+                      : `${habit.color || catConfig.color}08`,
                     borderLeft: `3px solid ${habit.color || catConfig.color}${habit.todayDone ? '60' : '30'}`,
                   }}
                 >
@@ -634,7 +619,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <span className={clsx(
                       'text-sm font-medium transition-all truncate block',
-                      habit.todayDone ? 'line-through text-mithra-merino/35' : 'text-mithra-merino/85'
+                      habit.todayDone ? 'line-through text-white/35' : 'text-white/85'
                     )}>
                       {habit.title}
                     </span>
@@ -649,17 +634,16 @@ export default function Dashboard() {
                     onClick={() => toggleHabit(habit.id)}
                     className={clsx('w-7 h-7 rounded-full flex items-center justify-center transition-all border flex-shrink-0',
                       habit.todayDone
-                        ? 'bg-accent-visor border-accent-visor text-black shadow-[0_0_12px_var(--accent-glow)]'
-                        : 'border-mithra-merino/15 text-mithra-merino/30 hover:border-accent-visor/50 hover:text-accent-visor'
+                        ? 'bg-cyan-500 border-cyan-500 text-black shadow-[0_0_12px_rgba(34,211,238,0.5)]'
+                        : 'border-white/15 text-white/30 hover:border-cyan-400/50 hover:text-cyan-400'
                     )}
-                    style={habit.todayDone ? { backgroundColor: 'var(--accent-color)', borderColor: 'var(--accent-color)' } : {}}
                   >
                     {habit.todayDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                   </motion.button>
                 </motion.div>
               );
             }) : (
-              <p className="text-mithra-merino/40 text-sm text-center py-8">
+              <p className="text-white/40 text-sm text-center py-8">
                 No habits yet — create some in the Focus Hub!
               </p>
             )}
@@ -672,8 +656,8 @@ export default function Dashboard() {
           ════════════════════════════════════ */}
       <GlassCard custom={4} className="p-6 md:p-8">
         <div className="flex items-center gap-2.5 mb-6">
-          <Sparkles className="w-[18px] h-[18px] text-accent-visor" />
-          <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+          <Sparkles className="w-[18px] h-[18px] text-cyan-400" />
+          <h2 className="text-white text-lg font-semibold tracking-tight">
             How are you feeling?
           </h2>
         </div>
@@ -691,16 +675,16 @@ export default function Dashboard() {
               className={clsx(
                 'flex flex-col items-center gap-2.5 p-4 md:p-5 rounded-2xl transition-all duration-300',
                 selectedMood?.value === mood.value
-                  ? 'glass-tab-active shadow-lg'
-                  : 'hover:bg-mithra-merino/[0.03]'
+                  ? 'bg-white/10 shadow-lg border border-white/10'
+                  : 'hover:bg-white/[0.03]'
               )}
             >
               <span className="text-4xl md:text-5xl select-none drop-shadow-lg">{mood.emoji}</span>
               <span className={clsx(
                 'text-xs font-medium transition-colors duration-300',
                 selectedMood?.value === mood.value
-                  ? 'text-mithra-merino'
-                  : 'text-mithra-merino/35'
+                  ? 'text-white'
+                  : 'text-white/35'
               )}>
                 {mood.label}
               </span>
@@ -714,14 +698,10 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 15, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="mt-5 p-4 rounded-xl text-center"
-              style={{
-                background: isLight ? 'rgba(var(--color-visor), 0.04)' : 'rgba(var(--color-visor), 0.08)',
-                border: '1px solid rgba(var(--color-visor), 0.12)',
-              }}
+              className="mt-5 p-4 rounded-xl text-center bg-cyan-500/10 border border-cyan-500/20"
             >
-              <p className="text-accent-visor/70 text-sm font-medium mb-1">✓ Mood logged</p>
-              <p className="text-mithra-merino/60 text-sm leading-relaxed italic">
+              <p className="text-cyan-400 text-sm font-medium mb-1">✓ Mood logged</p>
+              <p className="text-white/60 text-sm leading-relaxed italic">
                 "{selectedMood.message}"
               </p>
             </motion.div>
@@ -752,21 +732,21 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 + i * 0.07, duration: 0.5, ease: luxuryEase }}
-              className="rounded-2xl p-5 glass-card glass-shine group hover:scale-[1.02] transition-transform duration-300"
+              className="rounded-2xl p-5 group hover:scale-[1.02] transition-transform duration-300"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                backdropFilter: 'blur(10px)'
+              }}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{
-                    background: isLight ? 'rgb(var(--color-visor) / 0.08)' : 'rgb(var(--color-visor) / 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: isLight ? '1px solid rgb(var(--color-visor) / 0.15)' : '1px solid rgb(var(--color-visor) / 0.2)',
-                  }}>
-                  <Icon className="w-4 h-4 text-accent-visor" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
+                  <Icon className="w-4 h-4 text-cyan-400" />
                 </div>
-                <span className="text-accent-visor text-xs font-semibold">{stat.change}</span>
+                <span className="text-cyan-400 text-xs font-semibold">{stat.change}</span>
               </div>
-              <p className="text-mithra-merino text-2xl font-bold tracking-tight">{stat.value}</p>
-              <p className="text-mithra-merino/50 text-xs mt-1 font-medium">{stat.label}</p>
+              <p className="text-white text-2xl font-bold tracking-tight">{stat.value}</p>
+              <p className="text-white/50 text-xs mt-1 font-medium">{stat.label}</p>
             </motion.div>
           );
         })}

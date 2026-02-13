@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ChevronLeft, Check, AlertCircle, Loader2, Sparkles, Shield, Zap, Calendar, Heart, Brain, Bot, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 /* ═══════════════════════════════════════════════════════════════
    MITHRA AUTH — Premium Dark/Cyan Aesthetic
@@ -106,6 +107,7 @@ const features = [
 ];
 
 export default function AuthPage({ isPasswordReset = false }) {
+  const navigate = useNavigate();
   const { signIn, signUp, resetPassword, confirmResetPassword, signInWithGoogle } = useAuth();
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -198,10 +200,16 @@ export default function AuthPage({ isPasswordReset = false }) {
     if (!validate()) return;
     setLoading(true); setGlobalError('');
     try {
-      if (view === 'login') await signIn({ email, password });
-      else if (view === 'signup') await signUp({ fullName, email, password });
-      else if (view === 'forgot') { await resetPassword(email); setView('resetSent'); }
-      else if (view === 'resetNew') {
+      if (view === 'login') {
+        await signIn({ email, password });
+        navigate('/dashboard');
+      } else if (view === 'signup') {
+        await signUp({ fullName, email, password });
+        navigate('/dashboard');
+      } else if (view === 'forgot') {
+        await resetPassword(email);
+        setView('resetSent');
+      } else if (view === 'resetNew') {
         const resetEmail = localStorage.getItem('mithra-reset-email') || email;
         await confirmResetPassword(resetEmail, newPassword);
         setView('resetSuccess');
@@ -216,6 +224,7 @@ export default function AuthPage({ isPasswordReset = false }) {
     setGlobalError('');
     try {
       await signInWithGoogle();
+      navigate('/dashboard');
     } catch (err) {
       setGlobalError(getReadableError(err.message));
     } finally {

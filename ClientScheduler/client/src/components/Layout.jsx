@@ -67,22 +67,27 @@ const bottomNavItems = [
 /* ═══════════════════════════════════════════════════════════════
    DESKTOP SIDEBAR — Hidden on mobile (< md)
    ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP SIDEBAR — Hidden on mobile (< md)
+   ═══════════════════════════════════════════════════════════════ */
 const DesktopSidebar = () => {
     const location = useLocation();
-    const { theme } = useData();
-    const isLight = theme === 'light';
 
     return (
-        <aside className="hidden md:flex w-20 lg:w-64 h-screen fixed left-0 top-0 z-30 flex-col glass-heavy transition-all duration-400">
-            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b" style={{ borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.06)' }}>
-                <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center ${isLight ? '' : 'bg-accent-visor/90'}`} style={{ backgroundColor: isLight ? 'var(--accent-color)' : undefined, boxShadow: '0 0 20px var(--accent-glow)' }}>
-                    <Bot className="w-5 h-5 text-white" />
-                    <div className="absolute inset-0 rounded-xl border animate-ping opacity-20" style={{ borderColor: 'var(--accent-color)' }} />
+        <aside className="hidden md:flex w-20 lg:w-64 h-screen fixed left-0 top-0 z-30 flex-col transition-all duration-400"
+            style={{
+                background: 'rgba(5, 5, 5, 0.8)',
+                backdropFilter: 'blur(20px)',
+                borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b border-white/5">
+                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                    <Bot className="w-5 h-5 text-cyan-400" />
+                    <div className="absolute inset-0 rounded-xl border border-cyan-500/30 animate-pulse opacity-50" />
                 </div>
                 <div className="hidden lg:block ml-3">
-                    <h1 className="font-sans font-bold text-lg tracking-wide" style={{ color: 'var(--text-primary)' }}>Mithra</h1>
-                    <p className="text-[10px] font-medium -mt-0.5 tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Life OS</p>
-
+                    <h1 className="font-sans font-bold text-lg tracking-wide text-white">Mithra</h1>
+                    <p className="text-[10px] font-medium -mt-0.5 tracking-widest uppercase text-cyan-400/60">Life OS</p>
                 </div>
             </div>
 
@@ -92,34 +97,26 @@ const DesktopSidebar = () => {
                     return (
                         <NavLink key={item.path} to={item.path}
                             className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
-                            {isActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl glass-tab-active" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            {isActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full" style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 8px var(--accent-glow)' }} transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            <item.icon size={20} className={`relative z-10 transition-all duration-300 ${isActive ? 'drop-shadow-[0_0_6px_var(--accent-glow)]' : isLight ? 'text-gray-400 group-hover:text-gray-600' : 'text-mithra-merino/40 group-hover:text-mithra-merino/80'}`} style={isActive ? { color: 'var(--accent-color)' } : {}} />
-                            <span className={`hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 ${isActive ? 'font-semibold' : 'font-medium'}`} style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-dim)' }}>{item.label}</span>
-                            {!isActive && (<div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isLight ? '' : 'bg-mithra-merino/0 group-hover:bg-mithra-merino/[0.03]'}`} />)}
+                            {isActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl bg-white/5 border border-white/5" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
+                            {isActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
+                            <item.icon size={20} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]' : 'text-white/40 group-hover:text-white/80'}`} />
+                            <span className={`hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 ${isActive ? 'font-semibold text-white' : 'font-medium text-white/50 group-hover:text-white/80'}`}>{item.label}</span>
                         </NavLink>
                     );
                 })}
             </nav>
 
-            <div className="p-3 border-t space-y-1" style={{ borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.06)' }}>
-                {(() => {
-                    const isSettingsActive = location.pathname === '/settings';
-                    return (
-                        <NavLink to="/settings" className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
-                            {isSettingsActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl glass-tab-active" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            {isSettingsActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full" style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 8px var(--accent-glow)' }} transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            <Settings size={20} className={`relative z-10 transition-all duration-300 ${isSettingsActive ? 'drop-shadow-[0_0_6px_var(--accent-glow)]' : isLight ? 'text-gray-400 group-hover:text-gray-600' : 'text-mithra-merino/40 group-hover:text-mithra-merino/80'}`} style={isSettingsActive ? { color: 'var(--accent-color)' } : {}} />
-                            <span className={`hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 ${isSettingsActive ? 'font-semibold' : 'font-medium'}`} style={{ color: isSettingsActive ? 'var(--text-primary)' : 'var(--text-dim)' }}>Settings</span>
-                            {!isSettingsActive && (<div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isLight ? '' : 'bg-mithra-merino/0 group-hover:bg-mithra-merino/[0.03]'}`} />)}
-                        </NavLink>
-                    );
-                })()}
-                <NavLink to="/settings" className="flex items-center p-3 rounded-xl glass-card cursor-pointer group">
+            <div className="p-3 border-t border-white/5 space-y-1">
+                <NavLink to="/settings" className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
+                    <Settings size={20} className="relative z-10 transition-all duration-300 text-white/40 group-hover:text-white/80" />
+                    <span className="hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 font-medium text-white/50 group-hover:text-white/80">Settings</span>
+                </NavLink>
+
+                <NavLink to="/settings" className="flex items-center p-3 rounded-xl cursor-pointer group hover:bg-white/5 border border-transparent hover:border-white/5 transition-all">
                     <ProfileAvatar />
                     <div className="hidden lg:block ml-3">
-                        <div className="text-sm font-medium transition-colors" style={{ color: 'var(--text-primary)' }}><ProfileName /></div>
-                        <div className="text-[10px] font-medium" style={{ color: 'var(--text-dim)' }}>Pro Workspace</div>
+                        <div className="text-sm font-medium transition-colors text-white group-hover:text-cyan-100"><ProfileName /></div>
+                        <div className="text-[10px] font-medium text-white/40">Pro Workspace</div>
                     </div>
                 </NavLink>
                 <div className="hidden lg:flex justify-center pt-1">
@@ -133,31 +130,38 @@ const DesktopSidebar = () => {
 /* ═══════════════════════════════════════════════════════════════
    MOBILE TOP BAR — Visible only on mobile (< md)
    ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE TOP BAR — Visible only on mobile (< md)
+   ═══════════════════════════════════════════════════════════════ */
 const MobileTopBar = () => {
-    const { theme } = useData();
-    const isLight = theme === 'light';
     const location = useLocation();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const currentPage = [...navItems, { path: '/settings', label: 'Settings' }].find(i => i.path === location.pathname)?.label || 'Mithra';
 
     return (
         <>
-            <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 glass-heavy"
-                style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)', height: 'calc(56px + env(safe-area-inset-top, 0px))', borderBottom: `1px solid ${isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.06)'}` }}>
+            <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4"
+                style={{
+                    paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)',
+                    height: 'calc(56px + env(safe-area-inset-top, 0px))',
+                    background: 'rgba(5, 5, 5, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
                 <div className="flex items-center gap-3">
-                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 12px var(--accent-glow)' }}>
-                        <Bot className="w-4 h-4 text-white" />
+                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
+                        <Bot className="w-4 h-4 text-cyan-400" />
                     </div>
-                    <h1 className="font-bold text-sm tracking-wide" style={{ color: 'var(--text-primary)' }}>{currentPage}</h1>
+                    <h1 className="font-bold text-sm tracking-wide text-white">{currentPage}</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <NavLink to="/settings" onClick={() => hapticLight()}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center glass-card">
-                        <Settings size={18} style={{ color: location.pathname === '/settings' ? 'var(--accent-color)' : 'var(--text-dim)' }} />
+                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/5 text-white/60">
+                        <Settings size={18} />
                     </NavLink>
                     <button onClick={() => { setDrawerOpen(!drawerOpen); hapticLight(); }}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center glass-card">
-                        {drawerOpen ? <X size={18} style={{ color: 'var(--text-primary)' }} /> : <Menu size={18} style={{ color: 'var(--text-dim)' }} />}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/5">
+                        {drawerOpen ? <X size={18} className="text-white" /> : <Menu size={18} className="text-white/60" />}
                     </button>
                 </div>
             </div>
@@ -166,29 +170,33 @@ const MobileTopBar = () => {
                 {drawerOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="md:hidden fixed inset-0 z-50" onClick={() => setDrawerOpen(false)}>
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
                         <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
                             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                            className="absolute right-0 top-0 bottom-0 w-72 glass-heavy p-6 pt-20 space-y-2"
+                            className="absolute right-0 top-0 bottom-0 w-72 p-6 pt-20 space-y-2"
+                            style={{
+                                background: '#0A0A0A',
+                                borderLeft: '1px solid rgba(255,255,255,0.08)'
+                            }}
                             onClick={e => e.stopPropagation()}>
                             {navItems.map(item => {
                                 const isActive = location.pathname === item.path;
                                 return (
                                     <NavLink key={item.path} to={item.path}
                                         onClick={() => { setDrawerOpen(false); hapticLight(); }}
-                                        className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'glass-tab-active' : 'hover:bg-white/[0.03]'}`}>
-                                        <item.icon size={20} style={{ color: isActive ? 'var(--accent-color)' : 'var(--text-dim)' }} />
-                                        <span className="text-sm font-medium" style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-dim)' }}>{item.label}</span>
+                                        className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-cyan-500/10 border border-cyan-500/20' : 'hover:bg-white/[0.03] border border-transparent'}`}>
+                                        <item.icon size={20} className={isActive ? 'text-cyan-400' : 'text-white/40'} />
+                                        <span className="text-sm font-medium" style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.5)' }}>{item.label}</span>
                                     </NavLink>
                                 );
                             })}
-                            <div className="pt-4 border-t" style={{ borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.06)' }}>
+                            <div className="pt-4 border-t border-white/5">
                                 <NavLink to="/settings" onClick={() => setDrawerOpen(false)}
                                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/[0.03]">
                                     <ProfileAvatar size="w-8 h-8" />
                                     <div>
-                                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}><ProfileName /></div>
-                                        <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>Settings & Profile</div>
+                                        <div className="text-sm font-medium text-white"><ProfileName /></div>
+                                        <div className="text-[10px] text-white/40">Settings & Profile</div>
                                     </div>
                                 </NavLink>
                             </div>
@@ -204,12 +212,20 @@ const MobileTopBar = () => {
 /* ═══════════════════════════════════════════════════════════════
    MOBILE BOTTOM NAV — Android-style bottom navigation
    ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAV — Android-style bottom navigation
+   ═══════════════════════════════════════════════════════════════ */
 const MobileBottomNav = () => {
     const location = useLocation();
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-heavy"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)', borderTop: '1px solid rgba(242,235,227,0.06)' }}>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
+            style={{
+                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
+                background: 'rgba(5, 5, 5, 0.85)',
+                backdropFilter: 'blur(20px)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
             <div className="flex items-center justify-around px-2 py-1">
                 {bottomNavItems.map(item => {
                     const isActive = location.pathname === item.path;
@@ -218,12 +234,11 @@ const MobileBottomNav = () => {
                             className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl relative transition-all min-w-[56px]">
                             {isActive && (
                                 <motion.div layoutId="bottom-nav-pill"
-                                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-1 rounded-full"
-                                    style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 8px var(--accent-glow)' }}
+                                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
                             )}
-                            <item.icon size={20} className="transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'var(--text-dim)' }} />
-                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'var(--text-dim)' }}>{item.label}</span>
+                            <item.icon size={20} className="transition-all" style={{ color: isActive ? '#22d3ee' : 'rgba(255,255,255,0.4)' }} />
+                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? '#22d3ee' : 'rgba(255,255,255,0.4)' }}>{item.label}</span>
                         </NavLink>
                     );
                 })}
@@ -235,30 +250,24 @@ const MobileBottomNav = () => {
 /* ═══════════════════════════════════════════════════════════════
    LAYOUT — Responsive: Sidebar on desktop, Bottom bar on mobile
    ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT — Responsive: Sidebar on desktop, Bottom bar on mobile
+   ═══════════════════════════════════════════════════════════════ */
 export const Layout = ({ children }) => {
     const { theme } = useData();
     const isLight = theme === 'light';
 
     return (
-        <div className="min-h-screen font-sans transition-all duration-400" style={{ backgroundColor: 'var(--body-bg)', color: 'var(--text-primary)' }}>
+        <div className="min-h-screen font-sans transition-all duration-400 text-white selection:bg-cyan-500/30 selection:text-cyan-200" style={{ backgroundColor: '#050505' }}>
             <NetworkStatus />
             <DesktopSidebar />
             <MobileTopBar />
             <main className="md:ml-20 lg:ml-64 min-h-screen relative overflow-x-hidden pt-14 md:pt-0 pb-20 md:pb-0">
                 <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                    {isLight ? (
-                        <>
-                            <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[150px]" style={{ background: 'rgb(var(--color-visor) / 0.03)' }} />
-                            <div className="absolute bottom-[-10%] left-[15%] w-[500px] h-[500px] rounded-full blur-[130px]" style={{ background: 'rgb(var(--color-visor) / 0.04)' }} />
-                            <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] bg-amber-200/[0.03] rounded-full blur-[120px]" />
-                        </>
-                    ) : (
-                        <>
-                            <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] bg-accent-wine/8 rounded-full blur-[150px]" />
-                            <div className="absolute bottom-[-10%] left-[15%] w-[500px] h-[500px] bg-accent-visor/[0.04] rounded-full blur-[130px]" />
-                            <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] bg-mithra-merino/[0.02] rounded-full blur-[120px]" />
-                        </>
-                    )}
+                    {/* Deep Black / Blue Glow Background */}
+                    <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] opacity-40 animate-pulse"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/05 rounded-full blur-[120px] opacity-30"></div>
+                    <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-indigo-600/05 rounded-full blur-[150px] opacity-20"></div>
                 </div>
                 <motion.div className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, ease: luxuryEase }}>
                     {children}
