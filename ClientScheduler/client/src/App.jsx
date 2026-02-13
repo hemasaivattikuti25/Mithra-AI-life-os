@@ -127,6 +127,19 @@ const GlobalSearch = () => {
 };
 
 function AppRoutes() {
+  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Global redirect safety net: if authenticated and on public page, go to dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      if (location.pathname === '/' || location.pathname === '/auth') {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, loading, location, navigate]);
+
   return (
     <>
       <BackButtonHandler />
