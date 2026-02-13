@@ -30,11 +30,11 @@ const toRoman = (num) => {
 };
 
 /* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
+/* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
 const Heatmap = ({ habits, accentColor }) => {
   const today = new Date();
   const [hoveredDay, setHoveredDay] = useState(null);
   const { theme } = useData();
-  const isLight = theme === 'light';
   const startDate = startOfYear(today);
   const days = useMemo(() => eachDayOfInterval({ start: startDate, end: today }), []);
   const totalDaysInYear = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -48,39 +48,8 @@ const Heatmap = ({ habits, accentColor }) => {
   }, [days]);
 
   // Accent-derived color levels (matching theme)
-  const hexToRgb = (hex) => {
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
-  };
-
-  const THEME_COLORS = useMemo(() => {
-    const accent = accentColor?.color || '#22d3ee';
-    const { r, g, b } = hexToRgb(accent.startsWith('var') ? '#22d3ee' : accent);
-    return {
-      dark: {
-        empty: 'rgba(255,255,255,0.03)',
-        emptyHover: 'rgba(255,255,255,0.08)',
-        levels: [
-          `rgba(${r},${g},${b},0.2)`,
-          `rgba(${r},${g},${b},0.4)`,
-          `rgba(${r},${g},${b},0.65)`,
-          `rgba(${r},${g},${b},0.9)`,
-        ],
-      },
-      light: {
-        empty: 'rgba(0,0,0,0.04)',
-        emptyHover: 'rgba(0,0,0,0.08)',
-        levels: [
-          `rgba(${r},${g},${b},0.15)`,
-          `rgba(${r},${g},${b},0.35)`,
-          `rgba(${r},${g},${b},0.55)`,
-          `rgba(${r},${g},${b},0.8)`,
-        ],
-      },
-    };
-  }, [accentColor]);
-
-  const colors = isLight ? THEME_COLORS.light : THEME_COLORS.dark;
+  // We use opacity levels applied to the base accent color
+  const OPACITY_LEVELS = [0.2, 0.4, 0.65, 0.9];
 
   // Build map: dateStr -> completion ratio (for ALL 365 days)
   const completionMap = useMemo(() => {
@@ -95,12 +64,12 @@ const Heatmap = ({ habits, accentColor }) => {
     return map;
   }, [habits, days]);
 
-  const getIntensityColor = (ratio) => {
-    if (!ratio || ratio <= 0) return null;
-    if (ratio <= 0.25) return colors.levels[0];
-    if (ratio <= 0.5) return colors.levels[1];
-    if (ratio <= 0.75) return colors.levels[2];
-    return colors.levels[3];
+  const getOpacity = (ratio) => {
+    if (!ratio || ratio <= 0) return 0.05; // Empty state
+    if (ratio <= 0.25) return OPACITY_LEVELS[0];
+    if (ratio <= 0.5) return OPACITY_LEVELS[1];
+    if (ratio <= 0.75) return OPACITY_LEVELS[2];
+    return OPACITY_LEVELS[3];
   };
 
   const totalActiveDays = Object.keys(completionMap).length;
@@ -183,29 +152,29 @@ const Heatmap = ({ habits, accentColor }) => {
                 if (!day) return <div key={`empty-${di}`} className="w-[11px] h-[11px] sm:w-3 sm:h-3" />;
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const ratio = completionMap[dateStr] || 0;
-                const cellColor = getIntensityColor(ratio);
+                const opacity = getOpacity(ratio);
+                const isAcitve = ratio > 0;
                 const isH = hoveredDay && isSameDay(hoveredDay, day);
+
                 return (
                   <div key={day.toISOString()} onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)} className="relative">
                     <div
                       className="w-[11px] h-[11px] sm:w-3 sm:h-3 rounded-[2px] sm:rounded-[3px] transition-all cursor-pointer"
                       style={{
-                        backgroundColor: cellColor || colors.empty,
+                        backgroundColor: isAcitve ? 'var(--accent-color)' : 'var(--text-dim)',
+                        opacity: opacity,
                         outline: isH ? `2px solid var(--accent-color)` : 'none',
                         outlineOffset: isH ? '-1px' : '0',
                       }}
                     />
                     {isH && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap z-50 pointer-events-none"
-                        style={{ background: 'var(--text-primary)', color: 'var(--body-bg)' }}>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap z-50 pointer-events-none shadow-lg glass-heavy border border-white/10"
+                        style={{ background: 'var(--surface-bg)', color: 'var(--text-primary)' }}>
                         <span className="font-bold">
                           {ratio >= 1 ? 'All habits done' : ratio > 0 ? `${Math.round(ratio * 100)}% completed` : 'No activity'}
                         </span>
-                        <span className="ml-1.5 opacity-70">{format(day, 'MMM d, yyyy')}</span>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style={{
-                          borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
-                          borderTop: `4px solid var(--text-primary)`
-                        }} />
+                        <span className="ml-1.5 opacity-70 border-l border-white/10 pl-1.5">{format(day, 'MMM d, yyyy')}</span>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-[var(--surface-bg)]" />
                       </div>
                     )}
                   </div>
@@ -219,9 +188,9 @@ const Heatmap = ({ habits, accentColor }) => {
       {/* Legend — GitHub style */}
       <div className="flex items-center justify-end gap-1.5 mt-3 text-[11px] text-[var(--text-dim)]">
         <span>Less</span>
-        <div className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: colors.empty }} />
-        {colors.levels.map((c, i) => (
-          <div key={i} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: c }} />
+        <div className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: 'var(--text-dim)', opacity: 0.05 }} />
+        {OPACITY_LEVELS.map((op, i) => (
+          <div key={i} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: 'var(--accent-color)', opacity: op }} />
         ))}
         <span>More</span>
       </div>
@@ -251,12 +220,12 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
       transition={{ delay: index * 0.05, duration: 0.4, ease: luxuryEase }}
       className={clsx('glass-card glass-shine rounded-xl p-4 flex items-center gap-4 group transition-all relative', habit.todayDone && 'opacity-60')}
       style={{
-        background: `linear-gradient(135deg, ${habitColor}18, ${habitColor}08, transparent)`,
-        borderLeft: `3px solid ${habitColor}${habit.todayDone ? '80' : '50'}`,
+        background: `linear-gradient(135deg, color-mix(in srgb, ${habitColor}, transparent 85%), color-mix(in srgb, ${habitColor}, transparent 95%), transparent)`,
+        borderLeft: `3px solid ${habitColor}`,
       }}
     >
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: `${habitColor}15`, border: `1px solid ${habitColor}25` }}>
+        style={{ background: `color-mix(in srgb, ${habitColor}, transparent 85%)`, border: `1px solid color-mix(in srgb, ${habitColor}, transparent 85%)` }}>
         <Icon size={20} style={{ color: habitColor }} />
       </div>
 
@@ -278,7 +247,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
         {/* Streak goal progress bar */}
         {habit.streakGoal > 0 && (
           <div className="mt-1.5 flex items-center gap-2">
-            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(242,235,227,0.06)' }}>
+            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--glass-border)' }}>
               <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${goalProgress}%` }} transition={{ duration: 0.5 }}
                 style={{ backgroundColor: habitColor }} />
             </div>
@@ -305,7 +274,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
             backgroundColor: habitColor,
             borderColor: habitColor,
             color: 'var(--body-bg)',
-            boxShadow: `0 0 12px ${habitColor}40`,
+            boxShadow: `0 0 12px ${habitColor}`, // Hex with opacity removed, assuming solid shadow or let it be
           } : {
             borderColor: 'var(--glass-border)',
             color: 'var(--text-dim)',
