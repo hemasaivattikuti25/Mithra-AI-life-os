@@ -25,7 +25,7 @@ export const supabase = isConfigured
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: false, // We handle PKCE code exchange manually in AuthContext
       flowType: 'pkce',
       storage: localStorage,
       storageKey: 'mithra-supabase-auth',
