@@ -162,6 +162,31 @@ const COLOR_THEMES = {
       '--glass-border-hover': 'rgba(93,64,55,0.18)',
     },
   },
+  neon: {
+    name: 'Neon',
+    preview: { top: '#06b6d4', bottomLeft: '#0a0f14', bottomRight: '#22d3ee' },
+    dark: {
+      '--accent-color': '#22d3ee',
+      '--accent-soft': '#06b6d4',
+      '--accent-glow': 'rgba(34,211,238,0.15)',
+      '--accent-secondary': '#3b82f6',
+      '--color-visor': '34 211 238',
+      '--visor-glow': 'rgba(34,211,238,0.12)',
+      '--glass-border': 'rgba(242,235,227,0.08)',
+      '--glass-border-hover': 'rgba(242,235,227,0.14)',
+    },
+    light: {
+      '--accent-color': '#0891b2',
+      '--accent-soft': '#0e7490',
+      '--accent-glow': 'rgba(8,145,178,0.1)',
+      '--accent-secondary': '#1d4ed8',
+      '--color-visor': '8 145 178',
+      '--visor-glow': 'rgba(8,145,178,0.08)',
+      '--glass-border': 'rgba(8,145,178,0.1)',
+      '--glass-border-hover': 'rgba(8,145,178,0.18)',
+    },
+  },
+
 };
 
 /* Helper to apply a color theme's CSS variables */
