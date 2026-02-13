@@ -69,14 +69,14 @@ export function ToastProvider({ children }) {
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-xl shadow-2xl"
-                style={{ 
-                  background: color.bg, 
+                style={{
+                  background: color.bg,
                   border: `1px solid ${color.border}`,
                   backdropFilter: 'blur(20px) saturate(180%)',
                 }}
               >
                 <Icon size={18} style={{ color: color.icon }} className="flex-shrink-0" />
-                <span className="text-sm text-mithra-merino/90 flex-1">{toast.message}</span>
+                <span className="text-sm text-[var(--text-primary)] flex-1 opacity-90">{toast.message}</span>
                 {toast.undoAction && (
                   <button
                     onClick={() => handleUndo(toast)}
@@ -86,7 +86,7 @@ export function ToastProvider({ children }) {
                     <Undo2 size={12} /> Undo
                   </button>
                 )}
-                <button onClick={() => removeToast(toast.id)} className="p-1 rounded-lg hover:bg-white/10 text-mithra-merino/40 hover:text-mithra-merino/70 transition-colors flex-shrink-0">
+                <button onClick={() => removeToast(toast.id)} className="p-1 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] opacity-40 hover:opacity-70 transition-colors flex-shrink-0">
                   <X size={14} />
                 </button>
               </motion.div>

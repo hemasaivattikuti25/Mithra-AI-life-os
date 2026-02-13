@@ -72,7 +72,7 @@ export const scheduleNotification = async ({ id, title, body, at }) => {
           schedule: { at: new Date(at) },
           sound: 'beep.wav',
           smallIcon: 'ic_stat_icon_config_sample',
-          iconColor: '#C2185B',
+          iconColor: '#22d3ee',
         }],
       });
     } else if ('Notification' in window && Notification.permission === 'granted') {
@@ -133,7 +133,7 @@ export const nativeStorage = {
     if (isNative) {
       await Preferences.set({ key, value: JSON.stringify(value) });
     }
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { }
   },
   remove: async (key) => {
     if (isNative) await Preferences.remove({ key });
@@ -152,7 +152,7 @@ export const openUrl = async (url) => {
 
 /* ─── Back Button Handler (Android) ─── */
 export const setupBackButton = (navigateBack) => {
-  if (!isNative) return { remove: () => {} };
+  if (!isNative) return { remove: () => { } };
   return CapApp.addListener('backButton', ({ canGoBack }) => {
     if (canGoBack) {
       navigateBack();

@@ -16,7 +16,7 @@ const CATEGORY_CONFIG = {
   Health: { icon: Dumbbell, color: '#f97316' },
   Personal: { icon: Heart, color: '#a855f7' },
   Learning: { icon: BookOpen, color: '#06b6d4' },
-  Mindfulness: { icon: Brain, color: '#C2185B' },
+  Mindfulness: { icon: Brain, color: 'var(--accent-color)' },
 };
 
 /* roman numeral helper */
@@ -54,12 +54,12 @@ const Heatmap = ({ habits, accentColor }) => {
   };
 
   const THEME_COLORS = useMemo(() => {
-    const accent = accentColor?.color || '#C2185B';
-    const { r, g, b } = hexToRgb(accent);
+    const accent = accentColor?.color || '#22d3ee';
+    const { r, g, b } = hexToRgb(accent.startsWith('var') ? '#22d3ee' : accent);
     return {
       dark: {
-        empty: '#161b22',
-        emptyHover: '#1f2630',
+        empty: 'rgba(255,255,255,0.03)',
+        emptyHover: 'rgba(255,255,255,0.08)',
         levels: [
           `rgba(${r},${g},${b},0.2)`,
           `rgba(${r},${g},${b},0.4)`,
@@ -68,8 +68,8 @@ const Heatmap = ({ habits, accentColor }) => {
         ],
       },
       light: {
-        empty: '#ebedf0',
-        emptyHover: '#dbdfe4',
+        empty: 'rgba(0,0,0,0.04)',
+        emptyHover: 'rgba(0,0,0,0.08)',
         levels: [
           `rgba(${r},${g},${b},0.15)`,
           `rgba(${r},${g},${b},0.35)`,
@@ -129,11 +129,11 @@ const Heatmap = ({ habits, accentColor }) => {
     return (
       <div className="glass-card glass-shine rounded-2xl p-5 lg:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Activity size={14} className="text-accent-visor" />
-          <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: isLight ? 'rgba(26,26,26,0.45)' : 'rgba(242,235,227,0.35)' }}>Consistency Map</h3>
+          <Activity size={14} className="text-[var(--accent-color)]" />
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-dim)]">Consistency Map</h3>
         </div>
-        <div className="flex items-center justify-center py-12 rounded-xl border border-dashed" style={{ borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(242,235,227,0.1)' }}>
-          <p className="text-sm text-center" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.3)' }}>
+        <div className="flex items-center justify-center py-12 rounded-xl border border-dashed border-[var(--glass-border)]">
+          <p className="text-sm text-center text-[var(--text-dim)] opacity-60">
             Add your first habit to start tracking consistency!
           </p>
         </div>
@@ -144,12 +144,12 @@ const Heatmap = ({ habits, accentColor }) => {
   return (
     <div className="glass-card glass-shine rounded-2xl p-5 lg:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: isLight ? 'rgba(26,26,26,0.45)' : 'rgba(242,235,227,0.35)' }}>
-          <Activity size={14} className="text-accent-visor" /> Consistency Map — {format(today, 'yyyy')}
+        <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-[var(--text-dim)]">
+          <Activity size={14} className="text-[var(--accent-color)]" /> Consistency Map — {format(today, 'yyyy')}
         </h3>
-        <div className="flex items-center gap-3 text-xs" style={{ color: isLight ? 'rgba(26,26,26,0.45)' : 'rgba(242,235,227,0.45)' }}>
+        <div className="flex items-center gap-3 text-xs text-[var(--text-dim)]">
           <span>{totalActiveDays} active days</span>
-          <span className="text-accent-visor font-semibold">{Math.round((totalActiveDays / totalDaysInYear) * 100)}%</span>
+          <span className="text-[var(--accent-color)] font-semibold">{Math.round((totalActiveDays / totalDaysInYear) * 100)}%</span>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ const Heatmap = ({ habits, accentColor }) => {
         <div className="w-7 flex-shrink-0" /> {/* spacer for day labels */}
         <div className="flex gap-[3px] relative" style={{ minWidth: weeks.length * 14 }}>
           {monthLabels.map((m, i) => (
-            <span key={i} className="absolute text-[10px] font-medium" style={{ left: m.col * 14, color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>
+            <span key={i} className="absolute text-[10px] font-medium text-[var(--text-dim)] opacity-60" style={{ left: m.col * 14 }}>
               {m.month}
             </span>
           ))}
@@ -171,7 +171,7 @@ const Heatmap = ({ habits, accentColor }) => {
         <div className="flex flex-col gap-[3px] mr-1.5 flex-shrink-0">
           {DAY_LABELS.map((label, i) => (
             <div key={i} className="h-[11px] sm:h-3 flex items-center justify-end pr-0.5">
-              <span className="text-[9px] leading-none" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>{label}</span>
+              <span className="text-[9px] leading-none text-[var(--text-dim)] opacity-50">{label}</span>
             </div>
           ))}
         </div>
@@ -191,20 +191,20 @@ const Heatmap = ({ habits, accentColor }) => {
                       className="w-[11px] h-[11px] sm:w-3 sm:h-3 rounded-[2px] sm:rounded-[3px] transition-all cursor-pointer"
                       style={{
                         backgroundColor: cellColor || colors.empty,
-                        outline: isH ? `2px solid ${isLight ? '#24292f' : '#e6edf3'}` : 'none',
+                        outline: isH ? `2px solid var(--accent-color)` : 'none',
                         outlineOffset: isH ? '-1px' : '0',
                       }}
                     />
                     {isH && (
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap z-50 pointer-events-none"
-                        style={{ background: isLight ? '#24292f' : '#e6edf3', color: isLight ? '#fff' : '#24292f' }}>
+                        style={{ background: 'var(--text-primary)', color: 'var(--body-bg)' }}>
                         <span className="font-bold">
                           {ratio >= 1 ? 'All habits done' : ratio > 0 ? `${Math.round(ratio * 100)}% completed` : 'No activity'}
                         </span>
                         <span className="ml-1.5 opacity-70">{format(day, 'MMM d, yyyy')}</span>
                         <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style={{
                           borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
-                          borderTop: `4px solid ${isLight ? '#24292f' : '#e6edf3'}`
+                          borderTop: `4px solid var(--text-primary)`
                         }} />
                       </div>
                     )}
@@ -217,7 +217,7 @@ const Heatmap = ({ habits, accentColor }) => {
       </div>
 
       {/* Legend — GitHub style */}
-      <div className="flex items-center justify-end gap-1.5 mt-3 text-[11px]" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>
+      <div className="flex items-center justify-end gap-1.5 mt-3 text-[11px] text-[var(--text-dim)]">
         <span>Less</span>
         <div className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: colors.empty }} />
         {colors.levels.map((c, i) => (
@@ -304,11 +304,11 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
           style={habit.todayDone ? {
             backgroundColor: habitColor,
             borderColor: habitColor,
-            color: '#000',
+            color: 'var(--body-bg)',
             boxShadow: `0 0 12px ${habitColor}40`,
           } : {
-            borderColor: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(242,235,227,0.15)',
-            color: isLight ? 'rgba(0,0,0,0.3)' : 'rgba(242,235,227,0.3)',
+            borderColor: 'var(--glass-border)',
+            color: 'var(--text-dim)',
           }}>
           {habit.todayDone ? <CheckCircle2 size={18} /> : <Circle size={18} />}
         </motion.button>
@@ -318,7 +318,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
 };
 
 /* ═══════════ HABIT MODAL — Rich fields with schedule time ═══════════ */
-const HABIT_COLORS = ['#C2185B', '#3b82f6', '#f97316', '#a855f7', '#06b6d4', '#ef4444', '#eab308', '#ec4899', '#14b8a6', '#f2ebe3'];
+const HABIT_COLORS = ['var(--accent-color)', '#3b82f6', '#f97316', '#a855f7', '#06b6d4', '#ef4444', '#eab308', '#ec4899', '#14b8a6', '#f2ebe3'];
 const DAY_LABELS_MODAL = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -347,7 +347,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
         setStreakGoal(editingHabit.streakGoal || 30);
         setStreakUnit(editingHabit.streakUnit || 'Day'); setDuration(editingHabit.focusDuration || 25);
       } else {
-        setTitle(''); setCategory('Work'); setColor('#C2185B'); setRepeatDays([0, 1, 2, 3, 4, 5, 6]);
+        setTitle(''); setCategory('Work'); setColor('var(--accent-color)'); setRepeatDays([0, 1, 2, 3, 4, 5, 6]);
         setFrequency(1); setReminder(false); setStreakGoal(30);
         setScheduleTime('08:00');
         setStreakUnit('Day'); setDuration(25);
@@ -563,36 +563,36 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
         onClick={e => e.stopPropagation()} className="w-full max-w-sm glass-heavy glass-shine rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-[#F2EBE3]/5">
-          <h3 className="text-lg font-medium text-[#F2EBE3]">{editingSession ? 'Edit Session' : 'Add Session'}</h3>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><X size={20} /></button>
+        <div className="flex items-center justify-between p-5 border-b border-[var(--glass-border)]">
+          <h3 className="text-lg font-medium text-[var(--text-primary)]">{editingSession ? 'Edit Session' : 'Add Session'}</h3>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
         </div>
         <div className="p-5 space-y-5">
           <div>
-            <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Session Name</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Session Name</label>
             <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()}
               placeholder="e.g. Deep Work" className="glass-input" />
           </div>
           <div>
-            <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Duration (minutes)</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Duration (minutes)</label>
             <div className="flex items-center gap-3">
-              <button onClick={() => setTime(t => Math.max(1, t - 5))} className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#F2EBE3]/50 hover:text-[#F2EBE3] font-bold text-lg">−</button>
-              <span className="w-16 text-center font-bold text-2xl text-[#F2EBE3] tabular-nums">{time}</span>
-              <button onClick={() => setTime(t => Math.min(120, t + 5))} className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#F2EBE3]/50 hover:text-[#F2EBE3] font-bold text-lg">+</button>
+              <button onClick={() => setTime(t => Math.max(1, t - 5))} className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--text-primary)] font-bold text-lg">−</button>
+              <span className="w-16 text-center font-bold text-2xl text-[var(--text-primary)] tabular-nums">{time}</span>
+              <button onClick={() => setTime(t => Math.min(120, t + 5))} className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[var(--text-dim)] hover:text-[var(--text-primary)] font-bold text-lg">+</button>
             </div>
             <div className="flex gap-2 mt-3 flex-wrap">
               {[5, 10, 15, 25, 30, 45, 60, 90].map(d => (
                 <button key={d} onClick={() => setTime(d)}
                   className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                    time === d ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/30 hover:border-[#F2EBE3]/20'
+                    time === d ? 'border-[var(--accent-color)] text-[var(--accent-color)] bg-[var(--accent-glow)]' : 'border-[var(--glass-border)] text-[var(--text-dim)] hover:border-[var(--text-dim)] opacity-50 hover:opacity-100'
                   )}>{d}m</button>
               ))}
             </div>
           </div>
         </div>
-        <div className="p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[#F2EBE3]/40 text-sm hover:bg-white/5 transition-colors">Cancel</button>
-          <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-[#C2185B] text-white font-bold text-sm hover:shadow-[0_0_20px_rgba(194,24,91,0.3)] transition-all">
+        <div className="p-5 border-t border-[var(--glass-border)] flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm hover:bg-[var(--glass-bg-hover)] transition-colors">Cancel</button>
+          <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-[var(--accent-color)] text-white font-bold text-sm hover:shadow-[0_0_20px_var(--accent-glow)] transition-all">
             {editingSession ? 'Save' : 'Add Session'}
           </button>
         </div>
@@ -602,7 +602,7 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
 };
 
 /* ═══════════ CIRCULAR PROGRESS RING (heartbeat animation) ═══════════ */
-const CircularTimer = ({ progress, timeStr, label, isActive, color = '#C2185B', isLight }) => {
+const CircularTimer = ({ progress, timeStr, label, isActive, color = 'var(--accent-color)', isLight }) => {
   const size = 280;
   const stroke = 8;
   const radius = (size - stroke) / 2;

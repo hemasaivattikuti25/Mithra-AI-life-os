@@ -6,9 +6,9 @@ import { Inbox } from 'lucide-react';
  * Reusable empty state component for lists.
  * Usage: <EmptyState icon={ListTodo} title="No tasks yet" action={{ label: 'Add Task', onClick: fn }} />
  */
-export default function EmptyState({ 
-  icon: Icon = Inbox, 
-  title = 'Nothing here yet', 
+export default function EmptyState({
+  icon: Icon = Inbox,
+  title = 'Nothing here yet',
   description = '',
   action = null,  // { label: string, onClick: fn }
 }) {
@@ -19,15 +19,15 @@ export default function EmptyState({
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col items-center justify-center py-16 px-6 text-center"
     >
-      <div 
+      <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
         style={{ background: 'rgba(var(--color-visor, 194 24 91), 0.06)', border: '1px solid rgba(var(--color-visor, 194 24 91), 0.1)' }}
       >
         <Icon size={28} className="text-accent-visor opacity-50" />
       </div>
-      <h3 className="text-mithra-merino/70 text-base font-semibold mb-1">{title}</h3>
+      <h3 className="text-[var(--text-primary)] text-base font-semibold mb-1 opacity-70">{title}</h3>
       {description && (
-        <p className="text-mithra-merino/40 text-sm max-w-xs leading-relaxed">{description}</p>
+        <p className="text-[var(--text-dim)] text-sm max-w-xs leading-relaxed opacity-40">{description}</p>
       )}
       {action && (
         <button

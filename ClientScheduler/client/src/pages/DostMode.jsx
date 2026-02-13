@@ -785,11 +785,11 @@ export default function DostMode() {
       <span key={i}>
         {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
           if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={j} className="font-semibold text-mithra-merino">{part.slice(2, -2)}</strong>;
+            return <strong key={j} className="font-semibold text-[var(--text-primary)]">{part.slice(2, -2)}</strong>;
           }
           // Handle bullet points
           if (part.trim().startsWith('•') || part.trim().startsWith('-')) {
-            return <span key={j} className="text-mithra-merino/70">{part}</span>;
+            return <span key={j} className="text-[var(--text-dim)] opacity-70">{part}</span>;
           }
           return part;
         })}
@@ -806,8 +806,8 @@ export default function DostMode() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] text-mithra-merino relative overflow-hidden rounded-2xl border border-mithra-merino/5"
-      style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.4)' : 'rgba(5,5,5,0.6)' }}>
+    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl border border-[var(--glass-border)]"
+      style={{ backgroundColor: 'var(--glass-bg)', color: 'var(--text-primary)' }}>
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => { handleFileImport(e); if (fileInputRef.current) fileInputRef.current.setAttribute('accept', '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp'); }} />
@@ -817,24 +817,24 @@ export default function DostMode() {
         style={{ background: isLight ? 'rgb(var(--color-visor) / 0.05)' : 'rgb(var(--color-visor) / 0.08)' }} />
 
       {/* HEADER */}
-      <header className="p-4 md:p-6 border-b border-mithra-merino/10 flex items-center justify-between z-10 backdrop-blur-md"
-        style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(5,5,5,0.8)' }}>
+      <header className="p-4 md:p-6 border-b border-[var(--glass-border)] flex items-center justify-between z-10 backdrop-blur-md"
+        style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
         <div className="flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full transition-all ${isThinking ? 'bg-accent-visor animate-ping' : isListening ? 'bg-red-500 animate-pulse' : isOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
-          <h1 className="text-xl font-light tracking-wide">Dost <span className="text-mithra-dim text-sm">AI Companion</span></h1>
+          <h1 className="text-xl font-light tracking-wide">Dost <span className="text-[var(--text-dim)] text-sm opacity-50">AI Companion</span></h1>
           <span className={`text-[10px] px-2 py-0.5 rounded-full ${isListening ? 'bg-red-500/10 text-red-400 animate-pulse' : isOnline ? 'bg-green-500/10 text-green-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
             {isListening ? '🎤 Listening...' : isOnline ? 'AI Online' : 'Smart Mode'}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-1.5 text-mithra-dim hover:text-accent-visor cursor-pointer transition-colors px-3 py-1.5 rounded-lg hover:bg-mithra-merino/5 text-xs"
+            className="flex items-center gap-1.5 text-[var(--text-dim)] hover:text-accent-visor cursor-pointer transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--glass-bg-hover)] text-xs"
             title="Import CSV, Excel, or Image">
             <Upload size={14} />
             <span className="hidden sm:inline">Import</span>
           </button>
           <button onClick={() => { setMessages(INITIAL_MSG); localStorage.removeItem(getUserScopedKey('chat-history')); }}
-            className="flex items-center gap-1.5 text-mithra-dim hover:text-red-400 cursor-pointer transition-colors px-3 py-1.5 rounded-lg hover:bg-mithra-merino/5 text-xs" title="Clear chat">
+            className="flex items-center gap-1.5 text-[var(--text-dim)] hover:text-red-400 cursor-pointer transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--glass-bg-hover)] text-xs" title="Clear chat">
             <Trash2 size={14} />
             <span className="hidden sm:inline">Clear</span>
           </button>
@@ -858,17 +858,17 @@ export default function DostMode() {
               onClick={e => e.stopPropagation()}
               className="w-full max-w-sm rounded-2xl overflow-hidden"
               style={{
-                background: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(18,16,16,0.95)',
-                border: `1px solid ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(242,235,227,0.1)'}`,
-                backdropFilter: 'blur(20px)',
+                background: 'var(--body-bg)',
+                border: '1px solid var(--glass-border)',
+                backdropFilter: 'blur(40px)',
               }}
             >
-              <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(242,235,227,0.08)' }}>
-                <h3 className="text-lg font-medium" style={{ color: isLight ? '#1a1a1a' : '#F2EBE3' }}>Import Files</h3>
-                <button onClick={() => setShowImportModal(false)} className="p-2 rounded-lg hover:bg-white/10 text-mithra-dim"><X size={20} /></button>
+              <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+                <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Import Files</h3>
+                <button onClick={() => setShowImportModal(false)} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
               </div>
               <div className="p-5 space-y-3">
-                <p className="text-sm mb-4" style={{ color: isLight ? 'rgba(0,0,0,0.6)' : 'rgba(242,235,227,0.6)' }}>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
                   Choose a file type to import tasks or data:
                 </p>
                 {/* CSV Option */}
@@ -884,8 +884,8 @@ export default function DostMode() {
                     <FileSpreadsheet size={20} className="text-green-500" />
                   </div>
                   <div className="flex-1 text-left">
-                    <span className="font-medium block" style={{ color: isLight ? '#1a1a1a' : '#F2EBE3' }}>CSV File</span>
-                    <span className="text-xs" style={{ color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(242,235,227,0.5)' }}>Import tasks from .csv or .txt</span>
+                    <span className="font-medium block" style={{ color: 'var(--text-primary)' }}>CSV File</span>
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>Import tasks from .csv or .txt</span>
                   </div>
                 </button>
                 {/* Excel Option */}
@@ -893,16 +893,16 @@ export default function DostMode() {
                   onClick={() => { fileInputRef.current?.setAttribute('accept', '.xlsx,.xls'); fileInputRef.current?.click(); setShowImportModal(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
-                    background: isLight ? 'rgba(66,165,245,0.08)' : 'rgba(66,165,245,0.1)',
-                    border: '1px solid rgba(66,165,245,0.2)',
+                    background: isLight ? 'rgb(var(--color-accent) / 0.08)' : 'rgb(var(--color-accent) / 0.1)',
+                    border: '1px solid rgb(var(--color-accent) / 0.2)',
                   }}
                 >
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20">
-                    <FileText size={20} className="text-blue-500" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent-glow">
+                    <Flame size={16} className="text-accent-visor" />
                   </div>
                   <div className="flex-1 text-left">
-                    <span className="font-medium block" style={{ color: isLight ? '#1a1a1a' : '#F2EBE3' }}>Excel File</span>
-                    <span className="text-xs" style={{ color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(242,235,227,0.5)' }}>Import from .xlsx or .xls</span>
+                    <span className="font-medium block" style={{ color: 'var(--text-primary)' }}>Excel File</span>
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>Import from .xlsx or .xls</span>
                   </div>
                 </button>
                 {/* Image Option */}
@@ -914,12 +914,12 @@ export default function DostMode() {
                     border: '1px solid rgba(168,85,247,0.2)',
                   }}
                 >
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/20">
-                    <ImageIcon size={20} className="text-purple-500" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-cyan-600/20">
+                    <ImageIcon size={20} className="text-accent-visor" />
                   </div>
                   <div className="flex-1 text-left">
-                    <span className="font-medium block" style={{ color: isLight ? '#1a1a1a' : '#F2EBE3' }}>Image File</span>
-                    <span className="text-xs" style={{ color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(242,235,227,0.5)' }}>Upload JPG, PNG, or screenshot</span>
+                    <span className="font-medium block" style={{ color: 'var(--text-primary)' }}>Image File</span>
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>Upload JPG, PNG, or screenshot</span>
                   </div>
                 </button>
               </div>
@@ -940,20 +940,20 @@ export default function DostMode() {
           >
             <div className={`max-w-[85%] md:max-w-md p-4 rounded-2xl relative overflow-hidden
               ${msg.sender === 'user'
-                ? 'border border-mithra-merino/10 text-white'
-                : 'border border-accent-visor/20 text-mithra-merino'
+                ? 'border border-[var(--glass-border)]'
+                : 'border border-[var(--accent-color)]/20 text-[var(--text-primary)]'
               }`}
               style={
                 msg.sender === 'user'
-                  ? { background: isLight ? 'linear-gradient(135deg, rgba(252,228,236,0.7), rgb(var(--color-visor) / 0.1))' : 'linear-gradient(135deg, rgba(12,10,10,0.8), rgba(74,4,4,0.4))', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }
-                  : { background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(10,8,8,0.6)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: isLight ? '0 2px 12px rgba(0,0,0,0.04)' : '0 0 15px rgb(var(--color-visor) / 0.06)' }
+                  ? { background: 'var(--accent-color)', opacity: 0.9, backdropFilter: 'blur(20px) saturate(180%)' }
+                  : { background: 'var(--glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 0 15px var(--accent-glow)' }
               }
             >
               {/* Text Content with markdown rendering */}
               <div className="leading-relaxed text-sm md:text-base">{renderContent(msg.content)}</div>
 
               {/* Timestamp */}
-              <div className={`text-[10px] mt-2 ${msg.sender === 'user' ? 'text-mithra-merino/20 text-right' : 'text-mithra-merino/20'}`}>
+              <div className={`text-[10px] mt-2 ${msg.sender === 'user' ? 'text-white/40 text-right' : 'text-[var(--text-dim)]/40'}`}>
                 {formatMsgTime(msg.id)}
               </div>
 
@@ -975,7 +975,7 @@ export default function DostMode() {
                   style={{ background: isLight ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>
                   <Flame size={16} className="text-orange-500" />
                   <span className="text-sm font-medium">{msg.habitData.title}</span>
-                  <span className="ml-auto text-[10px] text-orange-400 font-bold uppercase">New Habit</span>
+                  <span className="ml-auto text-[10px] text-accent-visor font-bold uppercase">New Habit</span>
                 </motion.div>
               )}
 
@@ -1000,12 +1000,12 @@ export default function DostMode() {
         {/* Thinking Indicator */}
         {isThinking && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-            <div className="border border-accent-visor/20 px-4 py-3 rounded-2xl flex items-center gap-2"
-              style={{ background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(10,8,8,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+            <div className="border border-[var(--accent-color)]/20 px-4 py-3 rounded-2xl flex items-center gap-2"
+              style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
               <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
               <span className="w-2 h-2 bg-accent-visor rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              <span className="text-mithra-dim text-xs ml-2">Thinking...</span>
+              <span className="text-[var(--text-dim)] text-xs ml-2 opacity-50">Thinking...</span>
             </div>
           </motion.div>
         )}
@@ -1013,8 +1013,8 @@ export default function DostMode() {
       </div>
 
       {/* ─── QUICK ACTIONS BAR ─── */}
-      <div className="px-4 md:px-6 py-2.5 border-t border-mithra-merino/5 flex gap-2 overflow-x-auto scrollbar-hide z-10"
-        style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.5)' : 'rgba(5,5,5,0.6)' }}>
+      <div className="px-4 md:px-6 py-2.5 border-t border-[var(--glass-border)] flex gap-2 overflow-x-auto scrollbar-hide z-10"
+        style={{ backgroundColor: 'var(--glass-bg)' }}>
         {[
           { label: '📊 Summary', cmd: 'Summarize my day' },
           { label: '🔥 Habits', cmd: 'How are my habits?' },
@@ -1068,8 +1068,8 @@ export default function DostMode() {
                 }, 50);
               }
             }}
-            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full border border-mithra-merino/10 text-mithra-merino/60 hover:text-mithra-merino hover:border-accent-visor/30 hover:bg-accent-visor/5 transition-all flex-shrink-0 font-medium"
-            style={{ background: isLight ? 'rgba(255,255,255,0.3)' : 'rgba(10,8,8,0.3)' }}
+            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full border border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:border-accent-visor/30 hover:bg-accent-visor/5 transition-all flex-shrink-0 font-medium"
+            style={{ background: 'var(--glass-bg)' }}
           >
             {q.label}
           </button>
@@ -1077,8 +1077,8 @@ export default function DostMode() {
       </div>
 
       {/* INPUT AREA */}
-      <div className="p-4 md:p-6 border-t border-mithra-merino/10 z-20"
-        style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(5,5,5,0.8)' }}>
+      <div className="p-4 md:p-6 border-t border-[var(--glass-border)] z-20"
+        style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
         <div className="relative group flex items-center gap-2">
           <input
             type="text"
@@ -1087,14 +1087,14 @@ export default function DostMode() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files..."}
-            className={`w-full text-mithra-merino border rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:border-accent-visor focus:shadow-[0_0_20px_rgba(139,26,43,0.15)] transition-all placeholder-mithra-dim text-sm md:text-base ${isListening ? 'border-red-500/30' : 'border-mithra-merino/10'}`}
-            style={{ background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(10,8,8,0.55)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
+            className={`w-full text-[var(--text-primary)] border rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:border-accent-visor focus:shadow-[0_0_20px_var(--accent-glow)] transition-all placeholder-[var(--text-dim)] text-sm md:text-base ${isListening ? 'border-red-500/30' : 'border-[var(--glass-border)]'}`}
+            style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px) saturate(180%)' }}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
             {/* Import button (opens modal) */}
             <button
               onClick={() => setShowImportModal(true)}
-              className="p-2 rounded-full text-mithra-dim hover:text-accent-visor hover:bg-accent-visor/10 transition-all"
+              className="p-2 rounded-full text-[var(--text-dim)] hover:text-accent-visor hover:bg-accent-visor/10 transition-all opacity-60 hover:opacity-100"
               title="Import files (CSV, Excel, Image)"
             >
               <Plus size={18} />
@@ -1102,7 +1102,7 @@ export default function DostMode() {
             {/* Mic Button */}
             <button
               onClick={isListening ? stopListening : startListening}
-              className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-mithra-dim hover:text-mithra-merino hover:bg-mithra-merino/5'}`}
+              className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] opacity-60 hover:opacity-100'}`}
               title={isListening ? 'Stop listening' : 'Voice input'}
             >
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
@@ -1111,7 +1111,7 @@ export default function DostMode() {
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className={`p-2 rounded-full text-white transition-all ${input.trim() ? 'bg-accent-visor hover:scale-105 active:scale-95' : 'bg-mithra-merino/10 text-mithra-merino/30'}`}
+              className={`p-2 rounded-full text-white transition-all ${input.trim() ? 'bg-accent-visor hover:scale-105 active:scale-95' : 'bg-[var(--glass-border)] text-[var(--text-dim)] opacity-20'}`}
             >
               <Send size={18} />
             </button>

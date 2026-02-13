@@ -47,10 +47,10 @@ export default function ConfirmDialog({
                   <AlertTriangle size={20} style={{ color: c.icon }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-mithra-merino text-base font-semibold">{title}</h3>
-                  <p className="text-mithra-merino/50 text-sm mt-1 leading-relaxed">{message}</p>
+                  <h3 className="text-[var(--text-primary)] text-base font-semibold">{title}</h3>
+                  <p className="text-[var(--text-dim)] text-sm mt-1 leading-relaxed opacity-50">{message}</p>
                 </div>
-                <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-white/10 text-mithra-merino/40 flex-shrink-0">
+                <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] opacity-40 flex-shrink-0">
                   <X size={16} />
                 </button>
               </div>
@@ -58,7 +58,7 @@ export default function ConfirmDialog({
               <div className="flex gap-3 justify-end pt-2">
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 rounded-xl text-sm font-medium glass-card text-mithra-merino/70 hover:text-mithra-merino transition-all"
+                  className="px-4 py-2 rounded-xl text-sm font-medium glass-card text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-all"
                 >
                   {cancelLabel}
                 </button>

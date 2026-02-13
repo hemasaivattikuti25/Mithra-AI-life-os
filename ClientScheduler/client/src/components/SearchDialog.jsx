@@ -79,7 +79,7 @@ export default function SearchDialog({ open, onClose }) {
           matched.push({ type: 'journal', title: entry.title || 'Journal entry', subtitle: entry.date, path: '/journal', icon: BookOpen });
         }
       });
-    } catch {}
+    } catch { }
 
     return matched.slice(0, 12);
   }, [query, tasks, habits]);
@@ -125,17 +125,17 @@ export default function SearchDialog({ open, onClose }) {
           className="w-full max-w-lg rounded-2xl overflow-hidden glass-heavy shadow-2xl"
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'rgba(242,235,227,0.06)' }}>
-            <Search size={20} className="text-mithra-merino/40 flex-shrink-0" />
+          <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+            <Search size={20} className="text-[var(--text-dim)] flex-shrink-0 opacity-40" />
             <input
               ref={inputRef}
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search tasks, habits, pages..."
-              className="flex-1 bg-transparent text-mithra-merino text-sm outline-none placeholder:text-mithra-merino/30"
+              className="flex-1 bg-transparent text-[var(--text-primary)] text-sm outline-none placeholder:text-[var(--text-dim)]/30"
             />
-            <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-medium text-mithra-merino/30 bg-white/5 border border-white/10">
+            <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--text-dim)]/30 bg-[var(--glass-bg)] border border-[var(--glass-border)]">
               ESC
             </kbd>
           </div>
@@ -143,7 +143,7 @@ export default function SearchDialog({ open, onClose }) {
           {/* Results */}
           <div className="max-h-80 overflow-y-auto py-2">
             {results.length === 0 ? (
-              <div className="py-12 text-center text-mithra-merino/40 text-sm">
+              <div className="py-12 text-center text-[var(--text-dim)] text-sm opacity-40">
                 No results found for "{query}"
               </div>
             ) : (
@@ -154,20 +154,19 @@ export default function SearchDialog({ open, onClose }) {
                     key={`${item.type}-${item.title}-${i}`}
                     onClick={() => handleSelect(item)}
                     onMouseEnter={() => setSelectedIndex(i)}
-                    className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all ${
-                      i === selectedIndex ? 'bg-white/[0.05]' : 'hover:bg-white/[0.03]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all ${i === selectedIndex ? 'bg-white/[0.05]' : 'hover:bg-white/[0.03]'
+                      }`}
                   >
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: i === selectedIndex ? 'rgba(var(--color-visor), 0.1)' : 'rgba(242,235,227,0.03)' }}>
-                      <Icon size={16} className={i === selectedIndex ? 'text-accent-visor' : 'text-mithra-merino/40'} />
+                      style={{ background: i === selectedIndex ? 'var(--accent-glow)' : 'var(--glass-bg)' }}>
+                      <Icon size={16} className={i === selectedIndex ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)] opacity-40'} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-mithra-merino/80 truncate">{item.title}</div>
-                      {item.subtitle && <div className="text-xs text-mithra-merino/30 truncate">{item.subtitle}</div>}
+                      <div className="text-sm text-[var(--text-primary)] opacity-80 truncate">{item.title}</div>
+                      {item.subtitle && <div className="text-xs text-[var(--text-dim)] opacity-30 truncate">{item.subtitle}</div>}
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider text-mithra-merino/25 flex-shrink-0">{item.type}</span>
-                    {i === selectedIndex && <ArrowRight size={14} className="text-accent-visor flex-shrink-0" />}
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-dim)] opacity-25 flex-shrink-0">{item.type}</span>
+                    {i === selectedIndex && <ArrowRight size={14} className="text-[var(--accent-color)] flex-shrink-0" />}
                   </button>
                 );
               })
@@ -175,7 +174,7 @@ export default function SearchDialog({ open, onClose }) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-2.5 border-t text-[10px] text-mithra-merino/25" style={{ borderColor: 'rgba(242,235,227,0.06)' }}>
+          <div className="flex items-center justify-between px-5 py-2.5 border-t text-[10px] text-[var(--text-dim)] opacity-25" style={{ borderColor: 'var(--glass-border)' }}>
             <span>Navigate with ↑↓ &middot; Select with ↵</span>
             <span className="flex items-center gap-1">
               <Command size={10} />K to toggle

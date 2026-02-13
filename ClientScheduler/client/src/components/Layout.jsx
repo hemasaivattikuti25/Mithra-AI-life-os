@@ -29,7 +29,7 @@ const ProfileAvatar = ({ size = 'w-9 h-9' }) => {
     return (
         <div className={`${size} rounded-full flex items-center justify-center text-xs font-bold ring-1`}
             style={{
-                background: `linear-gradient(135deg, var(--accent-color), var(--accent-soft, #8B1A2B))`,
+                background: `linear-gradient(135deg, var(--accent-color), var(--accent-soft))`,
                 color: 'white',
                 ringColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.1)',
             }}>
@@ -76,18 +76,18 @@ const DesktopSidebar = () => {
     return (
         <aside className="hidden md:flex w-20 lg:w-64 h-screen fixed left-0 top-0 z-30 flex-col transition-all duration-400"
             style={{
-                background: 'rgba(5, 5, 5, 0.8)',
+                background: 'var(--nav-bg)',
                 backdropFilter: 'blur(20px)',
-                borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+                borderRight: '1px solid var(--glass-border)'
             }}>
-            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b border-white/5">
-                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-                    <Bot className="w-5 h-5 text-cyan-400" />
-                    <div className="absolute inset-0 rounded-xl border border-cyan-500/30 animate-pulse opacity-50" />
+            <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b border-[var(--glass-border)]">
+                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)] shadow-[0_0_15px_var(--accent-glow)]">
+                    <Bot className="w-5 h-5 text-[var(--accent-color)]" />
+                    <div className="absolute inset-0 rounded-xl border border-[var(--accent-glow)] animate-pulse opacity-50" />
                 </div>
                 <div className="hidden lg:block ml-3">
-                    <h1 className="font-sans font-bold text-lg tracking-wide text-white">Mithra</h1>
-                    <p className="text-[10px] font-medium -mt-0.5 tracking-widest uppercase text-cyan-400/60">Life OS</p>
+                    <h1 className="font-sans font-bold text-lg tracking-wide text-[var(--text-primary)]">Mithra</h1>
+                    <p className="text-[10px] font-medium -mt-0.5 tracking-widest uppercase text-[var(--accent-color)] opacity-60">Life OS</p>
                 </div>
             </div>
 
@@ -97,26 +97,26 @@ const DesktopSidebar = () => {
                     return (
                         <NavLink key={item.path} to={item.path}
                             className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
-                            {isActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl bg-white/5 border border-white/5" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            {isActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
-                            <item.icon size={20} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]' : 'text-white/40 group-hover:text-white/80'}`} />
-                            <span className={`hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 ${isActive ? 'font-semibold text-white' : 'font-medium text-white/50 group-hover:text-white/80'}`}>{item.label}</span>
+                            {isActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl bg-[var(--accent-glow)] border border-[var(--glass-border)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
+                            {isActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--accent-color)] shadow-[0_0_10px_var(--accent-glow)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
+                            <item.icon size={20} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-[var(--accent-color)] drop-shadow-[0_0_8px_var(--accent-glow)]' : 'text-[var(--text-dim)] group-hover:text-[var(--text-primary)]'}`} />
+                            <span className={`hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 ${isActive ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-dim)] group-hover:text-[var(--text-primary)]'}`}>{item.label}</span>
                         </NavLink>
                     );
                 })}
             </nav>
 
-            <div className="p-3 border-t border-white/5 space-y-1">
+            <div className="p-3 border-t border-[var(--glass-border)] space-y-1">
                 <NavLink to="/settings" className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
-                    <Settings size={20} className="relative z-10 transition-all duration-300 text-white/40 group-hover:text-white/80" />
-                    <span className="hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 font-medium text-white/50 group-hover:text-white/80">Settings</span>
+                    <Settings size={20} className="relative z-10 transition-all duration-300 text-[var(--text-dim)] group-hover:text-[var(--text-primary)]" />
+                    <span className="hidden lg:block ml-4 text-sm relative z-10 transition-all duration-300 font-medium text-[var(--text-dim)] group-hover:text-[var(--text-primary)]">Settings</span>
                 </NavLink>
 
-                <NavLink to="/settings" className="flex items-center p-3 rounded-xl cursor-pointer group hover:bg-white/5 border border-transparent hover:border-white/5 transition-all">
+                <NavLink to="/settings" className="flex items-center p-3 rounded-xl cursor-pointer group hover:bg-[var(--glass-bg-hover)] border border-transparent hover:border-[var(--glass-border)] transition-all">
                     <ProfileAvatar />
                     <div className="hidden lg:block ml-3">
-                        <div className="text-sm font-medium transition-colors text-white group-hover:text-cyan-100"><ProfileName /></div>
-                        <div className="text-[10px] font-medium text-white/40">Pro Workspace</div>
+                        <div className="text-sm font-medium transition-colors text-[var(--text-primary)] group-hover:text-[var(--accent-color)]"><ProfileName /></div>
+                        <div className="text-[10px] font-medium text-[var(--text-dim)]">Pro Workspace</div>
                     </div>
                 </NavLink>
                 <div className="hidden lg:flex justify-center pt-1">
@@ -144,24 +144,24 @@ const MobileTopBar = () => {
                 style={{
                     paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)',
                     height: 'calc(56px + env(safe-area-inset-top, 0px))',
-                    background: 'rgba(5, 5, 5, 0.8)',
+                    background: 'var(--nav-bg)',
                     backdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+                    borderBottom: '1px solid var(--glass-border)'
                 }}>
                 <div className="flex items-center gap-3">
-                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
-                        <Bot className="w-4 h-4 text-cyan-400" />
+                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)]">
+                        <Bot className="w-4 h-4 text-[var(--accent-color)]" />
                     </div>
-                    <h1 className="font-bold text-sm tracking-wide text-white">{currentPage}</h1>
+                    <h1 className="font-bold text-sm tracking-wide text-[var(--text-primary)]">{currentPage}</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <NavLink to="/settings" onClick={() => hapticLight()}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/5 text-white/60">
+                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-dim)]">
                         <Settings size={18} />
                     </NavLink>
                     <button onClick={() => { setDrawerOpen(!drawerOpen); hapticLight(); }}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 border border-white/5">
-                        {drawerOpen ? <X size={18} className="text-white" /> : <Menu size={18} className="text-white/60" />}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+                        {drawerOpen ? <X size={18} className="text-[var(--text-primary)]" /> : <Menu size={18} className="text-[var(--text-dim)]" />}
                     </button>
                 </div>
             </div>
@@ -175,8 +175,8 @@ const MobileTopBar = () => {
                             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                             className="absolute right-0 top-0 bottom-0 w-72 p-6 pt-20 space-y-2"
                             style={{
-                                background: '#0A0A0A',
-                                borderLeft: '1px solid rgba(255,255,255,0.08)'
+                                background: 'var(--body-bg)',
+                                borderLeft: '1px solid var(--glass-border)'
                             }}
                             onClick={e => e.stopPropagation()}>
                             {navItems.map(item => {
@@ -184,19 +184,19 @@ const MobileTopBar = () => {
                                 return (
                                     <NavLink key={item.path} to={item.path}
                                         onClick={() => { setDrawerOpen(false); hapticLight(); }}
-                                        className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-cyan-500/10 border border-cyan-500/20' : 'hover:bg-white/[0.03] border border-transparent'}`}>
-                                        <item.icon size={20} className={isActive ? 'text-cyan-400' : 'text-white/40'} />
-                                        <span className="text-sm font-medium" style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.5)' }}>{item.label}</span>
+                                        className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-[var(--accent-glow)] border border-[var(--accent-glow)]' : 'hover:bg-[var(--glass-bg-hover)] border border-transparent'}`}>
+                                        <item.icon size={20} className={isActive ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'} />
+                                        <span className="text-sm font-medium" style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-dim)' }}>{item.label}</span>
                                     </NavLink>
                                 );
                             })}
-                            <div className="pt-4 border-t border-white/5">
+                            <div className="pt-4 border-t border-[var(--glass-border)]">
                                 <NavLink to="/settings" onClick={() => setDrawerOpen(false)}
-                                    className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/[0.03]">
+                                    className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[var(--glass-bg-hover)]">
                                     <ProfileAvatar size="w-8 h-8" />
                                     <div>
-                                        <div className="text-sm font-medium text-white"><ProfileName /></div>
-                                        <div className="text-[10px] text-white/40">Settings & Profile</div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)]"><ProfileName /></div>
+                                        <div className="text-[10px] text-[var(--text-dim)]">Settings & Profile</div>
                                     </div>
                                 </NavLink>
                             </div>
@@ -222,9 +222,9 @@ const MobileBottomNav = () => {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
             style={{
                 paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
-                background: 'rgba(5, 5, 5, 0.85)',
+                background: 'var(--nav-bg)',
                 backdropFilter: 'blur(20px)',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+                borderTop: '1px solid var(--glass-border)'
             }}>
             <div className="flex items-center justify-around px-2 py-1">
                 {bottomNavItems.map(item => {
@@ -234,11 +234,11 @@ const MobileBottomNav = () => {
                             className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl relative transition-all min-w-[56px]">
                             {isActive && (
                                 <motion.div layoutId="bottom-nav-pill"
-                                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]"
+                                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-[var(--accent-color)] shadow-[0_0_10px_var(--accent-glow)]"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
                             )}
-                            <item.icon size={20} className="transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.4)' }} />
-                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.4)' }}>{item.label}</span>
+                            <item.icon size={20} className="transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'var(--text-dim)' }} />
+                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'var(--text-dim)' }}>{item.label}</span>
                         </NavLink>
                     );
                 })}
@@ -258,16 +258,16 @@ export const Layout = ({ children }) => {
     const isLight = theme === 'light';
 
     return (
-        <div className="min-h-screen font-sans transition-all duration-400 text-white selection:bg-cyan-500/30 selection:text-cyan-200" style={{ backgroundColor: '#050505' }}>
+        <div className="min-h-screen font-sans transition-all duration-400 text-[var(--text-primary)] selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]" style={{ backgroundColor: 'var(--body-bg)' }}>
             <NetworkStatus />
             <DesktopSidebar />
             <MobileTopBar />
             <main className="md:ml-20 lg:ml-64 min-h-screen relative overflow-x-hidden pt-14 md:pt-0 pb-20 md:pb-0">
                 <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                    {/* Deep Black / Blue Glow Background */}
-                    <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] opacity-40 animate-pulse"></div>
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/05 rounded-full blur-[120px] opacity-30"></div>
-                    <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-indigo-600/05 rounded-full blur-[150px] opacity-20"></div>
+                    {/* Theme-aware Ambient Glows */}
+                    <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-40 animate-pulse" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-30" />
+                    <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-[var(--visor-glow)] rounded-full blur-[150px] opacity-20" />
                 </div>
                 <motion.div className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, ease: luxuryEase }}>
                     {children}

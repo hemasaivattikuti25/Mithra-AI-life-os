@@ -23,7 +23,7 @@ const GlassCard = ({ children, className = '', delay = 0 }) => (
 
 const StatCard = ({ icon: Icon, label, value, change, changeType = 'neutral', delay = 0 }) => {
   const ChangeIcon = changeType === 'up' ? ArrowUpRight : changeType === 'down' ? ArrowDownRight : Minus;
-  const changeColor = changeType === 'up' ? 'text-green-400' : changeType === 'down' ? 'text-red-400' : 'text-mithra-merino/40';
+  const changeColor = changeType === 'up' ? 'text-green-400' : changeType === 'down' ? 'text-red-400' : 'text-[var(--text-dim)] opacity-40';
 
   return (
     <GlassCard className="p-5" delay={delay}>
@@ -38,8 +38,8 @@ const StatCard = ({ icon: Icon, label, value, change, changeType = 'neutral', de
           </span>
         )}
       </div>
-      <p className="text-mithra-merino text-2xl font-bold tracking-tight">{value}</p>
-      <p className="text-mithra-merino/50 text-xs mt-1 font-medium">{label}</p>
+      <p className="text-[var(--text-primary)] text-2xl font-bold tracking-tight">{value}</p>
+      <p className="text-[var(--text-dim)] text-xs mt-1 font-medium opacity-50">{label}</p>
     </GlassCard>
   );
 };
@@ -58,7 +58,7 @@ const MiniBarChart = ({ data, color = 'var(--accent-color)', maxHeight = 60 }) =
             className="w-full max-w-[12px] rounded-t-sm"
             style={{ background: color, opacity: d.value > 0 ? 1 : 0.15, minHeight: 2 }}
           />
-          <span className="text-[8px] text-mithra-merino/30">{d.label}</span>
+          <span className="text-[8px] text-[var(--text-dim)] opacity-30">{d.label}</span>
         </div>
       ))}
     </div>
@@ -106,14 +106,14 @@ export default function Insights() {
     try {
       focusSessions = parseInt(localStorage.getItem(getUserScopedKey('focus-sessions')) || '0', 10);
       totalFocusMin = Math.round(parseInt(localStorage.getItem(getUserScopedKey('focus-total-time')) || '0', 10));
-    } catch {}
+    } catch { }
 
     // Journal entries
     let journalCount = 0;
     try {
       const entries = JSON.parse(localStorage.getItem(getUserScopedKey('journal-entries')) || '[]');
       journalCount = entries.length;
-    } catch {}
+    } catch { }
 
     // Mood history
     let avgMood = 0;
@@ -128,7 +128,7 @@ export default function Insights() {
           moodTrend = recent > older ? 'up' : recent < older ? 'down' : 'neutral';
         }
       }
-    } catch {}
+    } catch { }
 
     // Weekly task trend (last 7 days)
     const weeklyTasks = [];
@@ -179,22 +179,22 @@ export default function Insights() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-1">
           <BarChart3 className="w-6 h-6 text-accent-visor" />
-          <h1 className="text-2xl md:text-3xl font-light text-mithra-merino tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-light text-[var(--text-primary)] tracking-tight">
             Insights & <span className="font-semibold">Analytics</span>
           </h1>
         </div>
-        <p className="text-mithra-merino/40 text-sm ml-9">Your productivity at a glance</p>
+        <p className="text-[var(--text-dim)] text-sm ml-9 opacity-40">Your productivity at a glance</p>
       </motion.div>
 
       {/* Top stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={CheckCircle2} label="Task Completion" value={`${stats.taskCompletionRate}%`} 
+        <StatCard icon={CheckCircle2} label="Task Completion" value={`${stats.taskCompletionRate}%`}
           change={`${stats.completedTasks}/${stats.totalTasks}`} changeType="neutral" delay={0.1} />
-        <StatCard icon={Flame} label="Best Streak" value={`${stats.bestStreak}d`} 
+        <StatCard icon={Flame} label="Best Streak" value={`${stats.bestStreak}d`}
           change={`avg ${stats.avgStreak}d`} changeType={stats.avgStreak > 3 ? 'up' : 'neutral'} delay={0.15} />
-        <StatCard icon={Zap} label="Focus Sessions" value={String(stats.focusSessions)} 
+        <StatCard icon={Zap} label="Focus Sessions" value={String(stats.focusSessions)}
           change={`${Math.round(stats.totalFocusMin / 60)}h total`} changeType="neutral" delay={0.2} />
-        <StatCard icon={BookOpen} label="Journal Entries" value={String(stats.journalCount)} 
+        <StatCard icon={BookOpen} label="Journal Entries" value={String(stats.journalCount)}
           change="All time" changeType="neutral" delay={0.25} />
       </div>
 
@@ -204,11 +204,11 @@ export default function Insights() {
         <GlassCard className="p-6" delay={0.3}>
           <div className="flex items-center gap-2 mb-5">
             <CheckCircle2 size={16} className="text-accent-visor" />
-            <h3 className="text-mithra-merino text-sm font-semibold">Tasks Completed This Week</h3>
+            <h3 className="text-[var(--text-primary)] text-sm font-semibold">Tasks Completed This Week</h3>
           </div>
           <MiniBarChart data={stats.weeklyTasks} color="var(--accent-color)" maxHeight={80} />
-          <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
-            <span className="text-xs text-mithra-merino/40">Total this week</span>
+          <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--glass-border)' }}>
+            <span className="text-xs text-[var(--text-dim)] opacity-40">Total this week</span>
             <span className="text-sm font-semibold text-accent-visor">{stats.weeklyTasks.reduce((s, d) => s + d.value, 0)}</span>
           </div>
         </GlassCard>
@@ -216,13 +216,13 @@ export default function Insights() {
         {/* Weekly Habits */}
         <GlassCard className="p-6" delay={0.35}>
           <div className="flex items-center gap-2 mb-5">
-            <Flame size={16} className="text-orange-400" />
-            <h3 className="text-mithra-merino text-sm font-semibold">Habits Completed This Week</h3>
+            <Flame size={16} className="text-accent-visor" />
+            <h3 className="text-[var(--text-primary)] text-sm font-semibold">Habits Completed This Week</h3>
           </div>
-          <MiniBarChart data={stats.weeklyHabits} color="#f97316" maxHeight={80} />
-          <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
-            <span className="text-xs text-mithra-merino/40">Avg per day</span>
-            <span className="text-sm font-semibold text-orange-400">
+          <MiniBarChart data={stats.weeklyHabits} color="var(--accent-color)" maxHeight={80} />
+          <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--glass-border)' }}>
+            <span className="text-xs text-[var(--text-dim)] opacity-40">Avg per day</span>
+            <span className="text-sm font-semibold text-accent-visor">
               {(stats.weeklyHabits.reduce((s, d) => s + d.value, 0) / 7).toFixed(1)}
             </span>
           </div>
@@ -235,29 +235,29 @@ export default function Insights() {
         <GlassCard className="p-6" delay={0.4}>
           <div className="flex items-center gap-2 mb-4">
             <Calendar size={16} className="text-accent-visor" />
-            <h3 className="text-mithra-merino text-sm font-semibold">Today</h3>
+            <h3 className="text-[var(--text-primary)] text-sm font-semibold">Today</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-mithra-merino/50 text-xs">Tasks</span>
-              <span className="text-sm font-semibold text-mithra-merino">{stats.todayDone}/{stats.todayTasks}</span>
+              <span className="text-[var(--text-dim)] text-xs opacity-50">Tasks</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">{stats.todayDone}/{stats.todayTasks}</span>
             </div>
-            <div className="w-full h-2 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.06)' }}>
+            <div className="w-full h-2 rounded-full" style={{ background: 'var(--glass-border)' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${stats.todayTasks > 0 ? (stats.todayDone / stats.todayTasks) * 100 : 0}%` }}
                 transition={{ delay: 0.6, duration: 0.8, ease: luxuryEase }}
                 className="h-full rounded-full" style={{ background: 'var(--accent-color)', minWidth: stats.todayDone > 0 ? 8 : 0 }} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-mithra-merino/50 text-xs">Habits</span>
-              <span className="text-sm font-semibold text-mithra-merino">{stats.todayHabits}/{stats.totalHabits}</span>
+              <span className="text-[var(--text-dim)] text-xs opacity-50">Habits</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">{stats.todayHabits}/{stats.totalHabits}</span>
             </div>
-            <div className="w-full h-2 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.06)' }}>
+            <div className="w-full h-2 rounded-full" style={{ background: 'var(--glass-border)' }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${stats.totalHabits > 0 ? (stats.todayHabits / stats.totalHabits) * 100 : 0}%` }}
                 transition={{ delay: 0.7, duration: 0.8, ease: luxuryEase }}
-                className="h-full rounded-full" style={{ background: '#f97316', minWidth: stats.todayHabits > 0 ? 8 : 0 }} />
+                className="h-full rounded-full" style={{ background: 'var(--accent-color)', minWidth: stats.todayHabits > 0 ? 8 : 0 }} />
             </div>
             <div className="flex items-center justify-between pt-2">
-              <span className="text-mithra-merino/50 text-xs">Mood</span>
+              <span className="text-[var(--text-dim)] text-xs opacity-50">Mood</span>
               <span className="text-lg">{moodEmoji}</span>
             </div>
           </div>
@@ -267,7 +267,7 @@ export default function Insights() {
         <GlassCard className="p-6" delay={0.45}>
           <div className="flex items-center gap-2 mb-4">
             <Target size={16} className="text-accent-visor" />
-            <h3 className="text-mithra-merino text-sm font-semibold">Pending by Priority</h3>
+            <h3 className="text-[var(--text-primary)] text-sm font-semibold">Pending by Priority</h3>
           </div>
           <div className="space-y-3">
             {[
@@ -278,8 +278,8 @@ export default function Insights() {
             ].map(item => (
               <div key={item.label} className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                <span className="text-mithra-merino/60 text-xs flex-1">{item.label}</span>
-                <span className="text-sm font-bold text-mithra-merino">{item.count}</span>
+                <span className="text-[var(--text-dim)] text-xs flex-1 opacity-60">{item.label}</span>
+                <span className="text-sm font-bold text-[var(--text-primary)]">{item.count}</span>
               </div>
             ))}
           </div>
@@ -289,7 +289,7 @@ export default function Insights() {
         <GlassCard className="p-6" delay={0.5}>
           <div className="flex items-center gap-2 mb-4">
             <Award size={16} className="text-accent-visor" />
-            <h3 className="text-mithra-merino text-sm font-semibold">Tasks by Category</h3>
+            <h3 className="text-[var(--text-primary)] text-sm font-semibold">Tasks by Category</h3>
           </div>
           <div className="space-y-3">
             {Object.entries(stats.categories).map(([cat, data]) => {
@@ -298,10 +298,10 @@ export default function Insights() {
               return (
                 <div key={cat}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-mithra-merino/60 text-xs capitalize">{catName}</span>
-                    <span className="text-xs text-mithra-merino/40">{data.done}/{data.total} ({pct}%)</span>
+                    <span className="text-[var(--text-dim)] text-xs capitalize opacity-60">{catName}</span>
+                    <span className="text-xs text-[var(--text-dim)] opacity-40">{data.done}/{data.total} ({pct}%)</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(242,235,227,0.06)' }}>
+                  <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--glass-border)' }}>
                     <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                       transition={{ delay: 0.7, duration: 0.6, ease: luxuryEase }}
                       className="h-full rounded-full" style={{ background: 'var(--accent-color)', minWidth: data.done > 0 ? 4 : 0 }} />
@@ -310,7 +310,7 @@ export default function Insights() {
               );
             })}
             {Object.keys(stats.categories).length === 0 && (
-              <p className="text-mithra-merino/30 text-xs text-center py-4">No task data yet</p>
+              <p className="text-[var(--text-dim)] text-xs text-center py-4 opacity-30">No task data yet</p>
             )}
           </div>
         </GlassCard>

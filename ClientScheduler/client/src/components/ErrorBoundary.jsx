@@ -25,11 +25,11 @@ export class ErrorBoundary extends React.Component {
         <div className="min-h-screen flex items-center justify-center p-8" style={{ background: 'var(--bg-primary, #050505)' }}>
           <div className="max-w-md w-full text-center space-y-6 glass-card rounded-3xl p-10">
             <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <AlertTriangle className="w-8 h-8 text-red-400" />
+              <AlertTriangle size={32} className="text-[var(--accent-color)]" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-mithra-merino mb-2">Something went wrong</h2>
-              <p className="text-mithra-merino/50 text-sm leading-relaxed">
+              <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Something went wrong</h2>
+              <p className="text-[var(--text-dim)] text-sm leading-relaxed opacity-50">
                 An unexpected error occurred. Your data is safe — try refreshing the app.
               </p>
             </div>
@@ -48,7 +48,7 @@ export class ErrorBoundary extends React.Component {
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-card text-mithra-merino/70 hover:text-mithra-merino transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-card text-[var(--text-dim)] hover:text-[var(--text-primary)] opacity-70 hover:opacity-100 transition-all"
               >
                 Reload App
               </button>

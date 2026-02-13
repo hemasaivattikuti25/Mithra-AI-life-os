@@ -87,9 +87,9 @@ export default function LandingPage() {
 
             {/* Ambient Background Glows */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] opacity-40 animate-pulse"></div>
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[120px] opacity-40 animate-pulse"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px] opacity-30"></div>
-                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-indigo-600/10 rounded-full blur-[150px] opacity-20"></div>
+                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-cyan-400/5 rounded-full blur-[150px] opacity-20"></div>
             </div>
 
             {/* Navbar */}
@@ -98,7 +98,7 @@ export default function LandingPage() {
                     <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="relative">
                             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-lg blur opacity-40 group-hover:opacity-75 transition duration-200"></div>
-                            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center border border-white/10" style={{ background: 'linear-gradient(135deg, #06b6d4, #2563eb)' }}>
+                            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center border border-white/10" style={{ background: 'linear-gradient(135deg, var(--accent-color, #06b6d4), var(--accent-soft, #0891b2))' }}>
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                         </div>
@@ -145,7 +145,7 @@ export default function LandingPage() {
                                 <button onClick={() => navigate('/auth')}>Log in</button>
                                 <button
                                     onClick={() => navigate('/auth')}
-                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-3 rounded-lg text-center font-bold"
+                                    className="bg-gradient-to-r from-cyan-500 to-cyan-700 text-white px-4 py-3 rounded-lg text-center font-bold"
                                 >
                                     Get Mithra free
                                 </button>
@@ -172,7 +172,7 @@ export default function LandingPage() {
 
                     <h1 className="text-5xl md:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">
                         <span className="block text-white">One workspace.</span>
-                        <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent">
                             Your entire life.
                         </span>
                     </h1>
@@ -210,7 +210,7 @@ export default function LandingPage() {
                     transition={{ delay: 0.2, duration: 1 }}
                     className="relative"
                 >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-cyan-800 rounded-2xl blur-lg opacity-30"></div>
                     <div className="relative rounded-xl border border-white/10 shadow-2xl overflow-hidden bg-[#0A0A0A]">
                         <img
                             src="/assets/home_1.png"
@@ -256,7 +256,7 @@ export default function LandingPage() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
-                            className="group relative p-1 rounded-2xl bg-gradient-to-br from-white/10 to-transparent hover:from-cyan-500/50 hover:to-blue-600/50 transition-all duration-500"
+                            className="group relative p-1 rounded-2xl bg-gradient-to-br from-white/10 to-transparent hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all duration-500"
                         >
                             <div className="bg-[#0A0A0A] h-full rounded-xl p-6 overflow-hidden relative">
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -308,7 +308,7 @@ export default function LandingPage() {
                     <div className="rounded-3xl bg-white/5 border border-white/10 p-8 md:p-12 backdrop-blur-sm hover:border-cyan-500/30 transition-colors duration-500">
                         <div className="flex flex-col md:flex-row gap-12 items-start">
                             <div className="flex-shrink-0 mx-auto md:mx-0">
-                                <div className="w-48 h-48 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 p-[2px] shadow-2xl shadow-cyan-500/20">
+                                <div className="w-48 h-48 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 p-[2px] shadow-2xl shadow-cyan-500/20">
                                     <div className="w-full h-full rounded-2xl overflow-hidden bg-black relative group">
                                         <img src="/assets/hemasai.jpeg" alt="Hemasai Vattikuti" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     </div>
@@ -385,7 +385,7 @@ export default function LandingPage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => navigate('/auth')}
-                        className="px-12 py-5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-[0_0_50px_rgba(34,211,238,0.4)] transition-all font-bold text-xl text-white inline-flex items-center gap-3"
+                        className="px-12 py-5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:shadow-[0_0_50px_rgba(34,211,238,0.4)] transition-all font-bold text-xl text-white inline-flex items-center gap-3"
                     >
                         Launch Mithra
                         <ArrowRight className="w-6 h-6" />

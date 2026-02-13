@@ -25,7 +25,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
 const PageLoader = () => (
   <div className="h-full w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
-    <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #C2185B)', borderTopColor: 'transparent' }} />
+    <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #22d3ee)', borderTopColor: 'transparent' }} />
   </div>
 );
 
@@ -49,7 +49,7 @@ const ProtectedRoute = ({ children }) => {
     return (
       <div className="h-screen w-screen flex items-center justify-center" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #C2185B)', borderTopColor: 'transparent' }} />
+          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #22d3ee)', borderTopColor: 'transparent' }} />
           <p className="text-sm" style={{ color: 'var(--text-dim, #888)' }}>Loading...</p>
         </div>
       </div>

@@ -6,14 +6,14 @@ import React from 'react';
  */
 
 const shimmer = {
-  background: 'linear-gradient(90deg, rgba(242,235,227,0.03) 25%, rgba(242,235,227,0.06) 50%, rgba(242,235,227,0.03) 75%)',
+  background: 'linear-gradient(90deg, rgba(var(--color-merino), 0.03) 25%, rgba(var(--color-merino), 0.08) 50%, rgba(var(--color-merino), 0.03) 75%)',
   backgroundSize: '200% 100%',
   animation: 'shimmer 1.5s infinite',
 };
 
 export function SkeletonLine({ width = '100%', height = '12px', className = '' }) {
   return (
-    <div 
+    <div
       className={`rounded-md ${className}`}
       style={{ width, height, ...shimmer }}
     />
@@ -22,7 +22,7 @@ export function SkeletonLine({ width = '100%', height = '12px', className = '' }
 
 export function SkeletonCircle({ size = 40, className = '' }) {
   return (
-    <div 
+    <div
       className={`rounded-full flex-shrink-0 ${className}`}
       style={{ width: size, height: size, ...shimmer }}
     />

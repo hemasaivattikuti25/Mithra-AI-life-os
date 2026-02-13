@@ -38,7 +38,7 @@ const SLIDES = [
     title: 'Dost Mode AI',
     subtitle: 'Your AI assistant',
     description: 'Chat with Dost — your AI companion who understands your tasks, habits, and can help you plan.',
-    color: '#C2185B',
+    color: 'var(--accent-color)',
   },
 ];
 

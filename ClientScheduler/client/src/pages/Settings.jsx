@@ -19,10 +19,10 @@ const Toggle = ({ label, description, isActive, onToggle }) => (
     <button
       onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300"
-      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(128,128,128,0.3)' }}
+      style={{ background: isActive ? 'var(--accent-color)' : 'var(--glass-border)' }}
     >
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
-        style={{ backgroundColor: isActive ? '#fff' : 'rgba(180,180,180,0.8)' }} />
+        style={{ backgroundColor: '#fff' }} />
     </button>
   </div>
 );
@@ -104,9 +104,9 @@ const IconToggle = ({ label, description, icon: Icon, isActive, onToggle, disabl
     </div>
     <button onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 ml-3"
-      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(128,128,128,0.3)' }}>
+      style={{ background: isActive ? 'var(--accent-color)' : 'var(--glass-border)' }}>
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
-        style={{ backgroundColor: isActive ? '#fff' : 'rgba(180,180,180,0.8)' }} />
+        style={{ backgroundColor: '#fff' }} />
     </button>
   </div>
 );
@@ -219,7 +219,7 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
             Browser: <span className="font-semibold" style={{
               color: Notification.permission === 'granted' ? '#22c55e'
                 : Notification.permission === 'denied' ? '#ef4444' : 'var(--accent-color)'
-            }}>{Notification.permission === 'granted' ? 'Allowed' : Notification.permission === 'denied' ? 'Blocked' : 'Not set'}</span>
+            }}>{Notification.permission === 'granted' ? 'Allowed' : Notification.permission === 'denied' ? 'Blocked' : 'Requesting'}</span>
           </span>
         </div>
       )}
@@ -275,7 +275,7 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
 
             {/* Info */}
             <div className="flex items-start gap-2.5 mt-4 p-3 rounded-xl"
-              style={{ background: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+              style={{ background: 'var(--glass-bg-hover)' }}>
               <Info size={14} className="shrink-0 mt-0.5" style={{ color: 'var(--text-dim)' }} />
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-dim)' }}>
                 Notifications use your browser's built-in system. Make sure browser notifications are allowed for this site.
@@ -400,11 +400,11 @@ export default function Settings() {
         <section className="glass-panel glass-shine rounded-2xl overflow-hidden">
           {/* Centered Profile Header */}
           <div className="flex flex-col items-center py-10 px-6"
-            style={{ background: isDarkMode ? '#1a1a1a' : 'rgba(0,0,0,0.03)' }}>
+            style={{ background: 'var(--glass-bg-hover)' }}>
             {/* Circular Avatar */}
             <div className="relative group mb-5">
               <div className="w-28 h-28 rounded-full border-4 overflow-hidden shadow-xl transition-transform group-hover:scale-105"
-                style={{ borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', background: isDarkMode ? '#2a2a2a' : '#d1d5db' }}>
+                style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)' }}>
                 {profile.avatarUrl ? (
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -440,7 +440,7 @@ export default function Settings() {
                     onClick={cancelEditProfile}
                     whileTap={{ scale: 0.95 }}
                     className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                    style={{ color: 'var(--text-dim)', background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }}>
+                    style={{ color: 'var(--text-dim)', background: 'var(--glass-bg-hover)' }}>
                     <X size={14} /> Cancel
                   </motion.button>
                   <motion.button
@@ -460,8 +460,8 @@ export default function Settings() {
                   className="px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                   style={{
                     color: 'var(--accent-color)',
-                    background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                    border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                    background: 'var(--glass-bg-hover)',
+                    border: '1px solid var(--glass-border)',
                   }}>
                   <Pencil size={14} /> Edit Profile
                 </motion.button>
@@ -528,8 +528,8 @@ export default function Settings() {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
                 style={{
                   color: 'var(--text-primary)',
-                  background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                  border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                  background: 'var(--glass-bg-hover)',
+                  border: '1px solid var(--glass-border)',
                 }}>
                 <Lock size={14} style={{ color: 'var(--accent-color)' }} /> Change Password
               </button>
@@ -552,7 +552,7 @@ export default function Settings() {
             </span>
             <button onClick={toggleTheme}
               className="w-14 h-7 rounded-full p-1 transition-colors duration-300"
-              style={{ background: isDarkMode ? 'var(--accent-color)' : 'rgba(180,180,180,0.4)' }}>
+              style={{ background: isDarkMode ? 'var(--accent-color)' : 'var(--glass-border)' }}>
               <div className="w-5 h-5 rounded-full shadow-md transform transition-transform duration-300"
                 style={{ transform: isDarkMode ? 'translateX(28px)' : 'translateX(0)', backgroundColor: isDarkMode ? '#fff' : 'var(--accent-color)' }} />
             </button>
@@ -593,12 +593,12 @@ export default function Settings() {
         {/* ═══════ SUPPORT & ABOUT ═══════ */}
         <section className="glass-panel glass-shine rounded-2xl p-6">
           <h2 className="uppercase text-xs font-bold tracking-widest mb-4" style={{ color: 'var(--accent-color)' }}>Support & About</h2>
-          
+
           {/* Star on GitHub */}
           <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noopener noreferrer"
             className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group border-b"
             style={{ borderColor: 'var(--glass-border)' }}
-            onMouseEnter={e => e.currentTarget.style.background = isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}>
@@ -634,14 +634,14 @@ export default function Settings() {
             <p className="text-sm font-semibold mt-1" style={{ color: 'var(--accent-color)' }}>
               Hemasai Vattikuti
             </p>
-            
+
             {/* Social Links */}
             <div className="flex items-center justify-center gap-4 mt-4">
               <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-                style={{ background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
+                style={{ background: 'var(--glass-bg-hover)' }}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style={{ color: 'var(--text-primary)' }}>
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                 </svg>
               </a>
               <a href="https://www.linkedin.com/in/hemsaivattikuti" target="_blank" rel="noopener noreferrer"
@@ -663,7 +663,7 @@ export default function Settings() {
           <h2 className="text-red-500 uppercase text-xs font-bold tracking-widest mb-4">Data Zone</h2>
           <button onClick={exportData}
             className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
-            onMouseEnter={e => e.currentTarget.style.background = isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <div className="flex items-center gap-3">
               <Database size={20} style={{ color: 'var(--text-dim)' }} />
@@ -704,8 +704,8 @@ export default function Settings() {
               onClick={e => e.stopPropagation()}
               className="w-full max-w-md rounded-2xl p-6 shadow-2xl"
               style={{
-                background: isDarkMode ? 'rgba(18,16,16,0.95)' : 'rgba(255,255,255,0.95)',
-                border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+                background: 'var(--body-bg)',
+                border: '1px solid var(--glass-border)',
                 backdropFilter: 'blur(40px)',
               }}
             >
@@ -736,8 +736,8 @@ export default function Settings() {
                     <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
-                        background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                        border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+                        background: 'var(--glass-bg-hover)',
+                        border: '1px solid var(--glass-border)',
                         color: 'var(--text-primary)',
                       }} required />
                   </div>
@@ -746,8 +746,8 @@ export default function Settings() {
                     <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
-                        background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                        border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+                        background: 'var(--glass-bg-hover)',
+                        border: '1px solid var(--glass-border)',
                         color: 'var(--text-primary)',
                       }} required minLength={6} />
                   </div>
@@ -756,8 +756,8 @@ export default function Settings() {
                     <input type="password" value={confirmNewPw} onChange={e => setConfirmNewPw(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
-                        background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                        border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+                        background: 'var(--glass-bg-hover)',
+                        border: '1px solid var(--glass-border)',
                         color: 'var(--text-primary)',
                       }} required minLength={6} />
                   </div>
@@ -772,7 +772,7 @@ export default function Settings() {
                     <button type="button" onClick={() => setShowPasswordModal(false)}
                       className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors"
                       style={{
-                        background: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                        background: 'var(--glass-bg-hover)',
                         color: 'var(--text-primary)',
                       }}>
                       Cancel

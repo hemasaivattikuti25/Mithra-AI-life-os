@@ -38,7 +38,7 @@ const CATEGORY_COLORS = {
   Personal: '#a855f7',
   Focus: '#06b6d4',
   Social: '#FACC15',
-  default: '#C2185B',
+  default: 'var(--accent-color)',
 };
 
 const MOOD_EMOJIS = [
@@ -144,7 +144,7 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
                 title={`${day.habitsCompleted} habits done`}
               />
             </div>
-            <span className="text-[10px] text-mithra-merino/40 font-medium mt-1">{day.label}</span>
+            <span className="text-[10px] text-[var(--text-dim)] font-medium mt-1 opacity-40">{day.label}</span>
           </div>
         ))}
       </div>
@@ -153,7 +153,7 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
       <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-accent-visor" />
-          <span className="text-xs text-mithra-merino/50">
+          <span className="text-xs text-[var(--text-dim)] opacity-50">
             {data.reduce((s, d) => s + d.tasksCompleted, 0)} tasks &middot; {data.reduce((s, d) => s + d.habitsCompleted, 0)} habits this week
           </span>
         </div>
@@ -341,10 +341,10 @@ export default function Dashboard() {
         animate="visible"
         className="relative overflow-hidden rounded-3xl p-8 md:p-10"
         style={{
-          background: 'rgba(255, 255, 255, 0.03)',
+          background: 'var(--glass-bg)',
           backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+          border: '1px solid var(--glass-border)',
+          boxShadow: isLight ? '0 10px 40px rgba(0,0,0,0.05)' : '0 20px 60px rgba(0,0,0,0.4)',
         }}
       >
         {/* ambient glows inside the card */}
@@ -361,46 +361,46 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
-                <GreetingIcon className="w-5 h-5 text-cyan-400" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--glass-border)]">
+                <GreetingIcon className="w-5 h-5 text-[var(--accent-color)]" />
               </div>
-              <span className="text-white/40 text-sm font-medium tracking-widest uppercase">
+              <span className="text-[var(--text-dim)] text-sm font-medium tracking-widest uppercase">
                 {format(today, 'EEEE')}
               </span>
             </motion.div>
 
             <motion.h1
-              className="text-3xl md:text-4xl font-light text-white tracking-tight"
+              className="text-3xl md:text-4xl font-light text-[var(--text-primary)] tracking-tight"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6, ease: luxuryEase }}
             >
               {greeting.text},&nbsp;
-              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-blue-400">
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-[var(--accent-secondary)]">
                 {profile?.fullName || 'there'}
               </span>
             </motion.h1>
 
             <motion.p
-              className="text-white/35 text-base mt-2 font-light"
+              className="text-[var(--text-dim)] text-base mt-2 font-light"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.6, ease: luxuryEase }}
             >
               {format(today, 'MMMM d, yyyy')} &middot;&nbsp;
-              <span className="text-cyan-400/80">{pendingCount} tasks pending</span>
+              <span className="text-[var(--accent-color)] opacity-80">{pendingCount} tasks pending</span>
             </motion.p>
           </div>
 
           {/* Date badge — frosted glass */}
           <motion.div
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl border border-white/5 bg-white/[0.02]"
+            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)]"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.45, duration: 0.5, ease: luxuryEase }}
           >
-            <span className="text-cyan-400 text-2xl font-bold leading-none">{format(today, 'd')}</span>
-            <span className="text-white/30 text-xs uppercase mt-1 tracking-wider">{format(today, 'MMM')}</span>
+            <span className="text-[var(--accent-color)] text-2xl font-bold leading-none">{format(today, 'd')}</span>
+            <span className="text-[var(--text-dim)] text-xs uppercase mt-1 tracking-wider">{format(today, 'MMM')}</span>
           </motion.div>
         </div>
       </motion.div>
@@ -468,10 +468,12 @@ export default function Dashboard() {
         <GlassCard custom={1} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <Calendar className="w-[18px] h-[18px] text-cyan-400" />
-              <h2 className="text-white text-lg font-semibold tracking-tight">Events</h2>
+              <Calendar className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+              <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">Events</h2>
             </div>
-            <button onClick={() => navigate('/calendar')} className="text-white/40 text-xs font-semibold hover:text-cyan-400 transition-colors">{todayEvents.length} today →</button>
+            <button onClick={() => navigate('/calendar')} className="text-[var(--accent-color)] text-xs font-semibold hover:opacity-80 transition-opacity">
+              {todayEvents.length} today →
+            </button>
           </div>
 
           {todayEvents.length > 0 ? (
@@ -482,7 +484,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -15 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
-                  className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:bg-white/[0.03] border border-transparent hover:border-white/5"
+                  className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:bg-[var(--glass-bg-hover)] border border-transparent hover:border-[var(--glass-border)]"
                   onClick={() => {
                     if (event.source === 'task') navigate('/tasks');
                     else if (event.source === 'habit') navigate('/habits');
@@ -492,23 +494,23 @@ export default function Dashboard() {
                   <div className="w-1 h-10 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: event.color, boxShadow: `0 0 8px ${event.color}33` }} />
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-white/90 text-sm font-medium truncate group-hover:text-white transition-colors duration-300">
+                    <p className="text-[var(--text-primary)] opacity-90 text-sm font-medium truncate group-hover:opacity-100 transition-colors duration-300">
                       {event.title}
                     </p>
-                    <p className="text-white/30 text-xs mt-0.5 flex items-center gap-1.5">
+                    <p className="text-[var(--text-dim)] text-xs mt-0.5 flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> {event.time}
                     </p>
                   </div>
 
-                  <ArrowRight className="w-4 h-4 text-white/0 group-hover:text-white/30 transition-all duration-300 -translate-x-1 group-hover:translate-x-0" />
+                  <ArrowRight className="w-4 h-4 text-transparent group-hover:text-[var(--text-dim)] transition-all duration-300 -translate-x-1 group-hover:translate-x-0" />
                 </motion.div>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Inbox size={24} className="text-white/20 mb-2" />
-              <p className="text-white/40 text-sm">No events today</p>
-              <p className="text-white/25 text-xs mt-1">Add events in Calendar</p>
+              <Inbox size={24} className="text-[var(--text-dim)] mb-2 opacity-20" />
+              <p className="text-[var(--text-dim)] text-sm opacity-40">No events today</p>
+              <p className="text-[var(--text-dim)] text-xs mt-1 opacity-25">Add events in Calendar</p>
             </div>
           )}
         </GlassCard>
@@ -517,10 +519,10 @@ export default function Dashboard() {
         <GlassCard custom={2} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-[18px] h-[18px] text-cyan-400" />
-              <h2 className="text-white text-lg font-semibold tracking-tight">Tasks</h2>
+              <CheckCircle2 className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+              <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">Tasks</h2>
             </div>
-            <button onClick={() => navigate('/tasks')} className="text-white/40 text-xs font-semibold hover:text-cyan-400 transition-colors px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10">
+            <button onClick={() => navigate('/tasks')} className="text-[var(--accent-color)] text-xs font-semibold hover:opacity-80 transition-opacity px-2 py-0.5 rounded-lg bg-[var(--accent-glow)]">
               {doneCount}/{dashTasks.length} →
             </button>
           </div>
@@ -532,7 +534,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, x: 15 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
-                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.03] transition-all duration-300 border border-transparent hover:border-white/5"
+                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--glass-bg-hover)] transition-all duration-300 border border-transparent hover:border-[var(--glass-border)]"
                 style={{
                   background: task.priority === 'HIGH'
                     ? 'rgba(239,68,68,0.08)'
@@ -548,17 +550,17 @@ export default function Dashboard() {
                   className="flex-shrink-0 transition-transform duration-200 active:scale-90"
                 >
                   {task.done ? (
-                    <CheckCircle2 className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]" />
+                    <CheckCircle2 className="w-5 h-5 text-[var(--accent-color)] drop-shadow-[0_0_8px_var(--accent-glow)]" />
                   ) : (
-                    <Circle className="w-5 h-5 text-white/20 group-hover:text-white/45 transition-colors duration-300" />
+                    <Circle className="w-5 h-5 text-[var(--text-dim)] opacity-40 group-hover:text-[var(--text-primary)] group-hover:opacity-100 transition-colors duration-300" />
                   )}
                 </button>
 
                 <span className={clsx(
                   'flex-1 text-sm transition-all duration-300 truncate',
                   task.done
-                    ? 'line-through text-white/20'
-                    : 'text-white/85 group-hover:text-white'
+                    ? 'line-through text-[var(--text-dim)]'
+                    : 'text-[var(--text-primary)] opacity-90 group-hover:opacity-100'
                 )}>
                   {task.title}
                 </span>
@@ -582,10 +584,10 @@ export default function Dashboard() {
         <GlassCard custom={3} className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <Flame className="w-[18px] h-[18px] text-cyan-400" />
-              <h2 className="text-white text-lg font-semibold tracking-tight">Habits</h2>
+              <Flame className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+              <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">Habits</h2>
             </div>
-            <button onClick={() => navigate('/habits')} className="text-white/50 text-xs font-semibold hover:text-cyan-400 transition-colors px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10">
+            <button onClick={() => navigate('/habits')} className="text-[var(--accent-color)] text-xs font-semibold hover:opacity-80 transition-opacity px-2 py-0.5 rounded-lg bg-[var(--accent-glow)]">
               {habits ? habits.filter(h => h.todayDone).length : 0}/{habits ? habits.length : 0} →
             </button>
           </div>
@@ -602,7 +604,7 @@ export default function Dashboard() {
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
                   className={clsx(
                     'flex items-center gap-3 p-3 rounded-xl transition-all duration-300',
-                    habit.todayDone ? 'opacity-70' : 'hover:bg-white/[0.03]'
+                    habit.todayDone ? 'opacity-70' : 'hover:bg-[var(--glass-bg-hover)]'
                   )}
                   style={{
                     background: habit.todayDone
@@ -619,7 +621,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <span className={clsx(
                       'text-sm font-medium transition-all truncate block',
-                      habit.todayDone ? 'line-through text-white/35' : 'text-white/85'
+                      habit.todayDone ? 'line-through text-[var(--text-dim)]' : 'text-[var(--text-primary)] opacity-90 group-hover:opacity-100'
                     )}>
                       {habit.title}
                     </span>
@@ -634,8 +636,8 @@ export default function Dashboard() {
                     onClick={() => toggleHabit(habit.id)}
                     className={clsx('w-7 h-7 rounded-full flex items-center justify-center transition-all border flex-shrink-0',
                       habit.todayDone
-                        ? 'bg-cyan-500 border-cyan-500 text-black shadow-[0_0_12px_rgba(34,211,238,0.5)]'
-                        : 'border-white/15 text-white/30 hover:border-cyan-400/50 hover:text-cyan-400'
+                        ? 'bg-[var(--accent-color)] border-[var(--accent-glow)] text-[var(--selection-text)] shadow-[0_0_12px_var(--accent-glow)]'
+                        : 'border-[var(--glass-border)] text-[var(--text-dim)] hover:border-[var(--accent-color)] hover:text-[var(--accent-color)]'
                     )}
                   >
                     {habit.todayDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
@@ -656,8 +658,8 @@ export default function Dashboard() {
           ════════════════════════════════════ */}
       <GlassCard custom={4} className="p-6 md:p-8">
         <div className="flex items-center gap-2.5 mb-6">
-          <Sparkles className="w-[18px] h-[18px] text-cyan-400" />
-          <h2 className="text-white text-lg font-semibold tracking-tight">
+          <Sparkles className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+          <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">
             How are you feeling?
           </h2>
         </div>
@@ -675,16 +677,16 @@ export default function Dashboard() {
               className={clsx(
                 'flex flex-col items-center gap-2.5 p-4 md:p-5 rounded-2xl transition-all duration-300',
                 selectedMood?.value === mood.value
-                  ? 'bg-white/10 shadow-lg border border-white/10'
-                  : 'hover:bg-white/[0.03]'
+                  ? 'bg-[var(--accent-glow)] shadow-lg border border-[var(--glass-border)]'
+                  : 'hover:bg-[var(--glass-bg-hover)]'
               )}
             >
               <span className="text-4xl md:text-5xl select-none drop-shadow-lg">{mood.emoji}</span>
               <span className={clsx(
                 'text-xs font-medium transition-colors duration-300',
                 selectedMood?.value === mood.value
-                  ? 'text-white'
-                  : 'text-white/35'
+                  ? 'text-[var(--text-primary)]'
+                  : 'text-[var(--text-dim)]'
               )}>
                 {mood.label}
               </span>
@@ -698,10 +700,10 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 15, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="mt-5 p-4 rounded-xl text-center bg-cyan-500/10 border border-cyan-500/20"
+              className="mt-5 p-4 rounded-xl text-center bg-[var(--accent-glow)] border border-[var(--glass-border)]"
             >
-              <p className="text-cyan-400 text-sm font-medium mb-1">✓ Mood logged</p>
-              <p className="text-white/60 text-sm leading-relaxed italic">
+              <p className="text-[var(--accent-color)] text-sm font-medium mb-1">✓ Mood logged</p>
+              <p className="text-[var(--text-dim)] text-sm leading-relaxed italic">
                 "{selectedMood.message}"
               </p>
             </motion.div>
@@ -734,19 +736,19 @@ export default function Dashboard() {
               transition={{ delay: 0.4 + i * 0.07, duration: 0.5, ease: luxuryEase }}
               className="rounded-2xl p-5 group hover:scale-[1.02] transition-transform duration-300"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
                 backdropFilter: 'blur(10px)'
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
-                  <Icon className="w-4 h-4 text-cyan-400" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--glass-border)]">
+                  <Icon className="w-4 h-4 text-[var(--accent-color)]" />
                 </div>
-                <span className="text-cyan-400 text-xs font-semibold">{stat.change}</span>
+                <span className="text-[var(--accent-color)] text-xs font-semibold">{stat.change}</span>
               </div>
-              <p className="text-white text-2xl font-bold tracking-tight">{stat.value}</p>
-              <p className="text-white/50 text-xs mt-1 font-medium">{stat.label}</p>
+              <p className="text-[var(--text-primary)] text-2xl font-bold tracking-tight">{stat.value}</p>
+              <p className="text-[var(--text-dim)] text-xs mt-1 font-medium">{stat.label}</p>
             </motion.div>
           );
         })}
@@ -758,8 +760,8 @@ export default function Dashboard() {
       <GlassCard custom={6} className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <BarChart3 className="w-[18px] h-[18px] text-accent-visor" />
-            <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+            <BarChart3 className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+            <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">
               Weekly Progress
             </h2>
           </div>
@@ -784,7 +786,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-[18px] h-[18px] text-accent-visor" />
-            <h2 className="text-mithra-merino text-lg font-semibold tracking-tight">
+            <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">
               Recent Journal
             </h2>
           </div>
@@ -817,10 +819,10 @@ export default function Dashboard() {
                     {entry.date ? format(new Date(entry.date), 'MMM d') : ''}
                   </span>
                 </div>
-                <h4 className="text-sm font-medium text-mithra-merino/85 truncate group-hover:text-mithra-merino transition-colors">
+                <h4 className="text-sm font-medium text-[var(--text-primary)] truncate group-hover:text-[var(--accent-color)] transition-colors opacity-85">
                   {entry.title || 'Untitled'}
                 </h4>
-                <p className="text-xs text-mithra-merino/35 mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-[var(--text-dim)] mt-1 line-clamp-2 leading-relaxed opacity-35">
                   {entry.body || entry.content || ''}
                 </p>
                 {entry.tags && entry.tags.length > 0 && (
@@ -840,8 +842,8 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <FileText size={24} className="text-mithra-merino/20 mb-2" />
-            <p className="text-mithra-merino/40 text-sm">No journal entries yet</p>
+            <FileText size={24} className="text-[var(--text-dim)] mb-2 opacity-20" />
+            <p className="text-[var(--text-dim)] text-sm opacity-40">No journal entries yet</p>
             <button
               onClick={() => navigate('/journal')}
               className="text-accent-visor/70 text-xs mt-2 hover:text-accent-visor transition-colors"

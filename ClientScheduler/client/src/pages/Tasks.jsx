@@ -23,7 +23,7 @@ const PRIORITY_CONFIG = {
 };
 
 const TASK_CATEGORIES = [
-  { id: 'default', name: 'My Tasks', icon: ListTodo, color: '#C2185B' },
+  { id: 'default', name: 'My Tasks', icon: ListTodo, color: 'var(--accent-color)' },
   { id: 'work', name: 'Work', icon: Briefcase, color: '#3b82f6' },
   { id: 'personal', name: 'Personal', icon: Heart, color: '#f97316' },
 ];
@@ -84,39 +84,39 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         className="w-full sm:max-w-md max-h-[85dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden"
         style={{
           marginBottom: 'env(safe-area-inset-bottom)',
-          background: '#0A0A0A',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--body-bg)',
+          border: '1px solid var(--glass-border)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
         {/* Drag handle for mobile */}
         <div className="sm:hidden flex justify-center pt-3 pb-1" onClick={onClose}>
-          <div className="w-12 h-1.5 rounded-full bg-[#F2EBE3]/20" />
+          <div className="w-12 h-1.5 rounded-full bg-[var(--text-dim)] opacity-20" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/5">
-          <h3 className="text-lg font-medium text-white flex items-center gap-2.5">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[var(--glass-border)]">
+          <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-color)' }}>
               <CheckCircle2 size={18} style={{ color: 'var(--accent-color)' }} />
             </div>
             Add New Task
           </h3>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-5">
           {/* Task Title */}
           <div>
-            <label className="text-xs text-white/60 uppercase tracking-wider font-bold mb-2 block">Task Title</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Task Title</label>
             <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="What needs to be done?"
-              className="glass-input !border-white/10 !bg-white/5 text-white placeholder:text-white/20" />
+              className="glass-input" />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs text-[#F2EBE3]/60 uppercase tracking-wider font-bold mb-2 block flex items-center gap-1.5">
-              <FileText size={12} /> Description <span className="text-[#F2EBE3]/35 normal-case tracking-normal font-normal ml-1">(optional)</span>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block flex items-center gap-1.5 opacity-60">
+              <FileText size={12} /> Description <span className="text-[var(--text-dim)] normal-case tracking-normal font-normal ml-1 opacity-40">(optional)</span>
             </label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               placeholder="Add details about this task..." rows={3}
@@ -125,23 +125,23 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
 
           {/* Category Dropdown */}
           <div className="relative">
-            <label className="text-xs text-[#F2EBE3]/60 uppercase tracking-wider font-bold mb-2 block">Category</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Category</label>
             <button onClick={() => setShowCatDropdown(!showCatDropdown)}
               className="w-full glass-input !py-3 flex items-center justify-between">
               <span className="flex items-center gap-2.5">
                 <CatIcon size={16} style={{ color: selectedCat.color }} />
-                <span className="text-[#F2EBE3]/80">{selectedCat.name}</span>
+                <span className="text-[var(--text-primary)] opacity-80">{selectedCat.name}</span>
               </span>
-              <ChevronDown size={16} className="text-[#F2EBE3]/30" />
+              <ChevronDown size={16} className="text-[var(--text-dim)] opacity-30" />
             </button>
             <AnimatePresence>
               {showCatDropdown && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl border border-[#F2EBE3]/10 overflow-hidden z-20">
+                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl border border-[var(--glass-border)] overflow-hidden z-20">
                   {TASK_CATEGORIES.map(cat => (
                     <button key={cat.id} onClick={() => { setCategory(cat.id); setShowCatDropdown(false); }}
                       className={clsx('w-full px-4 py-3 flex items-center gap-2.5 text-sm transition-all',
-                        category === cat.id ? 'bg-white/[0.06] text-[#F2EBE3]' : 'text-[#F2EBE3]/50 hover:bg-white/[0.03]')}>
+                        category === cat.id ? 'bg-[var(--glass-bg-hover)] text-[var(--text-primary)]' : 'text-[var(--text-dim)] opacity-50 hover:bg-[var(--glass-bg-hover)]')}>
                       <cat.icon size={16} style={{ color: cat.color }} />
                       {cat.name}
                     </button>
@@ -153,7 +153,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
 
           {/* Priority */}
           <div>
-            <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Priority</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-40">Priority</label>
             <div className="flex gap-2">
               {[
                 { key: 'low', label: 'LOW', color: '#22c55e', bgActive: 'bg-green-500/15 border-green-500/40', bgInactive: 'border-green-500/20 text-green-400/40' },
@@ -173,8 +173,8 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
           {/* Date & Time Row */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block flex items-center gap-1.5">
-                <CalIcon size={12} /> Date <span className="text-[#F2EBE3]/20 normal-case tracking-normal font-normal ml-1">(optional)</span>
+              <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block flex items-center gap-1.5 opacity-40">
+                <CalIcon size={12} /> Date <span className="text-[var(--text-dim)] normal-case tracking-normal font-normal ml-1 opacity-20">(optional)</span>
               </label>
               <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
                 className="glass-input !py-2.5 !text-sm w-full" />
@@ -189,7 +189,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
 
           {/* Recurrence */}
           <div>
-            <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Repeat</label>
+            <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-40">Repeat</label>
             <div className="flex gap-2">
               {[
                 { key: 'none', label: 'Once' },
@@ -199,8 +199,8 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
               ].map(r => (
                 <button key={r.key} onClick={() => setRecurrence(r.key)}
                   className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${recurrence === r.key
-                    ? 'border-[#C2185B]/40 bg-[#C2185B]/10 text-[#C2185B]'
-                    : 'border-white/10 text-[#F2EBE3]/30 hover:border-white/20'
+                    ? 'border-[var(--accent-color)]/40 bg-[var(--accent-glow)] text-[var(--accent-color)]'
+                    : 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-30 hover:opacity-100 hover:border-[var(--glass-border-hover)]'
                     }`}>
                   {r.label}
                 </button>
@@ -210,10 +210,10 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         </div>
 
         {/* Footer — always visible at bottom */}
-        <div className="flex-shrink-0 p-5 border-t border-[#F2EBE3]/5 flex justify-end gap-3 sticky bottom-0 bg-inherit backdrop-blur-xl">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[#F2EBE3]/40 text-sm hover:bg-white/5 transition-colors">Cancel</button>
+        <div className="flex-shrink-0 p-5 border-t border-[var(--glass-border)] flex justify-end gap-3 sticky bottom-0 bg-inherit backdrop-blur-xl">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm hover:bg-[var(--glass-bg-hover)] transition-colors opacity-60">Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
-            className="px-6 py-2.5 rounded-xl bg-[#C2185B] text-white font-bold text-sm hover:shadow-[0_0_20px_rgba(194,24,91,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+            className="px-6 py-2.5 rounded-xl bg-[var(--accent-color)] text-white font-bold text-sm hover:shadow-[0_0_20px_var(--accent-glow)] transition-all disabled:opacity-30 disabled:cursor-not-allowed">
             Add Task
           </button>
         </div>
@@ -227,10 +227,10 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
    ═══════════════════════════════════════════════════════════════ */
 const formatDueDate = (date) => {
   if (!date) return null;
-  if (isToday(date)) return { text: 'Today', class: 'text-[#C2185B]' };
+  if (isToday(date)) return { text: 'Today', class: 'text-[var(--accent-color)]' };
   if (isTomorrow(date)) return { text: 'Tomorrow', class: 'text-blue-400' };
   if (isPast(startOfDay(date))) return { text: format(date, 'MMM d'), class: 'text-red-400' };
-  return { text: format(date, 'MMM d'), class: 'text-[#F2EBE3]/40' };
+  return { text: format(date, 'MMM d'), class: 'text-[var(--text-dim)] opacity-40' };
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -292,12 +292,12 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="w-[380px] flex-shrink-0 border-l border-white/5 flex flex-col h-full"
-      style={{ background: 'rgba(10, 10, 10, 0.6)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
+      className="w-[380px] flex-shrink-0 border-l border-[var(--glass-border)] flex flex-col h-full"
+      style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#F2EBE3]/5">
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50 transition-colors"><X size={20} /></button>
+      <div className="flex items-center justify-between p-4 border-b border-[var(--glass-border)]">
+        <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] transition-colors"><X size={20} /></button>
         <div className="flex gap-1">
           <button onClick={cyclePriority}
             className={clsx('p-2 rounded-lg hover:bg-white/10 transition-colors', PRIORITY_CONFIG[task.priority].color)}
@@ -305,7 +305,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
             <Flag size={18} />
           </button>
           <button onClick={() => onUpdate({ ...task, starred: !task.starred })}
-            className={clsx('p-2 rounded-lg hover:bg-white/10 transition-colors', task.starred ? 'text-yellow-400' : 'text-[#F2EBE3]/50')}>
+            className={clsx('p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-colors', task.starred ? 'text-yellow-400' : 'text-[var(--text-dim)] opacity-50')}>
             <Star size={18} fill={task.starred ? 'currentColor' : 'none'} />
           </button>
           <button onClick={() => { onDelete(task.id); onClose(); }}
@@ -324,7 +324,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
           onChange={(e) => setTitle(e.target.value)}
           onBlur={saveChanges}
           onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-          className="w-full bg-transparent text-lg font-medium text-white border-none outline-none placeholder:text-white/20"
+          className="w-full bg-transparent text-lg font-medium text-[var(--text-primary)] border-none outline-none placeholder:text-[var(--text-dim)]"
           placeholder="Task title"
         />
 
@@ -335,12 +335,12 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
           onBlur={saveChanges}
           placeholder="Add details"
           rows={3}
-          className="glass-input !text-sm !text-[#F2EBE3]/70 resize-none"
+          className="glass-input !text-sm !text-[var(--text-dim)] resize-none"
         />
 
         {/* Due Date — clickable with mini date picker */}
         <div className="flex items-center gap-3 text-sm">
-          <CalIcon size={16} className="text-[#F2EBE3]/40 flex-shrink-0" />
+          <CalIcon size={16} className="text-[var(--text-dim)] opacity-40 flex-shrink-0" />
           {editingDate ? (
             <input
               type="date"
@@ -353,20 +353,20 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
           ) : (
             <button
               onClick={() => setEditingDate(true)}
-              className="text-left hover:bg-white/5 px-2 py-1 rounded-lg transition-colors"
+              className="text-left hover:bg-[var(--glass-bg-hover)] px-2 py-1 rounded-lg transition-colors"
             >
               {task.dueDate ? (
                 <span className={formatDueDate(task.dueDate)?.class}>{formatDueDate(task.dueDate)?.text}</span>
               ) : (
-                <span className="text-[#F2EBE3]/30">Add date</span>
+                <span className="text-[var(--text-dim)] opacity-30">Add date</span>
               )}
             </button>
           )}
         </div>
 
         {/* Priority Badge */}
-        <button onClick={cyclePriority} className="flex items-center gap-3 text-sm hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors">
-          <Flag size={16} className="text-[#F2EBE3]/40" />
+        <button onClick={cyclePriority} className="flex items-center gap-3 text-sm hover:bg-[var(--glass-bg-hover)] -mx-2 px-2 py-1 rounded-lg transition-colors">
+          <Flag size={16} className="text-[var(--text-dim)] opacity-40" />
           <span className={clsx('px-3 py-1 rounded-full text-xs font-medium', PRIORITY_CONFIG[task.priority].bg, PRIORITY_CONFIG[task.priority].color)}>
             {PRIORITY_CONFIG[task.priority].label} Priority
           </span>
@@ -374,7 +374,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
 
         {/* Subtasks */}
         <div className="space-y-3 pt-2">
-          <h4 className="text-xs text-[#F2EBE3]/60 uppercase tracking-wider font-bold">Subtasks</h4>
+          <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold opacity-60">Subtasks</h4>
           <AnimatePresence>
             {task.subtasks.map(sub => (
               <motion.div
@@ -386,12 +386,12 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
               >
                 <button onClick={() => toggleSubtask(sub.id)} className="flex-shrink-0">
                   {sub.completed ? (
-                    <CheckCircle2 size={18} className="text-[#C2185B]" />
+                    <CheckCircle2 size={18} className="text-[var(--accent-color)]" />
                   ) : (
-                    <Circle size={18} className="text-[#F2EBE3]/35 hover:text-[#C2185B] transition-colors" />
+                    <Circle size={18} className="text-[var(--text-dim)] opacity-35 hover:text-[var(--accent-color)] transition-colors" />
                   )}
                 </button>
-                <span className={clsx('flex-1 text-sm', sub.completed ? 'line-through text-[#F2EBE3]/30' : 'text-[#F2EBE3]/80')}>
+                <span className={clsx('flex-1 text-sm', sub.completed ? 'line-through text-[var(--text-dim)] opacity-30' : 'text-[var(--text-primary)] opacity-80')}>
                   {sub.title}
                 </span>
                 <button onClick={() => deleteSubtask(sub.id)}
@@ -404,13 +404,13 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
 
           {/* Add Subtask */}
           <div className="flex items-center gap-3">
-            <Plus size={18} className="text-[#F2EBE3]/35 flex-shrink-0" />
+            <Plus size={18} className="text-[var(--text-dim)] opacity-35 flex-shrink-0" />
             <input
               value={subtaskInput}
               onChange={(e) => setSubtaskInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
               placeholder="Add subtask"
-              className="flex-1 bg-transparent text-sm text-[#F2EBE3] placeholder:text-[#F2EBE3]/20 border-none outline-none"
+              className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] border-none outline-none opacity-60"
             />
           </div>
         </div>
@@ -426,7 +426,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
   const due = formatDueDate(task.dueDate);
   const subtasksDone = task.subtasks.filter(s => s.completed).length;
   const subtasksTotal = task.subtasks.length;
-  const listColor = TASK_CATEGORIES.find(c => c.id === task.listId)?.color || '#C2185B';
+  const listColor = TASK_CATEGORIES.find(c => c.id === task.listId)?.color || 'var(--accent-color)';
 
   return (
     <motion.div
@@ -436,10 +436,10 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       exit={{ opacity: 0, x: -20, transition: { duration: 0.25 } }}
       onClick={() => onSelect(task)}
       className={clsx(
-        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-white/[0.04]',
+        'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-[var(--glass-border)]',
         isSelected
           ? 'bg-[var(--accent-glow)]'
-          : 'hover:bg-white/[0.02]',
+          : 'hover:bg-[var(--glass-bg-hover)]',
         task.completed && 'opacity-45'
       )}
       style={{
@@ -461,13 +461,13 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
         className="flex-shrink-0 mt-0.5"
       >
         {task.completed ? (
-          <CheckCircle2 size={20} className="text-[#C2185B]" />
+          <CheckCircle2 size={20} className="text-[var(--accent-color)]" />
         ) : (
           <Circle size={20} className={clsx(
             'transition-colors',
-            task.priority === 'high' ? 'text-red-400/60 hover:text-[#C2185B]' :
-              task.priority === 'medium' ? 'text-yellow-400/40 hover:text-[#C2185B]' :
-                'text-[#F2EBE3]/20 hover:text-[#C2185B]'
+            task.priority === 'high' ? 'text-red-400/60 hover:text-[var(--accent-color)]' :
+              task.priority === 'medium' ? 'text-yellow-400/40 hover:text-[var(--accent-color)]' :
+                'text-[var(--text-dim)] opacity-20 hover:text-[var(--accent-color)]'
           )} />
         )}
       </button>
@@ -476,7 +476,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       <div className="flex-1 min-w-0">
         <div className={clsx(
           'text-[14px] leading-snug transition-all',
-          task.completed ? 'line-through text-white/30' : 'text-white/90 group-hover:text-white'
+          task.completed ? 'line-through text-[var(--text-dim)] opacity-30' : 'text-[var(--text-primary)] opacity-90 group-hover:opacity-100'
         )}>
           {task.title}
         </div>
@@ -492,12 +492,12 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
             </span>
           )}
           {subtasksTotal > 0 && (
-            <span className="text-[12px] text-[#F2EBE3]/45">
+            <span className="text-[12px] text-[var(--text-dim)] opacity-45">
               {subtasksDone}/{subtasksTotal}
             </span>
           )}
           {task.details && !task.completed && (
-            <span className="text-[12px] text-[#F2EBE3]/35 truncate max-w-[140px]">{task.details}</span>
+            <span className="text-[12px] text-[var(--text-dim)] opacity-35 truncate max-w-[140px]">{task.details}</span>
           )}
         </div>
       </div>
@@ -506,7 +506,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onSelect(task); }}
-          className="p-1.5 rounded-lg text-[#F2EBE3]/50 hover:text-[#F2EBE3]/80 hover:bg-white/10 transition-all"
+          className="p-1.5 rounded-lg text-[var(--text-dim)] opacity-50 hover:opacity-100 hover:bg-[var(--glass-bg-hover)] transition-all"
           title="Edit"
         >
           <Edit3 size={16} />
@@ -515,7 +515,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
           onClick={(e) => { e.stopPropagation(); onStar(task.id); }}
           className="p-1.5 rounded-lg transition-all"
         >
-          <Star size={16} className={task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-[#F2EBE3]/40 hover:text-yellow-400/70'} />
+          <Star size={16} className={task.starred ? 'text-yellow-400 fill-yellow-400' : 'text-[var(--text-dim)] opacity-40 hover:text-yellow-400/70'} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
@@ -673,19 +673,14 @@ export default function MithraTasks() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden"
-      style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(30px)'
-      }}
+      className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy"
     >
       {/* ── MAIN TASK LIST ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header with filter chips */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[#F2EBE3]/5 flex-shrink-0 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--glass-border)] flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
-            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-white flex-shrink-0">Tasks</h2>
+            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[var(--text-primary)] flex-shrink-0">Tasks</h2>
             {/* Filter chips */}
             <div className="flex gap-1.5 ml-2 sm:ml-4">
               <button
@@ -693,8 +688,8 @@ export default function MithraTasks() {
                 className={clsx(
                   'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
                   activeFilter === 'all'
-                    ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)]'
-                    : 'border-white/10 text-white/40 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                    ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)] text-[var(--accent-color)]'
+                    : 'border-[var(--glass-border)] text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)]'
                 )}
               >
                 All
@@ -708,8 +703,8 @@ export default function MithraTasks() {
                     className={clsx(
                       'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 whitespace-nowrap',
                       activeFilter === list.id
-                        ? 'bg-white/[0.08] text-white font-semibold'
-                        : 'border-white/10 text-white/35 hover:border-white/20'
+                        ? 'bg-[var(--glass-bg-hover)] text-[var(--text-primary)] font-semibold'
+                        : 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-60 hover:opacity-100'
                     )}
                     style={activeFilter === list.id ? { borderColor: list.color + '50' } : {}}
                   >
@@ -736,7 +731,7 @@ export default function MithraTasks() {
             </button>
             <button
               onClick={() => setSortBy(s => s === 'date' ? 'priority' : s === 'priority' ? 'name' : 'date')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-white/35 hover:bg-white/5 border border-white/[0.06] transition-colors uppercase tracking-wider font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-[var(--text-dim)] opacity-40 hover:opacity-100 hover:bg-[var(--glass-bg-hover)] border border-[var(--glass-border)] transition-colors uppercase tracking-wider font-medium"
             >
               <SortAsc size={13} />
               {sortBy}
@@ -745,9 +740,9 @@ export default function MithraTasks() {
         </div>
 
         {/* Add Task Button — opens rich modal */}
-        <div className="px-5 py-3 border-b border-[#F2EBE3]/5 flex-shrink-0 flex items-center gap-3">
+        <div className="px-5 py-3 border-b border-[var(--glass-border)] flex-shrink-0 flex items-center gap-3">
           <button onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#C2185B]/10 border border-[#C2185B]/25 text-[#C2185B] text-sm font-medium hover:bg-[#C2185B]/15 hover:border-[#C2185B]/40 transition-all">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-glow)] border border-[var(--accent-color)]/25 text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/40 transition-all">
             <Plus size={16} /> New Task
           </button>
         </div>
@@ -760,12 +755,12 @@ export default function MithraTasks() {
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden border-b border-[#F2EBE3]/5"
+              className="overflow-hidden border-b border-[var(--glass-border)]"
             >
               <div className="p-5 space-y-4">
                 {/* Completion Rate + Quick Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl p-3 border border-[#F2EBE3]/[0.06] cursor-default" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                  <div className="rounded-xl p-3 border border-[var(--glass-border)] cursor-default" style={{ background: 'var(--glass-bg)' }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <TrendingUp size={12} className="text-accent-visor" />
                       <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: isLight ? 'rgba(26,26,26,0.4)' : 'rgba(242,235,227,0.4)' }}>Completion</span>

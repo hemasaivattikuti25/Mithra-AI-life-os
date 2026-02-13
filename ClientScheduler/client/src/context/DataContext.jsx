@@ -301,7 +301,7 @@ const INITIAL_HABITS = [];
 
 /* ── initial lists ── */
 const INITIAL_LISTS = [
-  { id: 'default', name: 'My Tasks', color: '#C2185B' },
+  { id: 'default', name: 'My Tasks', color: 'var(--accent-color)' },
   { id: 'work', name: 'Work', color: '#3b82f6' },
   { id: 'personal', name: 'Personal', color: '#f97316' },
 ];
@@ -350,7 +350,7 @@ export function DataProvider({ children }) {
   });
 
   // Color theme palette
-  const [colorTheme, setColorTheme] = useState(() => loadFromStorage('colorTheme', 'sakura'));
+  const [colorTheme, setColorTheme] = useState(() => loadFromStorage('colorTheme', 'neon'));
 
   // Preferences
   const [notifications, setNotifications] = useState(() => loadFromStorage('notifications', true));
@@ -495,7 +495,7 @@ export function DataProvider({ children }) {
   // Computed accent colors for JS usage (charts, inline styles, etc.)
   const accentColor = useMemo(() => {
     const palette = COLOR_THEMES[colorTheme];
-    if (!palette) return { color: '#C2185B', soft: '#8B1A2B', secondary: '#D4AF37', glow: 'rgba(194,24,91,0.15)' };
+    if (!palette) return { color: '#22d3ee', soft: '#06b6d4', secondary: '#3b82f6', glow: 'rgba(34,211,238,0.15)' };
     const vars = theme === 'light' ? palette.light : palette.dark;
     return {
       color: vars['--accent-color'],

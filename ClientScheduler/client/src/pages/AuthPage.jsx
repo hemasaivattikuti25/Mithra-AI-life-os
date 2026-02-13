@@ -25,15 +25,15 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
 
   return (
     <div className="relative group">
-      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2' : 'ring-1 ring-white/[0.08]'
+      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2' : 'ring-1 border border-[var(--glass-border)]'
         }`}
         style={{
-          background: focused ? 'rgba(34, 211, 238, 0.05)' : 'rgba(255,255,255,0.03)',
+          background: focused ? 'var(--accent-glow)' : 'var(--glass-bg)',
           backdropFilter: 'blur(12px)',
         }}
       >
         <div className="pl-4 pr-2 py-4">
-          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? 'var(--accent-color)' : 'rgba(255,255,255,0.3)' }} />
+          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? 'var(--accent-color)' : 'var(--text-dim)' }} />
         </div>
         <input
           type={isPassword ? (showPw ? 'text' : 'password') : type}
@@ -44,11 +44,11 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
           onBlur={() => setFocused(false)}
           autoFocus={autoFocus}
           autoComplete={isPassword ? 'current-password' : type === 'email' ? 'email' : 'off'}
-          className="flex-1 bg-transparent py-4 pr-4 text-sm text-white placeholder:text-white/25 outline-none font-medium"
+          className="flex-1 bg-transparent py-4 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)]/40 outline-none font-medium"
         />
         {isPassword && (
           <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
-            className="pr-4 text-white/30 hover:text-white/60 transition-colors">
+            className="pr-4 text-[var(--text-dim)]/40 hover:text-[var(--text-dim)] transition-colors">
             {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         )}
@@ -240,10 +240,10 @@ export default function AuthPage({ isPasswordReset = false }) {
   const direction = view === 'signup' ? 1 : view === 'forgot' ? 1 : -1;
 
   return (
-    <div className="min-h-screen w-full flex relative overflow-hidden" style={{ background: '#050505' }}>
+    <div className="min-h-screen w-full flex relative overflow-hidden" style={{ background: 'var(--body-bg)' }}>
 
       {/* ══════════ LEFT PANEL — Hero / Branding (desktop only) ══════════ */}
-      <div className="hidden lg:flex w-[52%] relative flex-col items-center justify-center p-12 overflow-hidden bg-[#0A0A0A]">
+      <div className="hidden lg:flex w-[52%] relative flex-col items-center justify-center p-12 overflow-hidden bg-[var(--body-bg)]">
         {/* Mesh gradient background */}
         <div className="absolute inset-0">
           <motion.div className="absolute w-[800px] h-[800px] rounded-full blur-[250px]"
@@ -290,7 +290,8 @@ export default function AuthPage({ isPasswordReset = false }) {
           <motion.p className="text-lg text-white/50 font-light mb-3"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.8 }}>Your AI-Powered Life Operating System</motion.p>
-          <motion.div className="w-16 h-[2px] mx-auto rounded-full mb-10 bg-cyan-500"
+          <motion.div className="w-16 h-[2px] mx-auto rounded-full mb-10"
+            style={{ backgroundColor: 'var(--accent-color)' }}
             initial={{ width: 0 }} animate={{ width: 64 }}
             transition={{ delay: 0.5, duration: 0.6 }} />
 
@@ -332,11 +333,11 @@ export default function AuthPage({ isPasswordReset = false }) {
           {/* Glass card */}
           <div className="relative rounded-3xl overflow-hidden"
             style={{
-              background: 'rgba(12,10,10,0.6)', backdropFilter: 'blur(40px) saturate(1.4)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 0 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)'
+              background: 'var(--glass-bg)', backdropFilter: 'blur(40px) saturate(1.4)',
+              border: '1px solid var(--glass-border)',
+              boxShadow: '0 0 80px rgba(0,0,0,0.5), inset 0 1px 0 var(--glass-border)'
             }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[2px] rounded-full bg-cyan-500 opacity-50" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[2px] rounded-full bg-[var(--accent-color)] opacity-50" />
 
             <div className="p-8 pt-10 pb-10">
               {/* Header */}
@@ -344,7 +345,7 @@ export default function AuthPage({ isPasswordReset = false }) {
                 <AnimatePresence mode="wait">
                   <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                    <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
                       {view === 'login' && 'Welcome back'}
                       {view === 'signup' && 'Create account'}
                       {view === 'forgot' && 'Reset password'}
@@ -352,7 +353,7 @@ export default function AuthPage({ isPasswordReset = false }) {
                       {view === 'resetNew' && 'Set new password'}
                       {view === 'resetSuccess' && 'Password updated!'}
                     </h2>
-                    <p className="text-sm text-white/40 mt-1.5">
+                    <p className="text-sm text-[var(--text-dim)] mt-1.5 opacity-60">
                       {view === 'login' && 'Sign in to your Mithra workspace'}
                       {view === 'signup' && 'Start your journey with Mithra'}
                       {view === 'forgot' && "Enter your email to verify your account"}
@@ -391,15 +392,15 @@ export default function AuthPage({ isPasswordReset = false }) {
                       value={password} onChange={e => setPassword(e.target.value)} error={fieldErrors.password} />
                     <div className="flex justify-end">
                       <button type="button" onClick={() => switchView('forgot')}
-                        className="text-xs font-medium transition-colors hover:underline underline-offset-4 text-cyan-400">Forgot password?</button>
+                        className="text-xs font-medium transition-colors hover:underline underline-offset-4 text-[var(--accent-color)]">Forgot password?</button>
                     </div>
                     <motion.button type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl text-white font-semibold text-sm tracking-wide relative overflow-hidden group disabled:opacity-60"
                       style={{
-                        background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
-                        boxShadow: '0 4px 24px rgba(6,182,212,0.25)'
+                        background: 'linear-gradient(135deg, var(--accent-color), var(--accent-soft))',
+                        boxShadow: '0 4px 24px var(--accent-glow)'
                       }}
-                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px rgba(6,182,212,0.4)' }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 8px 40px var(--accent-glow)' }}
                       whileTap={{ scale: 0.98 }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <span className="relative flex items-center justify-center gap-2">
@@ -416,9 +417,9 @@ export default function AuthPage({ isPasswordReset = false }) {
 
                     {/* Google Sign In */}
                     <motion.button type="button" onClick={handleGoogleSignIn} disabled={googleLoading}
-                      className="w-full py-3.5 rounded-2xl text-white/80 font-medium text-sm relative overflow-hidden group disabled:opacity-60 flex items-center justify-center gap-3"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                      whileHover={{ scale: 1.01, background: 'rgba(255,255,255,0.07)' }}
+                      className="w-full py-3.5 rounded-2xl text-[var(--text-primary)] font-medium text-sm relative overflow-hidden group disabled:opacity-60 flex items-center justify-center gap-3"
+                      style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+                      whileHover={{ scale: 1.01, background: 'var(--glass-bg-hover)' }}
                       whileTap={{ scale: 0.98 }}>
                       {googleLoading ? <Loader2 size={18} className="animate-spin" /> : (
                         <>
@@ -433,10 +434,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                       )}
                     </motion.button>
 
-                    <p className="text-center text-sm text-white/30 pt-2">
+                    <p className="text-center text-sm text-[var(--text-dim)] pt-2 opacity-60">
                       Don't have an account?{' '}
                       <button type="button" onClick={() => switchView('signup')}
-                        className="font-semibold transition-colors hover:underline underline-offset-4 text-cyan-400">Sign up</button>
+                        className="font-semibold transition-colors hover:underline underline-offset-4 text-[var(--accent-color)]">Sign up</button>
                     </p>
                   </motion.form>
                 )}
@@ -460,16 +461,17 @@ export default function AuthPage({ isPasswordReset = false }) {
                       value={confirmPw} onChange={e => setConfirmPw(e.target.value)} error={fieldErrors.confirmPw} />
                     <label className="flex items-start gap-3 cursor-pointer group pt-1">
                       <button type="button" onClick={() => setAgreeTerms(!agreeTerms)}
-                        className="w-5 h-5 mt-0.5 rounded-md border flex items-center justify-center shrink-0 transition-all"
+                        className="w-5 h-5 mt-0.5 rounded-md border flex items-center justify-center shrink-0 transition-all font-bold"
                         style={{
-                          borderColor: fieldErrors.terms ? 'rgba(239,68,68,0.5)' : agreeTerms ? '#22d3ee' : 'rgba(255,255,255,0.12)',
-                          background: agreeTerms ? '#22d3ee' : 'transparent'
+                          borderColor: fieldErrors.terms ? 'rgba(239,68,68,0.5)' : agreeTerms ? 'var(--accent-color)' : 'var(--glass-border)',
+                          background: agreeTerms ? 'var(--accent-color)' : 'transparent',
+                          color: '#fff'
                         }}>
-                        {agreeTerms && <Check size={12} className="text-black" strokeWidth={3} />}
+                        {agreeTerms && <Check size={12} strokeWidth={4} />}
                       </button>
-                      <span className="text-xs text-white/40 leading-relaxed">
-                        I agree to the <span className="cursor-pointer hover:underline text-cyan-400">Terms of Service</span> and{' '}
-                        <span className="cursor-pointer hover:underline text-cyan-400">Privacy Policy</span>
+                      <span className="text-xs text-[var(--text-dim)] leading-relaxed opacity-60">
+                        I agree to the <span className="cursor-pointer hover:underline text-[var(--accent-color)]">Terms of Service</span> and{' '}
+                        <span className="cursor-pointer hover:underline text-[var(--accent-color)]">Privacy Policy</span>
                       </span>
                     </label>
                     {fieldErrors.terms && (
@@ -517,10 +519,10 @@ export default function AuthPage({ isPasswordReset = false }) {
                       )}
                     </motion.button>
 
-                    <p className="text-center text-sm text-white/30 pt-2">
+                    <p className="text-center text-sm text-[var(--text-dim)] pt-2 opacity-60">
                       Already have an account?{' '}
                       <button type="button" onClick={() => switchView('login')}
-                        className="font-semibold transition-colors hover:underline underline-offset-4 text-cyan-400">Sign in</button>
+                        className="font-semibold transition-colors hover:underline underline-offset-4 text-[var(--accent-color)]">Sign in</button>
                     </p>
                   </motion.form>
                 )}

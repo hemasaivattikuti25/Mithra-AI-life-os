@@ -21,10 +21,10 @@ import { useData, getUserScopedKey } from '../context/DataContext';
 const CATEGORY_COLORS = {
   Work: { bg: 'bg-blue-500/15', border: 'border-blue-500', text: 'text-blue-400', dot: 'bg-blue-500', hex: '#3b82f6' },
   Meeting: { bg: 'bg-purple-500/15', border: 'border-purple-500', text: 'text-purple-400', dot: 'bg-purple-500', hex: '#a855f7' },
-  Personal: { bg: 'bg-[#C2185B]/10', border: 'border-[#C2185B]', text: 'text-[#C2185B]', dot: 'bg-[#C2185B]', hex: '#C2185B' },
+  Personal: { bg: 'bg-[var(--accent-color)]/10', border: 'border-[var(--accent-color)]', text: 'text-[var(--accent-color)]', dot: 'bg-[var(--accent-color)]', hex: 'var(--accent-color)' },
   Health: { bg: 'bg-orange-500/15', border: 'border-orange-500', text: 'text-orange-400', dot: 'bg-orange-500', hex: '#f97316' },
-  Focus: { bg: 'bg-cyan-500/15', border: 'border-cyan-500', text: 'text-cyan-400', dot: 'bg-cyan-500', hex: '#06b6d4' },
-  default: { bg: 'bg-[#F2EBE3]/10', border: 'border-[#F2EBE3]/30', text: 'text-[#F2EBE3]', dot: 'bg-[#F2EBE3]', hex: '#F2EBE3' },
+  Focus: { bg: 'bg-[var(--accent-color)]/10', border: 'border-[var(--accent-color)]', text: 'text-[var(--accent-color)]', dot: 'bg-[var(--accent-color)]', hex: 'var(--accent-color)' },
+  default: { bg: 'bg-[var(--text-dim)]/10', border: 'border-[var(--text-dim)]/30', text: 'text-[var(--text-primary)]', dot: 'bg-[var(--text-dim)]', hex: 'var(--text-dim)' },
 };
 
 const getColor = (cat) => CATEGORY_COLORS[cat] || CATEGORY_COLORS.default;
@@ -294,13 +294,13 @@ const MiniCalendar = ({ currentDate, onDateClick, events }) => {
   return (
     <div className="select-none">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-[#F2EBE3]">{format(viewMonth, 'MMMM yyyy')}</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">{format(viewMonth, 'MMMM yyyy')}</h3>
         <div className="flex gap-1">
-          <button aria-label="Previous month" onClick={() => setViewMonth(subMonths(viewMonth, 1))} className="p-1 rounded hover:bg-white/10 text-[#F2EBE3]/50"><ChevronLeft size={16} /></button>
-          <button aria-label="Next month" onClick={() => setViewMonth(addMonths(viewMonth, 1))} className="p-1 rounded hover:bg-white/10 text-[#F2EBE3]/50"><ChevronRight size={16} /></button>
+          <button aria-label="Previous month" onClick={() => setViewMonth(subMonths(viewMonth, 1))} className="p-1 rounded hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronLeft size={16} /></button>
+          <button aria-label="Next month" onClick={() => setViewMonth(addMonths(viewMonth, 1))} className="p-1 rounded hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronRight size={16} /></button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-0 text-center text-xs font-medium text-[#F2EBE3]/50 mb-2">
+      <div className="grid grid-cols-7 gap-0 text-center text-xs font-medium text-[var(--text-dim)] opacity-50 mb-2">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
       </div>
       <div className="grid grid-cols-7 gap-0">
@@ -317,13 +317,13 @@ const MiniCalendar = ({ currentDate, onDateClick, events }) => {
                 !inMonth && 'opacity-20',
                 selected && 'text-white font-bold',
                 todayMark && !selected && 'font-bold',
-                !selected && inMonth && 'text-[#F2EBE3]/70 hover:bg-white/10',
+                !selected && inMonth && 'text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)]',
               )}
-              style={selected ? { backgroundColor: accentColor.color } : todayMark ? { color: accentColor.color } : {}}
+              style={selected ? { backgroundColor: 'var(--accent-color)' } : todayMark ? { color: 'var(--accent-color)' } : {}}
             >
               {format(day, 'd')}
               {hasEvent(day) && !selected && (
-                <span className="absolute bottom-1 w-1 h-1 rounded-full" style={{ backgroundColor: accentColor.color }} />
+                <span className="absolute bottom-1 w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--accent-color)' }} />
               )}
             </button>
           );
@@ -340,7 +340,7 @@ const EVENT_COLORS = [
   { name: 'Blue', hex: '#3b82f6' },
   { name: 'Red', hex: '#ef4444' },
   { name: 'Yellow', hex: '#eab308' },
-  { name: 'Maroon', hex: '#C2185B' },
+  { name: 'Maroon', hex: 'var(--accent-color)' },
   { name: 'Orange', hex: '#f97316' },
   { name: 'Purple', hex: '#a855f7' },
   { name: 'Pink', hex: '#ec4899' },
@@ -473,14 +473,14 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
             className="w-full max-w-lg rounded-2xl overflow-hidden glass-heavy glass-shine max-h-[90vh] flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[#F2EBE3]/5 flex-shrink-0">
-              <h3 className="text-lg font-medium text-[#F2EBE3] flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center">
-                  <CalIcon size={18} className="text-purple-400" />
+            <div className="flex items-center justify-between p-5 border-b border-[var(--glass-border)] flex-shrink-0">
+              <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--accent-color)]/15 flex items-center justify-center">
+                  <CalIcon size={18} className="text-[var(--accent-color)]" />
                 </div>
                 {event ? 'Edit Event' : 'Add Event'}
               </h3>
-              <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><X size={20} /></button>
+              <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
             </div>
 
             {/* Body */}
@@ -494,7 +494,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
               )}
               {/* Title */}
               <div>
-                <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Event Title</label>
+                <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Event Title</label>
                 <input
                   ref={titleRef}
                   value={title}
@@ -507,20 +507,20 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
 
               {/* All Day Toggle */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#F2EBE3]/60">All day</span>
+                <span className="text-sm text-[var(--text-dim)]">All day</span>
                 <button onClick={() => setAllDay(!allDay)}
-                  className={clsx('w-11 h-6 rounded-full transition-all relative', !allDay && 'bg-[#F2EBE3]/10')}
-                  style={allDay ? { backgroundColor: accentColor.color } : {}}>
+                  className={clsx('w-11 h-6 rounded-full transition-all relative', !allDay && 'bg-[var(--glass-border)]/50')}
+                  style={allDay ? { backgroundColor: 'var(--accent-color)' } : {}}>
                   <motion.div animate={{ x: allDay ? 20 : 2 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className={clsx('w-5 h-5 rounded-full absolute top-0.5', allDay ? 'bg-black' : 'bg-[#F2EBE3]/40')} />
+                    className={clsx('w-5 h-5 rounded-full absolute top-0.5', allDay ? 'bg-white' : 'bg-[var(--text-dim)] opacity-40')} />
                 </button>
               </div>
 
               {/* Start Date/Time Row */}
               <div className="flex items-center gap-3">
-                <CalIcon size={16} className="text-[#F2EBE3]/40 flex-shrink-0" />
+                <CalIcon size={16} className="text-[var(--text-dim)] opacity-40 flex-shrink-0" />
                 <div className="flex-1">
-                  <label className="text-[11px] text-[#F2EBE3]/45 uppercase tracking-wider mb-1 block">Start</label>
+                  <label className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 block opacity-50">Start</label>
                   <div className="flex gap-2">
                     <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
                       className="glass-input !py-2 !px-3 !text-sm flex-1" />
@@ -534,9 +534,9 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
 
               {/* End Date/Time Row */}
               <div className="flex items-center gap-3">
-                <Clock size={16} className="text-[#F2EBE3]/40 flex-shrink-0" />
+                <Clock size={16} className="text-[var(--text-dim)] opacity-40 flex-shrink-0" />
                 <div className="flex-1">
-                  <label className="text-[11px] text-[#F2EBE3]/45 uppercase tracking-wider mb-1 block">End</label>
+                  <label className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 block opacity-50">End</label>
                   <div className="flex gap-2">
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                       className="glass-input !py-2 !px-3 !text-sm flex-1" />
@@ -550,39 +550,39 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
 
               {/* Location */}
               <div className="flex items-center gap-3">
-                <MapPin size={16} className="text-[#F2EBE3]/40 flex-shrink-0" />
+                <MapPin size={16} className="text-[var(--text-dim)] opacity-40 flex-shrink-0" />
                 <input value={location} onChange={e => setLocation(e.target.value)}
                   placeholder="Add location" className="flex-1 glass-input !py-2 !px-3 !text-sm" />
               </div>
 
               {/* Color Picker */}
               <div>
-                <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-3 block">Color</label>
+                <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-3 block opacity-60">Color</label>
                 <div className="flex gap-3 flex-wrap">
                   {EVENT_COLORS.map(c => (
                     <button key={c.hex} onClick={() => setEventColor(c.hex)}
-                      className={clsx('w-8 h-8 rounded-full transition-all', eventColor === c.hex ? 'scale-110 ring-2 ring-offset-2 ring-offset-[#0a0a0a]' : 'hover:scale-105')}
-                      style={{ backgroundColor: c.hex, ringColor: eventColor === c.hex ? c.hex : undefined }} />
+                      className={clsx('w-8 h-8 rounded-full transition-all', eventColor === c.hex ? 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--body-bg)]' : 'hover:scale-105')}
+                      style={{ backgroundColor: c.hex.startsWith('var') ? `var(--accent-color)` : c.hex }} />
                   ))}
                 </div>
               </div>
 
               {/* Repeat */}
               <div>
-                <label className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider font-bold mb-2 block">Repeat</label>
+                <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Repeat</label>
                 <select value={repeat} onChange={e => setRepeat(e.target.value)}
                   className="glass-input !py-2.5 !text-sm appearance-none cursor-pointer">
-                  {REPEAT_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-[#0a0a0a] text-[#F2EBE3]">{opt}</option>)}
+                  {REPEAT_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-[var(--body-bg)] text-[var(--text-primary)]">{opt}</option>)}
                 </select>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between p-5 border-t border-[#F2EBE3]/5 flex-shrink-0">
+            <div className="flex items-center justify-between p-5 border-t border-[var(--glass-border)] flex-shrink-0">
               {event ? (
                 event.isTask || event.isHabit ? (
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-[#F2EBE3]/10 text-xs text-[#F2EBE3]/40">
+                    <span className="px-2.5 py-1 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-dim)]">
                       {event.isTask ? '📋 From Tasks' : '🔄 From Habits'}
                     </span>
                     <button onClick={() => setShowDeleteConfirm(true)} className="px-3 py-1.5 rounded-lg text-red-400 text-xs hover:bg-red-500/10 transition-colors flex items-center gap-1.5">
@@ -596,8 +596,8 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                 )
               ) : <div />}
               <div className="flex gap-3">
-                <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-[#F2EBE3]/50 text-sm hover:bg-white/5 transition-colors">Cancel</button>
-                <button onClick={handleSave} disabled={isSynced} className={clsx('px-6 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors', isSynced ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90')} style={{ backgroundColor: accentColor.color }}>Save</button>
+                <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-[var(--text-dim)] text-sm hover:bg-[var(--glass-bg-hover)] transition-colors">Cancel</button>
+                <button onClick={handleSave} disabled={isSynced} className={clsx('px-6 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors', isSynced ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90')} style={{ backgroundColor: 'var(--accent-color)' }}>Save</button>
               </div>
             </div>
 
@@ -621,17 +621,17 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                       <AlertTriangle size={28} className="text-red-400" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-[#F2EBE3] mb-1">
+                      <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
                         {event?.isTask ? 'Delete Task?' : event?.isHabit ? 'Delete Habit?' : 'Delete Event?'}
                       </h4>
-                      <p className="text-sm text-[#F2EBE3]/50">
+                      <p className="text-sm text-[var(--text-dim)] opacity-60">
                         <span className="font-medium text-red-300">"{title}"</span> will be permanently removed
                         {event?.isTask ? ' from Tasks.' : event?.isHabit ? ' from Habits.' : ' from your calendar.'}
                       </p>
                     </div>
                     <div className="flex gap-3 justify-center pt-1">
                       <button onClick={() => setShowDeleteConfirm(false)}
-                        className="px-5 py-2.5 rounded-xl text-[#F2EBE3]/60 text-sm font-medium hover:bg-white/10 transition-colors border border-[#F2EBE3]/10">
+                        className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm font-medium hover:bg-[var(--glass-bg-hover)] transition-colors border border-[var(--glass-border)]">
                         Keep It
                       </button>
                       <button onClick={() => { onDelete(event.id); onClose(); }}
@@ -700,15 +700,15 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Day Headers */}
-      <div className="flex border-b border-[#F2EBE3]/5 flex-shrink-0">
+      <div className="flex border-b border-[var(--glass-border)] flex-shrink-0">
         <div className="w-10 sm:w-16 flex-shrink-0" /> {/* gutter */}
         {weekDays.map((day, i) => (
-          <div key={i} className={clsx('flex-1 text-center py-2 sm:py-3 border-l border-[#F2EBE3]/5', isToday(day) && 'bg-[#C2185B]/5')}>
-            <div className="text-[10px] sm:text-xs text-[#F2EBE3]/40 uppercase tracking-wider">{format(day, 'EEEEE')}<span className="hidden sm:inline">{format(day, 'EEE').slice(1)}</span></div>
+          <div key={i} className={clsx('flex-1 text-center py-2 sm:py-3 border-l border-[var(--glass-border)]', isToday(day) && 'bg-[var(--accent-color)]/5')}>
+            <div className="text-[10px] sm:text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-50">{format(day, 'EEEEE')}<span className="hidden sm:inline">{format(day, 'EEE').slice(1)}</span></div>
             <div className={clsx(
               'text-lg sm:text-2xl font-light mt-0.5 sm:mt-1',
-              isToday(day) ? 'text-[#C2185B]' : 'text-[#F2EBE3]',
-              isSameDay(day, currentDate) && !isToday(day) && 'text-[#F2EBE3]'
+              isToday(day) ? 'text-[var(--accent-color)]' : 'text-[var(--text-primary)]',
+              isSameDay(day, currentDate) && !isToday(day) && 'text-[var(--text-primary)]'
             )}>
               {format(day, 'd')}
             </div>
@@ -722,7 +722,7 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
           {/* Hour Labels */}
           <div className="w-10 sm:w-16 flex-shrink-0 relative">
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-xs text-[#F2EBE3]/30 -mt-2" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px` }}>
+              <div key={hour} className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-xs text-[var(--text-dim)] -mt-2 opacity-50" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px` }}>
                 {hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}
               </div>
             ))}
@@ -736,12 +736,12 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
             return (
               <div
                 key={col}
-                className={clsx('flex-1 relative border-l border-[#F2EBE3]/5', isToday(day) && 'bg-[#C2185B]/[0.02]')}
+                className={clsx('flex-1 relative border-l border-[var(--glass-border)]', isToday(day) && 'bg-[var(--accent-color)]/[0.02]')}
                 onClick={(e) => handleGridClick(e, day)}
               >
                 {/* Hour grid lines */}
                 {HOURS.map((hour) => (
-                  <div key={hour} className="absolute w-full border-t border-[#F2EBE3]/5" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
+                  <div key={hour} className="absolute w-full border-t border-[var(--glass-border)]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
                 ))}
 
                 {/* Events */}
@@ -769,10 +769,10 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                       whileHover={{ scale: 1.02 }}
                     >
                       <div className={clsx('text-xs font-semibold truncate', !dc.isCustom && dc.text)} style={dc.isCustom ? { color: dc.text } : {}}>{evt.title}</div>
-                      <div className="text-[10px] text-[#F2EBE3]/40 mt-0.5">
+                      <div className="text-[10px] text-[var(--text-dim)] opacity-60 mt-0.5">
                         {format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}
                       </div>
-                      {evt.location && <div className="text-[10px] text-[#F2EBE3]/25 truncate">{evt.location}</div>}
+                      {evt.location && <div className="text-[10px] text-[var(--text-dim)] opacity-40 truncate">{evt.location}</div>}
                     </motion.div>
                   );
                 })}
@@ -781,8 +781,8 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                 {showNowLine && nowTop > 0 && nowTop < HOURS.length * HOUR_HEIGHT && (
                   <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${nowTop}px` }}>
                     <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full bg-[#C2185B] -ml-1.5 shadow-[0_0_8px_#C2185B]" />
-                      <div className="flex-1 h-[2px] bg-[#C2185B] shadow-[0_0_6px_#C2185B]" />
+                      <div className="w-3 h-3 rounded-full bg-[var(--accent-color)] -ml-1.5 shadow-[0_0_8px_var(--accent-color)]" />
+                      <div className="flex-1 h-[2px] bg-[var(--accent-color)] shadow-[0_0_6px_var(--accent-color)]" />
                     </div>
                   </div>
                 )}
@@ -808,9 +808,9 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
   return (
     <div className="flex-1 flex flex-col">
       {/* Headers */}
-      <div className="grid grid-cols-7 border-b border-[#F2EBE3]/5 flex-shrink-0">
+      <div className="grid grid-cols-7 border-b border-[var(--glass-border)] flex-shrink-0">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="text-center py-1.5 sm:py-2 text-[10px] sm:text-xs text-[#F2EBE3]/40 uppercase tracking-wider">{d}</div>
+          <div key={i} className="text-center py-1.5 sm:py-2 text-[10px] sm:text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-60">{d}</div>
         ))}
       </div>
       {/* Grid */}
@@ -823,15 +823,15 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
               key={i}
               onClick={() => onDateClick(day)}
               className={clsx(
-                'border-b border-r border-[#F2EBE3]/5 p-1 sm:p-2 cursor-pointer transition-colors min-h-[60px] sm:min-h-[100px]',
+                'border-b border-r border-[var(--glass-border)] p-1 sm:p-2 cursor-pointer transition-colors min-h-[60px] sm:min-h-[100px]',
                 !inMonth && 'opacity-30',
-                isToday(day) && 'bg-[#C2185B]/[0.03]',
+                isToday(day) && 'bg-[var(--accent-color)]/[0.03]',
                 'hover:bg-white/[0.03]'
               )}
             >
               <div className={clsx(
                 'text-sm mb-1 w-7 h-7 flex items-center justify-center rounded-full',
-                isToday(day) ? 'bg-[#C2185B] text-white font-bold' : 'text-[#F2EBE3]/60',
+                isToday(day) ? 'bg-[var(--accent-color)] text-white font-bold' : 'text-[var(--text-dim)] opacity-60',
               )}>
                 {format(day, 'd')}
               </div>
@@ -850,7 +850,7 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
                   );
                 })}
                 {dayEvents.length > 3 && (
-                  <div className="text-[10px] text-[#F2EBE3]/30 px-2">+{dayEvents.length - 3} more</div>
+                  <div className="text-[10px] text-[var(--text-dim)] opacity-40 px-2">+{dayEvents.length - 3} more</div>
                 )}
               </div>
             </div>
@@ -902,9 +902,9 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      <div className="text-center py-4 border-b border-[#F2EBE3]/5 flex-shrink-0">
-        <div className="text-xs text-[#F2EBE3]/40 uppercase tracking-wider">{format(currentDate, 'EEEE')}</div>
-        <div className={clsx('text-3xl font-light mt-1', isToday(currentDate) ? 'text-[#C2185B]' : 'text-[#F2EBE3]')}>
+      <div className="text-center py-4 border-b border-[var(--glass-border)] flex-shrink-0">
+        <div className="text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-60">{format(currentDate, 'EEEE')}</div>
+        <div className={clsx('text-3xl font-light mt-1', isToday(currentDate) ? 'text-[var(--accent-color)]' : 'text-[var(--text-primary)]')}>
           {format(currentDate, 'd')}
         </div>
       </div>
@@ -917,9 +917,9 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
               </div>
             ))}
           </div>
-          <div className="flex-1 relative border-l border-[#F2EBE3]/5" onClick={handleGridClick}>
+          <div className="flex-1 relative border-l border-[var(--glass-border)]" onClick={handleGridClick}>
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full border-t border-[#F2EBE3]/5" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
+              <div key={hour} className="absolute w-full border-t border-[var(--glass-border)]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
             ))}
             {layoutEvents.map(evt => {
               const style = getEventStyle(evt);
@@ -940,15 +940,15 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                   whileHover={{ scale: 1.01 }}
                 >
                   <div className={clsx('text-sm font-semibold', !dc.isCustom && dc.text)} style={dc.isCustom ? { color: dc.text } : {}}>{evt.title}</div>
-                  <div className="text-xs text-[#F2EBE3]/40 mt-0.5">{format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}</div>
+                  <div className="text-xs text-[var(--text-dim)] opacity-50 mt-0.5">{format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}</div>
                 </motion.div>
               );
             })}
             {isToday(currentDate) && nowTop > 0 && (
               <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${nowTop}px` }}>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-[#C2185B] -ml-1.5 shadow-[0_0_8px_#C2185B]" />
-                  <div className="flex-1 h-[2px] bg-[#C2185B] shadow-[0_0_6px_#C2185B]" />
+                  <div className="w-3 h-3 rounded-full bg-[var(--accent-color)] -ml-1.5 shadow-[0_0_8px_var(--accent-color)]" />
+                  <div className="flex-1 h-[2px] bg-[var(--accent-color)] shadow-[0_0_6px_var(--accent-color)]" />
                 </div>
               </div>
             )}
@@ -1051,11 +1051,11 @@ const MithraCalendar = () => {
       className="h-[calc(100dvh-140px)] md:h-[calc(100vh-32px)] flex gap-0 rounded-2xl overflow-hidden glass-heavy glass-shine mx-2 sm:mx-0"
     >
       {/* ── LEFT SIDEBAR ── */}
-      <div className="w-60 flex-shrink-0 border-r border-[#F2EBE3]/5 p-4 hidden lg:flex flex-col gap-6">
+      <div className="w-60 flex-shrink-0 border-r border-[var(--glass-border)] p-4 hidden lg:flex flex-col gap-6">
         {/* Create Button */}
         <button
           onClick={() => openNewEvent(currentDate, 9)}
-          className="w-full flex items-center gap-3 px-5 py-3 rounded-2xl glass-card text-[#F2EBE3] hover:bg-[#C2185B]/10 hover:border-[#C2185B]/30 hover:text-[#C2185B] transition-all group"
+          className="w-full flex items-center gap-3 px-5 py-3 rounded-2xl glass-card text-[var(--text-primary)] hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/30 hover:text-[var(--accent-color)] transition-all group"
         >
           <Plus size={20} className="group-hover:rotate-90 transition-transform" />
           <span className="font-medium">Create</span>
@@ -1070,22 +1070,22 @@ const MithraCalendar = () => {
 
         {/* Categories Legend */}
         <div className="mt-auto space-y-2">
-          <h4 className="text-xs text-[#F2EBE3]/30 uppercase tracking-wider mb-3">Categories</h4>
+          <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider mb-3 opacity-40">Categories</h4>
           {Object.entries(CATEGORY_COLORS).filter(([k]) => k !== 'default').map(([cat, c]) => (
-            <div key={cat} className="flex items-center gap-3 text-sm text-[#F2EBE3]/60">
+            <div key={cat} className="flex items-center gap-3 text-sm text-[var(--text-dim)] opacity-70">
               <span className={clsx('w-3 h-3 rounded-sm', c.dot)} />
               {cat}
             </div>
           ))}
 
-          <div className="pt-4 mt-4 border-t border-[#F2EBE3]/5">
-            <h4 className="text-xs text-[#F2EBE3]/30 uppercase tracking-wider mb-3">Sync</h4>
+          <div className="pt-4 mt-4 border-t border-[var(--glass-border)]">
+            <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider mb-3 opacity-40">Sync</h4>
             <button
               onClick={toggleSyncGoogleCalendar}
-              className="flex items-center gap-3 text-sm text-[#F2EBE3]/60 hover:text-[#F2EBE3] transition-colors w-full text-left"
+              className="flex items-center gap-3 text-sm text-[var(--text-dim)] opacity-70 hover:opacity-100 hover:text-[var(--text-primary)] transition-all w-full text-left"
             >
               <div className={clsx("w-3 h-3 rounded-full border flex items-center justify-center transition-colors",
-                syncSettings.syncGoogleCalendar ? "bg-green-500 border-green-500" : "border-[#F2EBE3]/30")}
+                syncSettings.syncGoogleCalendar ? "bg-green-500 border-green-500" : "border-[var(--glass-border)]")}
               >
                 {syncSettings.syncGoogleCalendar && <Check size={8} className="text-black" />}
               </div>
@@ -1098,18 +1098,18 @@ const MithraCalendar = () => {
       {/* ── MAIN AREA ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-4 border-b border-[#F2EBE3]/5 flex-shrink-0 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-4 border-b border-[var(--glass-border)] flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={goToToday} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm border border-[#F2EBE3]/10 text-[#F2EBE3] hover:bg-white/5 transition-colors">Today</button>
+            <button onClick={goToToday} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm border border-[var(--glass-border)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors">Today</button>
             <div className="flex gap-0.5 sm:gap-1">
-              <button aria-label="Navigate back" onClick={navigateBack} className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><ChevronLeft size={18} /></button>
-              <button aria-label="Navigate forward" onClick={navigateForward} className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50"><ChevronRight size={18} /></button>
+              <button aria-label="Navigate back" onClick={navigateBack} className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronLeft size={18} /></button>
+              <button aria-label="Navigate forward" onClick={navigateForward} className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronRight size={18} /></button>
             </div>
-            <h2 className="text-sm sm:text-xl font-light text-[#F2EBE3] tracking-tight truncate">{headerTitle}</h2>
+            <h2 className="text-sm sm:text-xl font-light text-[var(--text-primary)] tracking-tight truncate">{headerTitle}</h2>
           </div>
           <div className="flex gap-1 items-center">
             <button onClick={() => exportEventsAsICS(allEvents)} title="Export to .ics (Google Calendar, Apple Calendar)"
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-[#F2EBE3]/50 transition-colors mr-1" aria-label="Export calendar">
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] transition-colors mr-1" aria-label="Export calendar">
               <Download size={16} />
             </button>
             <div className="flex gap-1 rounded-lg p-0.5 sm:p-1 glass-card">
@@ -1120,8 +1120,8 @@ const MithraCalendar = () => {
                   className={clsx(
                     'px-3 sm:px-4 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm capitalize transition-all',
                     view === v
-                      ? 'bg-[#C2185B]/10 text-[#C2185B] border border-[#C2185B]/30'
-                      : 'text-[#F2EBE3]/50 hover:text-[#F2EBE3] border border-transparent'
+                      ? 'bg-[var(--accent-color)]/10 text-[var(--accent-color)] border border-[var(--accent-color)]/30'
+                      : 'text-[var(--text-dim)] opacity-60 hover:opacity-100 hover:text-[var(--text-primary)] border border-transparent'
                   )}
                 >
                   {v}
