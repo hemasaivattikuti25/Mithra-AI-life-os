@@ -96,8 +96,8 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/5">
           <h3 className="text-lg font-medium text-white flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
-              <CheckCircle2 size={18} className="text-cyan-400" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-color)' }}>
+              <CheckCircle2 size={18} style={{ color: 'var(--accent-color)' }} />
             </div>
             Add New Task
           </h3>
@@ -110,7 +110,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             <label className="text-xs text-white/60 uppercase tracking-wider font-bold mb-2 block">Task Title</label>
             <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="What needs to be done?"
-              className="glass-input !border-white/10 focus:!border-cyan-500/40 !bg-white/5 text-white placeholder:text-white/20" />
+              className="glass-input !border-white/10 !bg-white/5 text-white placeholder:text-white/20" />
           </div>
 
           {/* Description */}
@@ -438,7 +438,7 @@ const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) =>
       className={clsx(
         'flex items-start gap-3.5 px-4 py-3.5 cursor-pointer group transition-all border-b border-white/[0.04]',
         isSelected
-          ? 'bg-cyan-500/[0.08]'
+          ? 'bg-[var(--accent-glow)]'
           : 'hover:bg-white/[0.02]',
         task.completed && 'opacity-45'
       )}
@@ -693,8 +693,8 @@ export default function MithraTasks() {
                 className={clsx(
                   'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
                   activeFilter === 'all'
-                    ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
-                    : 'border-white/10 text-white/35 hover:border-white/20'
+                    ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)]'
+                    : 'border-white/10 text-white/40 bg-white/5 hover:bg-white/10 hover:border-white/20'
                 )}
               >
                 All
@@ -727,8 +727,8 @@ export default function MithraTasks() {
               className={clsx(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] border transition-all uppercase tracking-wider font-medium',
                 showAnalytics
-                  ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
-                  : 'border-cyan-500/15 text-cyan-400/70 bg-cyan-500/[0.04] hover:bg-cyan-500/10 hover:border-cyan-500/25'
+                  ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)]'
+                  : 'border-[var(--accent-color)]/15 bg-[var(--accent-glow)] hover:bg-[var(--accent-glow)] hover:border-[var(--accent-color)]/25'
               )}
             >
               <BarChart3 size={13} />

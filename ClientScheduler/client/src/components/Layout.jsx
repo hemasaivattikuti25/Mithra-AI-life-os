@@ -237,8 +237,8 @@ const MobileBottomNav = () => {
                                     className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
                             )}
-                            <item.icon size={20} className="transition-all" style={{ color: isActive ? '#22d3ee' : 'rgba(255,255,255,0.4)' }} />
-                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? '#22d3ee' : 'rgba(255,255,255,0.4)' }}>{item.label}</span>
+                            <item.icon size={20} className="transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.4)' }} />
+                            <span className="text-[11px] font-semibold transition-all" style={{ color: isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.4)' }}>{item.label}</span>
                         </NavLink>
                     );
                 })}

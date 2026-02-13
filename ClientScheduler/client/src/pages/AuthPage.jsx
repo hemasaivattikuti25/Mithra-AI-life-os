@@ -25,7 +25,7 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
 
   return (
     <div className="relative group">
-      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2 ring-cyan-500/50' : 'ring-1 ring-white/[0.08]'
+      <div className={`relative flex items-center rounded-2xl transition-all duration-500 ${error ? 'ring-2 ring-red-500/50' : focused ? 'ring-2' : 'ring-1 ring-white/[0.08]'
         }`}
         style={{
           background: focused ? 'rgba(34, 211, 238, 0.05)' : 'rgba(255,255,255,0.03)',
@@ -33,7 +33,7 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
         }}
       >
         <div className="pl-4 pr-2 py-4">
-          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? '#22d3ee' : 'rgba(255,255,255,0.3)' }} />
+          <Icon size={18} className="transition-colors duration-300" style={{ color: focused ? 'var(--accent-color)' : 'rgba(255,255,255,0.3)' }} />
         </div>
         <input
           type={isPassword ? (showPw ? 'text' : 'password') : type}
@@ -54,7 +54,7 @@ const FloatingInput = ({ icon: Icon, type = 'text', placeholder, value, onChange
         )}
       </div>
       <motion.div
-        className="absolute bottom-0 left-1/2 h-[2px] rounded-full -translate-x-1/2 bg-cyan-400"
+        className="absolute bottom-0 left-1/2 h-[2px] rounded-full -translate-x-1/2"
         animate={{ width: focused ? '60%' : '0%', opacity: focused ? 1 : 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       />
@@ -81,7 +81,7 @@ const PasswordStrength = ({ password }) => {
   };
   const strength = getStrength(password);
   const labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
-  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#22d3ee'];
+  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', 'var(--accent-color)'];
   if (!password) return null;
   return (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 px-1">
