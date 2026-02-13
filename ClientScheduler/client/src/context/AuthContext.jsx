@@ -84,67 +84,10 @@ export function AuthProvider({ children }) {
     // Check for existing session on mount
     const initSession = async () => {
       try {
-        // PKCE OAuth callback: exchange ?code= for a session.
-        // detectSessionInUrl is disabled, so we handle this manually (no race).
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-
-        if (code) {
-          try {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-            // Clean the URL regardless of outcome
-            window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
-
-            if (error) {
-              console.warn('[Mithra] PKCE code exchange failed:', error.message);
-              // Fall through to getSession() below as safety net
-            } else if (data?.session?.user) {
-              const supaUser = {
-                id: data.session.user.id,
-                email: data.session.user.email,
-                provider: 'supabase',
-              };
-              setUser(supaUser);
-
-              // Pull profile
-              try {
-                const { data: profileData } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', data.session.user.id)
-                  .single();
-                if (profileData) {
-                  setProfile(prev => ({
-                    ...prev,
-                    fullName: profileData.full_name || data.session.user.user_metadata?.full_name || prev.fullName,
-                    email: data.session.user.email,
-                    avatarUrl: profileData.avatar_url || data.session.user.user_metadata?.avatar_url || prev.avatarUrl,
-                    dateJoined: profileData.created_at || prev.dateJoined,
-                  }));
-                } else {
-                  setProfile(prev => ({
-                    ...prev,
-                    fullName: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || prev.fullName,
-                    email: data.session.user.email,
-                    avatarUrl: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || prev.avatarUrl,
-                  }));
-                }
-              } catch { }
-
-              setLoading(false);
-              window.location.hash = '#/dashboard';
-              return; // Done!
-            }
-          } catch (err) {
-            console.warn('[Mithra] PKCE exchange error:', err);
-            window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
-          }
-          // If exchange failed, fall through to getSession() below
-        }
-
-        // Normal session restore (no ?code= in URL)
+        // Just get the session. Supabase handles the OAuth code exchange automatically
+        // because detectSessionInUrl is true in the client config.
         const { data: { session } } = await supabase.auth.getSession();
+
         if (session?.user) {
           const supaUser = {
             id: session.user.id,
@@ -154,24 +97,32 @@ export function AuthProvider({ children }) {
           setUser(supaUser);
 
           // Pull profile from Supabase
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
 
-          if (profileData) {
-            setProfile(prev => ({
-              ...prev,
-              fullName: profileData.full_name || prev.fullName,
-              email: session.user.email,
-              avatarUrl: profileData.avatar_url || prev.avatarUrl,
-              dateJoined: profileData.created_at || prev.dateJoined,
-            }));
+            if (profileData) {
+              setProfile(prev => ({
+                ...prev,
+                fullName: profileData.full_name || prev.fullName,
+                email: session.user.email,
+                avatarUrl: profileData.avatar_url || prev.avatarUrl,
+                dateJoined: profileData.created_at || prev.dateJoined,
+              }));
+            }
+          } catch (err) {
+            console.warn('[Mithra] Profile fetch warning:', err);
           }
         }
       } catch (err) {
-        console.warn('Failed to restore Supabase session:', err);
+        console.warn('[Mithra] Session restore error:', err);
+        // If session restore fails hard, clear local storage to prevent loops
+        if (err.message?.includes('JWT')) {
+          localStorage.removeItem('mithra-supabase-auth');
+        }
       } finally {
         setLoading(false);
       }
@@ -182,12 +133,10 @@ export function AuthProvider({ children }) {
     // Listen for auth state changes (sign in, sign out, token refresh, password recovery)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Mithra] Auth event:', event);
+
         if (event === 'PASSWORD_RECOVERY') {
-          // User clicked password reset link - store flag and redirect
           sessionStorage.setItem('mithra-password-recovery', 'true');
-          if (session?.user?.email) {
-            sessionStorage.setItem('mithra-recovery-email', session.user.email);
-          }
           window.location.hash = '#/reset-password';
         } else if (event === 'SIGNED_IN' && session?.user) {
           const supaUser = {
@@ -197,13 +146,21 @@ export function AuthProvider({ children }) {
           };
           setUser(supaUser);
 
-          // Pull profile for OAuth users (Google sign-in)
+          // Force navigation to dashboard if we're on landing page or auth page
+          // This fixes the issue where OAuth redirects to root but doesn't navigate
+          const currentHash = window.location.hash;
+          if (!currentHash || currentHash === '#/' || currentHash === '#/auth') {
+            window.location.hash = '#/dashboard';
+          }
+
+          // Pull profile logic...
           try {
             const { data: profileData } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single();
+
             if (profileData) {
               setProfile(prev => ({
                 ...prev,
@@ -213,7 +170,7 @@ export function AuthProvider({ children }) {
                 dateJoined: profileData.created_at || prev.dateJoined,
               }));
             } else {
-              // New OAuth user — set profile from Google metadata
+              // New OAuth user — set profile from metadata
               setProfile(prev => ({
                 ...prev,
                 fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
@@ -226,6 +183,7 @@ export function AuthProvider({ children }) {
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setLoading(false);
         }
       }
     );
