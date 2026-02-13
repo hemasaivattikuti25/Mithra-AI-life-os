@@ -150,7 +150,7 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
       </div>
 
       {/* Summary stats */}
-      <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
+      <div className="flex items-center justify-between pt-3">
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-accent-visor" />
           <span className="text-xs text-[var(--text-dim)] opacity-50">
@@ -343,7 +343,7 @@ export default function Dashboard() {
         style={{
           background: 'var(--glass-bg)',
           backdropFilter: 'blur(40px)',
-          border: '1px solid var(--glass-border)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
           boxShadow: isLight ? '0 10px 40px rgba(0,0,0,0.05)' : '0 20px 60px rgba(0,0,0,0.4)',
         }}
       >
@@ -361,7 +361,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--glass-border)]">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)]">
                 <GreetingIcon className="w-5 h-5 text-[var(--accent-color)]" />
               </div>
               <span className="text-[var(--text-dim)] text-sm font-medium tracking-widest uppercase">
@@ -394,7 +394,7 @@ export default function Dashboard() {
 
           {/* Date badge — frosted glass */}
           <motion.div
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)]"
+            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-[var(--glass-bg)] shadow-sm"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.45, duration: 0.5, ease: luxuryEase }}
@@ -614,7 +614,7 @@ export default function Dashboard() {
                   }}
                 >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${habit.color || catConfig.color}15`, border: `1px solid ${habit.color || catConfig.color}25` }}>
+                    style={{ background: `${habit.color || catConfig.color}15` }}>
                     <HabitIcon size={14} style={{ color: habit.color || catConfig.color }} />
                   </div>
 
@@ -737,12 +737,12 @@ export default function Dashboard() {
               className="rounded-2xl p-5 group hover:scale-[1.02] transition-transform duration-300"
               style={{
                 background: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 backdropFilter: 'blur(10px)'
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--glass-border)]">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--accent-glow)]">
                   <Icon className="w-4 h-4 text-[var(--accent-color)]" />
                 </div>
                 <span className="text-[var(--accent-color)] text-xs font-semibold">{stat.change}</span>
@@ -810,7 +810,7 @@ export default function Dashboard() {
                 className="p-4 rounded-xl cursor-pointer transition-all duration-300 hover:scale-[1.01] group"
                 style={{
                   background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)'}`,
+                  boxShadow: `0 4px 16px rgba(0,0,0,0.08)`,
                 }}
               >
                 <div className="flex items-center justify-between mb-2">

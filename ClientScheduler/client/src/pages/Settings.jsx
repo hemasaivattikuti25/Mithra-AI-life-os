@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 
 /* ═══════ SHARED TOGGLE ═══════ */
 const Toggle = ({ label, description, isActive, onToggle }) => (
-  <div className="flex items-center justify-between py-4 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+  <div className="flex items-center justify-between py-4">
     <div>
       <span style={{ color: 'var(--text-primary)' }}>{label}</span>
       {description && <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{description}</p>}
@@ -29,7 +29,7 @@ const Toggle = ({ label, description, isActive, onToggle }) => (
 
 /* ═══════ PROFILE FIELD ═══════ */
 const ProfileField = ({ icon: Icon, label, value, name, editing, editValues, onChange, type = 'text', isLast = false }) => (
-  <div className={`flex items-center gap-4 py-3.5 ${isLast ? '' : 'border-b'}`} style={isLast ? {} : { borderColor: 'var(--glass-border)' }}>
+  <div className={`flex items-center gap-4 py-3.5`}>
     <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
       style={{ background: 'var(--accent-glow)' }}>
       <Icon size={16} style={{ color: 'var(--accent-color)' }} />
@@ -88,8 +88,7 @@ const ThemeCircle = ({ palette, isSelected, onClick, isDark }) => {
 
 /* ═══════ TOGGLE WITH ICON (for notification categories) ═══════ */
 const IconToggle = ({ label, description, icon: Icon, isActive, onToggle, disabled = false }) => (
-  <div className={`flex items-center justify-between py-4 border-b ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
-    style={{ borderColor: 'var(--glass-border)' }}>
+  <div className={`flex items-center justify-between py-4 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
     <div className="flex items-center gap-3 flex-1 min-w-0">
       {Icon && (
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -230,8 +229,7 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
             exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
 
             {/* Reminder Timing */}
-            <div className={`mt-4 pt-4 border-t transition-opacity ${!notificationSettings.enabled ? 'opacity-40 pointer-events-none' : ''}`}
-              style={{ borderColor: 'var(--glass-border)' }}>
+            <div className={`mt-4 pt-4 transition-opacity ${!notificationSettings.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
               <h3 className="uppercase text-[10px] font-bold tracking-widest mb-1 flex items-center gap-2"
                 style={{ color: 'var(--text-dim)' }}>
                 <Clock size={12} /> Reminder Timing
@@ -239,19 +237,18 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
               <ReminderSlider label="Tasks"
                 value={notificationSettings.taskReminderMinutes || notificationSettings.reminderMinutes}
                 onChange={(v) => updateNotificationSettings({ taskReminderMinutes: v, reminderMinutes: v })} />
-              <div className="border-t" style={{ borderColor: 'var(--glass-border)' }} />
+              <div className="h-px bg-white/5" />
               <ReminderSlider label="Calendar Events"
                 value={notificationSettings.eventReminderMinutes || notificationSettings.reminderMinutes}
                 onChange={(v) => updateNotificationSettings({ eventReminderMinutes: v })} />
-              <div className="border-t" style={{ borderColor: 'var(--glass-border)' }} />
+              <div className="h-px bg-white/5" />
               <ReminderSlider label="Habits"
                 value={notificationSettings.habitReminderMinutes || 60}
                 onChange={(v) => updateNotificationSettings({ habitReminderMinutes: v })} />
             </div>
 
             {/* Notification Types */}
-            <div className={`mt-4 pt-4 border-t transition-opacity ${!notificationSettings.enabled ? 'opacity-40 pointer-events-none' : ''}`}
-              style={{ borderColor: 'var(--glass-border)' }}>
+            <div className={`mt-4 pt-4 transition-opacity ${!notificationSettings.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
               <h3 className="uppercase text-[10px] font-bold tracking-widest mb-2 flex items-center gap-2"
                 style={{ color: 'var(--text-dim)' }}>
                 <Bell size={12} /> Notification Types
@@ -403,8 +400,8 @@ export default function Settings() {
             style={{ background: 'var(--glass-bg-hover)' }}>
             {/* Circular Avatar */}
             <div className="relative group mb-5">
-              <div className="w-28 h-28 rounded-full border-4 overflow-hidden shadow-xl transition-transform group-hover:scale-105"
-                style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)' }}>
+              <div className="w-28 h-28 rounded-full overflow-hidden shadow-xl transition-transform group-hover:scale-105"
+                style={{ background: 'var(--glass-bg)' }}>
                 {profile.avatarUrl ? (
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -461,7 +458,7 @@ export default function Settings() {
                   style={{
                     color: 'var(--accent-color)',
                     background: 'var(--glass-bg-hover)',
-                    border: '1px solid var(--glass-border)',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                   }}>
                   <Pencil size={14} /> Edit Profile
                 </motion.button>
@@ -494,7 +491,7 @@ export default function Settings() {
                 editing={editingProfile} editValues={editValues} onChange={handleEditField} />
 
               {/* Bio field */}
-              <div className="flex items-start gap-4 py-3.5 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+              <div className="flex items-start gap-4 py-3.5">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                   style={{ background: 'var(--accent-glow)' }}>
                   <Edit3 size={16} style={{ color: 'var(--accent-color)' }} />
@@ -529,7 +526,7 @@ export default function Settings() {
                 style={{
                   color: 'var(--text-primary)',
                   background: 'var(--glass-bg-hover)',
-                  border: '1px solid var(--glass-border)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 }}>
                 <Lock size={14} style={{ color: 'var(--accent-color)' }} /> Change Password
               </button>
@@ -540,7 +537,7 @@ export default function Settings() {
         {/* ═══════ APPEARANCE ═══════ */}
         <section className="glass-panel glass-shine rounded-2xl p-6">
           <h2 className="uppercase text-xs font-bold tracking-widest mb-4" style={{ color: 'var(--accent-color)' }}>Appearance</h2>
-          <div className="flex items-center justify-between py-4 border-b" style={{ borderColor: 'var(--glass-border)' }}>
+          <div className="flex items-center justify-between py-4">
             <span className="flex items-center gap-3">
               {isDarkMode ? <Moon size={20} style={{ color: 'var(--accent-color)' }} /> : <Sun size={20} style={{ color: 'var(--accent-color)' }} />}
               <div>
@@ -596,8 +593,7 @@ export default function Settings() {
 
           {/* Star on GitHub */}
           <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noopener noreferrer"
-            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group border-b"
-            style={{ borderColor: 'var(--glass-border)' }}
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
             onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <div className="flex items-center gap-3">
@@ -613,8 +609,7 @@ export default function Settings() {
           </a>
 
           {/* About */}
-          <div className="w-full flex items-center justify-between p-4 rounded-lg text-left border-b"
-            style={{ borderColor: 'var(--glass-border)' }}>
+          <div className="w-full flex items-center justify-between p-4 rounded-lg text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }}>
                 <Info size={18} className="text-white" />
@@ -705,7 +700,7 @@ export default function Settings() {
               className="w-full max-w-md rounded-2xl p-6 shadow-2xl"
               style={{
                 background: 'var(--body-bg)',
-                border: '1px solid var(--glass-border)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 backdropFilter: 'blur(40px)',
               }}
             >
@@ -723,7 +718,7 @@ export default function Settings() {
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
                   className="text-center py-8">
                   <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center mb-4"
-                    style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    style={{ background: 'rgba(34,197,94,0.1)' }}>
                     <Check size={24} className="text-green-400" />
                   </div>
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Password Updated</p>
@@ -737,7 +732,7 @@ export default function Settings() {
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
                         background: 'var(--glass-bg-hover)',
-                        border: '1px solid var(--glass-border)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                         color: 'var(--text-primary)',
                       }} required />
                   </div>
@@ -747,7 +742,7 @@ export default function Settings() {
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
                         background: 'var(--glass-bg-hover)',
-                        border: '1px solid var(--glass-border)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                         color: 'var(--text-primary)',
                       }} required minLength={6} />
                   </div>
@@ -757,7 +752,7 @@ export default function Settings() {
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
                       style={{
                         background: 'var(--glass-bg-hover)',
-                        border: '1px solid var(--glass-border)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                         color: 'var(--text-primary)',
                       }} required minLength={6} />
                   </div>

@@ -101,7 +101,7 @@ const Heatmap = ({ habits, accentColor }) => {
           <Activity size={14} className="text-[var(--accent-color)]" />
           <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-dim)]">Consistency Map</h3>
         </div>
-        <div className="flex items-center justify-center py-12 rounded-xl border border-dashed border-[var(--glass-border)]">
+        <div className="flex items-center justify-center py-12 rounded-xl">
           <p className="text-sm text-center text-[var(--text-dim)] opacity-60">
             Add your first habit to start tracking consistency!
           </p>
@@ -225,7 +225,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
       }}
     >
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: `color-mix(in srgb, ${habitColor}, transparent 85%)`, border: `1px solid color-mix(in srgb, ${habitColor}, transparent 85%)` }}>
+        style={{ background: `color-mix(in srgb, ${habitColor}, transparent 85%)` }}>
         <Icon size={20} style={{ color: habitColor }} />
       </div>
 
@@ -356,7 +356,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
         {/* Header with colored accent bar */}
         <div className="relative">
           <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ backgroundColor: color }} />
-          <div className="flex items-center justify-between p-5 pt-6 border-b" style={{ borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.05)' }}>
+          <div className="flex items-center justify-between p-5 pt-6">
             <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{editingHabit ? 'Edit Habit' : 'New Habit'}</h3>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-dim)' }}><X size={20} /></button>
           </div>
@@ -492,7 +492,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t flex justify-end gap-3 flex-shrink-0" style={{ borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.05)' }}>
+        <div className="p-5 flex justify-end gap-3 flex-shrink-0">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors" style={{ color: 'var(--text-dim)' }}>Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
             className={clsx('px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-all', !title.trim() && 'opacity-40 cursor-not-allowed')}
@@ -532,7 +532,7 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
         onClick={e => e.stopPropagation()} className="w-full max-w-sm glass-heavy glass-shine rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-[var(--glass-border)]">
+        <div className="flex items-center justify-between p-5">
           <h3 className="text-lg font-medium text-[var(--text-primary)]">{editingSession ? 'Edit Session' : 'Add Session'}</h3>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>
         </div>
@@ -559,7 +559,7 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
             </div>
           </div>
         </div>
-        <div className="p-5 border-t border-[var(--glass-border)] flex justify-end gap-3">
+        <div className="p-5 flex justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm hover:bg-[var(--glass-bg-hover)] transition-colors">Cancel</button>
           <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-[var(--accent-color)] text-white font-bold text-sm hover:shadow-[0_0_20px_var(--accent-glow)] transition-all">
             {editingSession ? 'Save' : 'Add Session'}
@@ -853,7 +853,7 @@ export default function HabitFocusHub() {
           <motion.div className="absolute top-1 bottom-1 rounded-full" initial={false}
             animate={{ left: activeTab === 'tracker' ? '4px' : 'calc(50%)', width: 'calc(50% - 4px)' }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            style={{ background: 'rgb(var(--color-visor) / 0.1)', border: '1px solid rgb(var(--color-visor) / 0.2)', boxShadow: '0 0 16px rgb(var(--color-visor) / 0.08)' }} />
+            style={{ background: 'rgb(var(--color-visor) / 0.1)', boxShadow: '0 0 16px rgb(var(--color-visor) / 0.08)' }} />
           <button onClick={() => setActiveTab('tracker')} className={clsx('flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-full z-10 flex items-center justify-center gap-2 transition-colors', activeTab === 'tracker' ? 'text-[#C2185B]' : 'text-[#F2EBE3]/35')}>
             <Activity size={16} /> Tracker
           </button>
@@ -1095,7 +1095,7 @@ export default function HabitFocusHub() {
                       className={clsx('glass-card rounded-xl p-3.5 flex items-center gap-3 cursor-pointer transition-all group',
                         isSelected ? 'border border-[#C2185B]/30 bg-[#C2185B]/5' : 'hover:bg-white/[0.03]')}>
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${h.color || cfg.color}15`, border: `1px solid ${h.color || cfg.color}25` }}
+                        style={{ background: `${h.color || cfg.color}15` }}
                         onClick={() => startSession(h, 'habit')}>
                         <Icon size={16} style={{ color: h.color || cfg.color }} />
                       </div>
