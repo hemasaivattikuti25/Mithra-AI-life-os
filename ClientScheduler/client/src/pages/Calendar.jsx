@@ -473,7 +473,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
             className="w-full max-w-lg rounded-2xl overflow-hidden glass-heavy glass-shine max-h-[90vh] flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[var(--glass-border)] flex-shrink-0">
+            <div className="flex items-center justify-between p-5 flex-shrink-0">
               <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[var(--accent-color)]/15 flex items-center justify-center">
                   <CalIcon size={18} className="text-[var(--accent-color)]" />
@@ -578,11 +578,11 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between p-5 border-t border-[var(--glass-border)] flex-shrink-0">
+            <div className="flex items-center justify-between p-5 flex-shrink-0">
               {event ? (
                 event.isTask || event.isHabit ? (
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-dim)]">
+                    <span className="px-2.5 py-1 rounded-lg bg-[var(--glass-bg)] text-xs text-[var(--text-dim)]">
                       {event.isTask ? '📋 From Tasks' : '🔄 From Habits'}
                     </span>
                     <button onClick={() => setShowDeleteConfirm(true)} className="px-3 py-1.5 rounded-lg text-red-400 text-xs hover:bg-red-500/10 transition-colors flex items-center gap-1.5">
@@ -631,7 +631,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                     </div>
                     <div className="flex gap-3 justify-center pt-1">
                       <button onClick={() => setShowDeleteConfirm(false)}
-                        className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm font-medium hover:bg-[var(--glass-bg-hover)] transition-colors border border-[var(--glass-border)]">
+                        className="px-5 py-2.5 rounded-xl text-[var(--text-dim)] text-sm font-medium hover:bg-[var(--glass-bg-hover)] transition-colors">
                         Keep It
                       </button>
                       <button onClick={() => { onDelete(event.id); onClose(); }}
@@ -700,10 +700,10 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Day Headers */}
-      <div className="flex border-b border-[var(--glass-border)] flex-shrink-0">
+      <div className="flex border-b border-white/[0.04] flex-shrink-0">
         <div className="w-10 sm:w-16 flex-shrink-0" /> {/* gutter */}
         {weekDays.map((day, i) => (
-          <div key={i} className={clsx('flex-1 text-center py-2 sm:py-3 border-l border-[var(--glass-border)]', isToday(day) && 'bg-[var(--accent-color)]/5')}>
+          <div key={i} className={clsx('flex-1 text-center py-2 sm:py-3 border-l border-white/[0.04]', isToday(day) && 'bg-[var(--accent-color)]/5')}>
             <div className="text-[10px] sm:text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-50">{format(day, 'EEEEE')}<span className="hidden sm:inline">{format(day, 'EEE').slice(1)}</span></div>
             <div className={clsx(
               'text-lg sm:text-2xl font-light mt-0.5 sm:mt-1',
@@ -736,12 +736,12 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
             return (
               <div
                 key={col}
-                className={clsx('flex-1 relative border-l border-[var(--glass-border)]', isToday(day) && 'bg-[var(--accent-color)]/[0.02]')}
+                className={clsx('flex-1 relative border-l border-white/[0.04]', isToday(day) && 'bg-[var(--accent-color)]/[0.02]')}
                 onClick={(e) => handleGridClick(e, day)}
               >
                 {/* Hour grid lines */}
                 {HOURS.map((hour) => (
-                  <div key={hour} className="absolute w-full border-t border-[var(--glass-border)]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
+                  <div key={hour} className="absolute w-full border-t border-white/[0.04]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
                 ))}
 
                 {/* Events */}
@@ -808,7 +808,7 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
   return (
     <div className="flex-1 flex flex-col">
       {/* Headers */}
-      <div className="grid grid-cols-7 border-b border-[var(--glass-border)] flex-shrink-0">
+      <div className="grid grid-cols-7 border-b border-white/[0.04] flex-shrink-0">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <div key={i} className="text-center py-1.5 sm:py-2 text-[10px] sm:text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-60">{d}</div>
         ))}
@@ -823,7 +823,7 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
               key={i}
               onClick={() => onDateClick(day)}
               className={clsx(
-                'border-b border-r border-[var(--glass-border)] p-1 sm:p-2 cursor-pointer transition-colors min-h-[60px] sm:min-h-[100px]',
+                'border-b border-r border-white/[0.04] p-1 sm:p-2 cursor-pointer transition-colors min-h-[60px] sm:min-h-[100px]',
                 !inMonth && 'opacity-30',
                 isToday(day) && 'bg-[var(--accent-color)]/[0.03]',
                 'hover:bg-white/[0.03]'
@@ -902,7 +902,7 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      <div className="text-center py-4 border-b border-[var(--glass-border)] flex-shrink-0">
+      <div className="text-center py-4 border-b border-white/[0.04] flex-shrink-0">
         <div className="text-xs text-[var(--text-dim)] uppercase tracking-wider opacity-60">{format(currentDate, 'EEEE')}</div>
         <div className={clsx('text-3xl font-light mt-1', isToday(currentDate) ? 'text-[var(--accent-color)]' : 'text-[var(--text-primary)]')}>
           {format(currentDate, 'd')}
@@ -917,9 +917,9 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
               </div>
             ))}
           </div>
-          <div className="flex-1 relative border-l border-[var(--glass-border)]" onClick={handleGridClick}>
+          <div className="flex-1 relative border-l border-white/[0.04]" onClick={handleGridClick}>
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full border-t border-[var(--glass-border)]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
+              <div key={hour} className="absolute w-full border-t border-white/[0.04]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
             ))}
             {layoutEvents.map(evt => {
               const style = getEventStyle(evt);
@@ -1051,7 +1051,7 @@ const MithraCalendar = () => {
       className="h-[calc(100dvh-140px)] md:h-[calc(100vh-32px)] flex gap-0 rounded-2xl overflow-hidden glass-heavy glass-shine mx-2 sm:mx-0"
     >
       {/* ── LEFT SIDEBAR ── */}
-      <div className="w-60 flex-shrink-0 border-r border-[var(--glass-border)] p-4 hidden lg:flex flex-col gap-6">
+      <div className="w-60 flex-shrink-0 p-4 hidden lg:flex flex-col gap-6">
         {/* Create Button */}
         <button
           onClick={() => openNewEvent(currentDate, 9)}
@@ -1078,7 +1078,7 @@ const MithraCalendar = () => {
             </div>
           ))}
 
-          <div className="pt-4 mt-4 border-t border-[var(--glass-border)]">
+          <div className="pt-4 mt-4">
             <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider mb-3 opacity-40">Sync</h4>
             <button
               onClick={toggleSyncGoogleCalendar}
@@ -1098,9 +1098,9 @@ const MithraCalendar = () => {
       {/* ── MAIN AREA ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-4 border-b border-[var(--glass-border)] flex-shrink-0 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-4 flex-shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={goToToday} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm border border-[var(--glass-border)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors">Today</button>
+            <button onClick={goToToday} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors">Today</button>
             <div className="flex gap-0.5 sm:gap-1">
               <button aria-label="Navigate back" onClick={navigateBack} className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronLeft size={18} /></button>
               <button aria-label="Navigate forward" onClick={navigateForward} className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><ChevronRight size={18} /></button>

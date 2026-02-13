@@ -100,14 +100,14 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
             />
 
             {/* Toolbar */}
-            <div className="flex justify-between items-center px-6 py-4" style={{ borderBottom: '1px solid var(--glass-border)' }}>
+            <div className="flex justify-between items-center px-6 py-4">
               <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-colors" style={{ color: 'var(--text-dim)' }}>
                 <X size={22} />
               </button>
               <span className="text-xs uppercase tracking-[0.2em] flex items-center gap-2" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>
                 <Feather size={14} /> {editingEntry ? 'Edit Entry' : 'New Entry'}
               </span>
-              <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-[var(--accent-glow)] text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/20 border border-[var(--accent-color)]/20 transition-all">
+              <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-[var(--accent-glow)] text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/20 transition-all">
                 Save
               </button>
             </div>
@@ -154,7 +154,7 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
               />
 
               {/* Tags */}
-              <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--glass-border)' }}>
+              <div className="mt-6 pt-6">
                 <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
@@ -166,11 +166,11 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
             </div>
 
             {/* Footer Actions */}
-            <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor: 'var(--glass-border)' }}>
-              <button className="p-3 rounded-xl border transition-all" style={{ background: 'var(--glass-bg)', borderColor: 'var(--glass-border)', color: 'var(--text-dim)', opacity: 0.4 }}>
+            <div className="px-6 py-4 flex gap-3">
+              <button className="p-3 rounded-xl transition-all" style={{ background: 'var(--glass-bg)', color: 'var(--text-dim)', opacity: 0.4 }}>
                 <ImageIcon size={18} />
               </button>
-              <button className="p-3 rounded-xl border transition-all" style={{ background: 'var(--glass-bg)', borderColor: 'var(--glass-border)', color: 'var(--text-dim)', opacity: 0.4 }}>
+              <button className="p-3 rounded-xl transition-all" style={{ background: 'var(--glass-bg)', color: 'var(--text-dim)', opacity: 0.4 }}>
                 <Mic size={18} />
               </button>
             </div>
@@ -197,7 +197,7 @@ const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       onClick={onClick}
       className={clsx(
-        'break-inside-avoid p-6 rounded-2xl border cursor-pointer group relative overflow-hidden transition-shadow glass-card',
+        'break-inside-avoid p-6 rounded-2xl cursor-pointer group relative overflow-hidden transition-shadow glass-card',
         moodBorder(entry.mood, isLight),
       )}
     >
@@ -236,7 +236,7 @@ const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
       {/* Tags */}
       <div className="flex flex-wrap gap-2 relative">
         {entry.tags.map(tag => (
-          <span key={tag} style={{ color: 'var(--text-dim)', borderColor: 'var(--glass-border)' }} className="text-xs px-2.5 py-1 rounded-full bg-[var(--glass-bg)] border opacity-60">
+          <span key={tag} style={{ color: 'var(--text-dim)' }} className="text-xs px-2.5 py-1 rounded-full bg-[var(--glass-bg)] opacity-60">
             {tag}
           </span>
         ))}
@@ -379,13 +379,13 @@ export default function MithraJournal() {
               <div style={{ color: 'var(--text-dim)' }} className="flex items-center gap-3 mb-6 text-sm opacity-60">
                 <span className="text-3xl">{moodEmoji(selectedEntry.mood)}</span>
                 <span>{format(selectedEntry.date, 'EEEE, MMMM d, yyyy')}</span>
-                <span style={{ borderColor: 'var(--glass-border)' }} className="ml-auto px-3 py-1 rounded-full border text-xs">Mood: {selectedEntry.mood}/10</span>
+                <span className="ml-auto px-3 py-1 rounded-full text-xs" style={{ background: 'var(--glass-bg)' }}>Mood: {selectedEntry.mood}/10</span>
               </div>
               <h2 style={{ color: 'var(--text-primary)' }} className="text-2xl lg:text-3xl font-light mb-6">{selectedEntry.title}</h2>
               <p style={{ color: 'var(--text-dim)' }} className="leading-relaxed text-lg whitespace-pre-wrap opacity-80">{selectedEntry.body}</p>
-              <div style={{ borderColor: 'var(--glass-border)' }} className="flex flex-wrap gap-2 mt-8 pt-6 border-t">
+              <div className="flex flex-wrap gap-2 mt-8 pt-6">
                 {selectedEntry.tags.map(t => (
-                  <span key={t} style={{ color: 'var(--text-dim)' }} className="text-xs px-3 py-1.5 rounded-full bg-[var(--glass-bg)] border border-[var(--glass-border)] opacity-60">{t}</span>
+                  <span key={t} style={{ color: 'var(--text-dim)' }} className="text-xs px-3 py-1.5 rounded-full bg-[var(--glass-bg)] opacity-60">{t}</span>
                 ))}
               </div>
             </motion.div>
@@ -439,10 +439,10 @@ export default function MithraJournal() {
           <motion.div
             whileHover={{ scale: 1.02, backgroundColor: 'var(--accent-glow)' }}
             onClick={() => setEditorOpen(true)}
-            style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dim)', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}
-            className="break-inside-avoid p-8 rounded-2xl border border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[220px] hover:text-[var(--accent-color)] hover:border-[var(--accent-color)]/30 transition-all group"
+            style={{ color: 'var(--text-dim)', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}
+            className="break-inside-avoid p-8 rounded-2xl border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[220px] hover:text-[var(--accent-color)] transition-all group"
           >
-            <div style={{ background: 'var(--glass-bg)', borderColor: 'var(--glass-border)' }} className="p-4 rounded-full border group-hover:border-[var(--accent-color)]/30 group-hover:bg-[var(--accent-glow)] transition-all">
+            <div style={{ background: 'var(--glass-bg)' }} className="p-4 rounded-full group-hover:bg-[var(--accent-glow)] transition-all">
               <Plus size={28} />
             </div>
             <span className="font-light tracking-[0.2em] uppercase text-sm">New Entry</span>
@@ -486,7 +486,7 @@ export default function MithraJournal() {
             <h4 style={{ color: 'var(--text-dim)' }} className="text-xs uppercase tracking-wider font-bold mb-4 flex items-center gap-2 opacity-50">
               <BarChart2 size={14} /> This Week
             </h4>
-            <div style={{ borderColor: 'var(--glass-border)' }} className="h-32 flex items-end justify-between gap-1.5 border-b pb-2">
+            <div className="h-32 flex items-end justify-between gap-1.5 pb-2">
               {weekMoods.map((val, i) => (
                 <div key={i} style={{ background: 'var(--glass-bg-hover)' }} className="w-full rounded-t-sm relative group h-full flex items-end">
                   <motion.div
@@ -531,7 +531,7 @@ export default function MithraJournal() {
           </div>
 
           {/* Stats */}
-          <div style={{ borderColor: 'var(--glass-border)' }} className="mt-auto pt-4 border-t space-y-3">
+          <div className="mt-auto pt-4 space-y-3">
             <div className="flex justify-between text-xs">
               <span style={{ color: 'var(--text-dim)', opacity: 0.4 }}>Total Entries</span>
               <span style={{ color: 'var(--text-dim)', opacity: 0.8 }}>{entries.length}</span>
