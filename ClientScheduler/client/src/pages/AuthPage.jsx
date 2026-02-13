@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ChevronLeft, Check, AlertCircle, Loader2, Sparkles, Shield, Zap, Calendar, Heart, Brain, Bot, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
