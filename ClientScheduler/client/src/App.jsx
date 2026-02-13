@@ -29,6 +29,33 @@ const PageLoader = () => (
   </div>
 );
 
+/* OAuth Callback Handler — detects ?code= and waits for auth before redirecting */
+const OAuthCallbackGuard = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const hasCode = new URLSearchParams(window.location.search).has('code');
+
+  // If this is an OAuth callback (?code= in URL), show loading while AuthContext exchanges it
+  if (hasCode) {
+    if (loading) {
+      return (
+        <div className="h-screen w-screen flex items-center justify-center" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-color, #22d3ee)', borderTopColor: 'transparent' }} />
+            <p className="text-sm" style={{ color: 'var(--text-dim, #888)' }}>Signing you in...</p>
+          </div>
+        </div>
+      );
+    }
+    // Auth exchange done — redirect to dashboard
+    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  }
+
+  // Also redirect if already authenticated and visiting landing page
+  if (!loading && isAuthenticated) return <Navigate to="/dashboard" replace />;
+
+  return children;
+};
+
 /* Guard: redirect to /auth if not authenticated */
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -106,7 +133,7 @@ function AppRoutes() {
       <GlobalSearch />
       <Routes>
         {/* Public Landing Page */}
-        <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
+        <Route path="/" element={<OAuthCallbackGuard><Suspense fallback={<PageLoader />}><LandingPage /></Suspense></OAuthCallbackGuard>} />
 
         {/* Auth routes — no sidebar/layout */}
         <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />

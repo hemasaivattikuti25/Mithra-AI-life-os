@@ -91,8 +91,8 @@ export function AuthProvider({ children }) {
         if (code) {
           try {
             const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-            // Clean the URL (remove ?code= param) so it doesn't get reused
-            window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+            // Clean the URL (remove ?code= param) and redirect to dashboard
+            window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
 
             if (data?.session?.user) {
               const supaUser = {
@@ -128,6 +128,8 @@ export function AuthProvider({ children }) {
               } catch { }
 
               setLoading(false);
+              // Force navigate to dashboard after successful OAuth
+              window.location.hash = '#/dashboard';
               return; // Done — don't fall through to getSession
             }
             if (error) console.warn('PKCE code exchange failed:', error.message);
