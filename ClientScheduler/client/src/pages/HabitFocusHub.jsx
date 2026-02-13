@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, CheckCircle2, Circle, Play, Pause, RotateCcw, Plus, X,
@@ -12,16 +12,16 @@ import { useData, getUserScopedKey } from '../context/DataContext';
 const luxuryEase = [0.22, 1, 0.36, 1];
 
 const CATEGORY_CONFIG = {
-  Work:        { icon: Code, color: '#3b82f6' },
-  Health:      { icon: Dumbbell, color: '#f97316' },
-  Personal:    { icon: Heart, color: '#a855f7' },
-  Learning:    { icon: BookOpen, color: '#06b6d4' },
+  Work: { icon: Code, color: '#3b82f6' },
+  Health: { icon: Dumbbell, color: '#f97316' },
+  Personal: { icon: Heart, color: '#a855f7' },
+  Learning: { icon: BookOpen, color: '#06b6d4' },
   Mindfulness: { icon: Brain, color: '#C2185B' },
 };
 
 /* roman numeral helper */
 const toRoman = (num) => {
-  const map = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  const map = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
   let result = '';
   for (const [value, symbol] of map) {
     while (num >= value) { result += symbol; num -= value; }
@@ -149,7 +149,7 @@ const Heatmap = ({ habits, accentColor }) => {
         </h3>
         <div className="flex items-center gap-3 text-xs" style={{ color: isLight ? 'rgba(26,26,26,0.45)' : 'rgba(242,235,227,0.45)' }}>
           <span>{totalActiveDays} active days</span>
-          <span className="text-accent-visor font-semibold">{Math.round((totalActiveDays/totalDaysInYear)*100)}%</span>
+          <span className="text-accent-visor font-semibold">{Math.round((totalActiveDays / totalDaysInYear) * 100)}%</span>
         </div>
       </div>
 
@@ -271,7 +271,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
           <span className="text-[11px] uppercase tracking-wider" style={{ color: habitColor, opacity: 0.7 }}>{habit.category}</span>
           {habit.scheduleTime && (
             <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
-              <Clock size={10} /> {(() => { const [h,m] = habit.scheduleTime.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`; })()}
+              <Clock size={10} /> {(() => { const [h, m] = habit.scheduleTime.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; })()}
             </span>
           )}
         </div>
@@ -328,7 +328,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Work');
   const [color, setColor] = useState('#C2185B');
-  const [repeatDays, setRepeatDays] = useState([0,1,2,3,4,5,6]);
+  const [repeatDays, setRepeatDays] = useState([0, 1, 2, 3, 4, 5, 6]);
   const [frequency, setFrequency] = useState(1);
   const [reminder, setReminder] = useState(false);
   const [scheduleTime, setScheduleTime] = useState('08:00');
@@ -341,13 +341,13 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
     if (isOpen) {
       if (editingHabit) {
         setTitle(editingHabit.title || ''); setCategory(editingHabit.category || 'Work');
-        setColor(editingHabit.color || '#C2185B'); setRepeatDays(editingHabit.repeatDays || [0,1,2,3,4,5,6]);
+        setColor(editingHabit.color || '#C2185B'); setRepeatDays(editingHabit.repeatDays || [0, 1, 2, 3, 4, 5, 6]);
         setFrequency(editingHabit.frequency || 1); setReminder(editingHabit.reminder || false);
         setScheduleTime(editingHabit.scheduleTime || '08:00');
         setStreakGoal(editingHabit.streakGoal || 30);
         setStreakUnit(editingHabit.streakUnit || 'Day'); setDuration(editingHabit.focusDuration || 25);
       } else {
-        setTitle(''); setCategory('Work'); setColor('#C2185B'); setRepeatDays([0,1,2,3,4,5,6]);
+        setTitle(''); setCategory('Work'); setColor('#C2185B'); setRepeatDays([0, 1, 2, 3, 4, 5, 6]);
         setFrequency(1); setReminder(false); setStreakGoal(30);
         setScheduleTime('08:00');
         setStreakUnit('Day'); setDuration(25);
@@ -383,7 +383,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
         onClick={e => e.stopPropagation()} className="w-full max-w-md glass-heavy glass-shine rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        
+
         {/* Header with colored accent bar */}
         <div className="relative">
           <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ backgroundColor: color }} />
@@ -454,7 +454,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
                   className="glass-input !py-2.5 !pl-9 !text-sm w-full" />
               </div>
               <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>
-                {scheduleTime ? (() => { const [h,m] = scheduleTime.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`; })() : ''}
+                {scheduleTime ? (() => { const [h, m] = scheduleTime.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`; })() : ''}
               </span>
             </div>
           </div>
@@ -463,7 +463,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
           <div>
             <label className="text-xs uppercase tracking-wider font-bold mb-2 block" style={{ color: 'var(--text-dim)' }}>Focus Duration</label>
             <div className="flex gap-2 flex-wrap">
-              {[10,15,25,30,45,60,90].map(d => (
+              {[10, 15, 25, 30, 45, 60, 90].map(d => (
                 <button key={d} onClick={() => setDuration(d)}
                   className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     duration === d ? 'text-white' : ''
@@ -512,7 +512,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
                 <button onClick={() => setStreakGoal(g => g + 1)} className="w-8 h-8 rounded-lg glass-card flex items-center justify-center transition-colors font-bold text-lg" style={{ color: 'var(--text-dim)' }}>+</button>
               </div>
               <div className="flex gap-1.5 ml-2">
-                {['Day','Week','Month'].map(u => (
+                {['Day', 'Week', 'Month'].map(u => (
                   <button key={u} onClick={() => setStreakUnit(u)}
                     className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all')}
                     style={streakUnit === u ? { borderColor: `${color}50`, color: color, background: `${color}15` } : { borderColor: isLight ? 'var(--glass-border)' : 'rgba(242,235,227,0.1)', color: 'var(--text-dim)' }}>{u}</button>
@@ -581,7 +581,7 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
               <button onClick={() => setTime(t => Math.min(120, t + 5))} className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[#F2EBE3]/50 hover:text-[#F2EBE3] font-bold text-lg">+</button>
             </div>
             <div className="flex gap-2 mt-3 flex-wrap">
-              {[5,10,15,25,30,45,60,90].map(d => (
+              {[5, 10, 15, 25, 30, 45, 60, 90].map(d => (
                 <button key={d} onClick={() => setTime(d)}
                   className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     time === d ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/30 hover:border-[#F2EBE3]/20'
@@ -613,9 +613,9 @@ const CircularTimer = ({ progress, timeStr, label, isActive, color = '#C2185B', 
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       {/* Background ring */}
       <svg width={size} height={size} className="absolute -rotate-90">
-        <circle cx={size/2} cy={size/2} r={radius} stroke={isLight ? 'rgba(0,0,0,0.08)' : 'rgba(242,235,227,0.06)'} strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke={isLight ? 'rgba(0,0,0,0.08)' : 'rgba(242,235,227,0.06)'} strokeWidth={stroke} fill="none" />
         <motion.circle
-          cx={size/2} cy={size/2} r={radius}
+          cx={size / 2} cy={size / 2} r={radius}
           stroke={color}
           strokeWidth={stroke}
           fill="none"
@@ -634,8 +634,8 @@ const CircularTimer = ({ progress, timeStr, label, isActive, color = '#C2185B', 
           style={{
             backgroundColor: color,
             boxShadow: `0 0 10px ${color}`,
-            top: size/2 - radius * Math.cos((progress / 100) * 2 * Math.PI) - 7,
-            left: size/2 + radius * Math.sin((progress / 100) * 2 * Math.PI) - 7,
+            top: size / 2 - radius * Math.cos((progress / 100) * 2 * Math.PI) - 7,
+            left: size / 2 + radius * Math.sin((progress / 100) * 2 * Math.PI) - 7,
           }}
         />
       )}
@@ -697,7 +697,7 @@ export default function HabitFocusHub() {
     try {
       const saved = localStorage.getItem(getUserScopedKey('custom-sessions'));
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch { }
     return [
       { id: 's-1', name: 'Deep Work', time: 45 },
       { id: 's-2', name: 'Quick Sprint', time: 15 },
@@ -707,10 +707,10 @@ export default function HabitFocusHub() {
   const [editingSession, setEditingSession] = useState(null);
 
   // Persist focus data
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-sessions'), String(sessions)); } catch {} }, [sessions]);
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-total-time'), String(totalFocusTime)); } catch {} }, [totalFocusTime]);
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-history'), JSON.stringify(sessionHistory)); } catch {} }, [sessionHistory]);
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('custom-sessions'), JSON.stringify(customSessions)); } catch {} }, [customSessions]);
+  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-sessions'), String(sessions)); } catch { } }, [sessions]);
+  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-total-time'), String(totalFocusTime)); } catch { } }, [totalFocusTime]);
+  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-history'), JSON.stringify(sessionHistory)); } catch { } }, [sessionHistory]);
+  useEffect(() => { try { localStorage.setItem(getUserScopedKey('custom-sessions'), JSON.stringify(customSessions)); } catch { } }, [customSessions]);
 
   // Stopwatch state
   const [mode, setMode] = useState('timer'); // 'timer' | 'stopwatch'
