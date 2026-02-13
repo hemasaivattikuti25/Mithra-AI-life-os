@@ -97,8 +97,10 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="relative">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-200"></div>
-                            <img src="/assets/logo.png" alt="Mithra" className="relative w-8 h-8 rounded-lg border border-white/10" />
+                            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-lg blur opacity-40 group-hover:opacity-75 transition duration-200"></div>
+                            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center border border-white/10" style={{ background: 'linear-gradient(135deg, #06b6d4, #2563eb)' }}>
+                                <Sparkles className="w-5 h-5 text-white" />
+                            </div>
                         </div>
                         <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Mithra AI</span>
                     </div>

@@ -285,25 +285,7 @@ export default function AuthPage({ isPasswordReset = false }) {
             initial={{ width: 0 }} animate={{ width: 64 }}
             transition={{ delay: 0.5, duration: 0.6 }} />
 
-          <div className="grid grid-cols-2 gap-4 text-left">
-            {features.map((f, i) => (
-              <motion.div key={f.title} className="p-4 rounded-2xl group cursor-default"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-                whileHover={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
-                <f.icon size={20} className="mb-2.5 transition-colors text-cyan-400 group-hover:text-cyan-300" />
-                <h3 className="text-sm font-semibold text-white/90 mb-1">{f.title}</h3>
-                <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        <div className="absolute bottom-6 left-0 right-0 text-center">
-          <p className="text-[11px] text-white/40 tracking-[0.2em] uppercase font-medium">
-            Developed by Hemasai Vattikuti
-          </p>
+          {/* Visuals only - text removed per user request */}
         </div>
       </div>
 
