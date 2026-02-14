@@ -272,6 +272,7 @@ export default function DostMode() {
   const [isOnline, setIsOnline] = useState(false);
   const [apiError, setApiError] = useState(null); // New error state
   const [isListening, setIsListening] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
