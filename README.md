@@ -140,5 +140,5 @@ Productivity, React, FastAPI, Supabase, Gemini AI, Habit Tracker, Pomodoro, Jour
 ---
 
 <div align="center">
-  Built with ❤️ in India &nbsp;·&nbsp; MIT License
+  crafted and devloped with ❤️ by HEMASAI VATTUKUTI &nbsp;·&nbsp; MIT License
 </div>
