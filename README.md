@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./server/assets/logo.png" width="72" height="72" />
+<img src="./docs/assets/logo.png" width="72" height="72" />
 
 # Mithra AI — Life Operating System
 
@@ -20,6 +20,13 @@
 Mithra is a full-stack AI Life Operating System that unifies everything —
 tasks, habits, calendar, journal, and an AI companion with real memory —
 into one offline-first workspace. Built solo, from scratch.
+
+---
+
+## 🎬 Demo
+
+<!-- Replace demo.gif with real screen recording -->
+![Mithra Demo](./docs/demo.gif)
 
 ---
 
@@ -58,7 +65,7 @@ into one offline-first workspace. Built solo, from scratch.
 - Node.js v18+
 - Python 3.10+
 - Supabase account (free tier works)
-- Gemini API key (free at ai.google.dev)
+- Gemini API key (free at https://ai.google.dev)
 
 ### 1. Clone
 ```bash
@@ -68,7 +75,7 @@ cd Mithra-AI-life-os
 
 ### 2. Frontend
 ```bash
-cd client
+cd client-app/client
 npm install
 cp .env.example .env   # add your Supabase keys
 npm run dev
@@ -76,7 +83,7 @@ npm run dev
 
 ### 3. Backend (optional — for AI features)
 ```bash
-cd server
+cd client-app/server
 pip install -r requirements.txt
 cp .env.example .env   # add GEMINI_API_KEY, SUPABASE_URL, JWT_SECRET
 uvicorn main:app --reload
@@ -94,6 +101,12 @@ uvicorn main:app --reload
 
 ---
 
+## 🌐 Live Demo
+
+👉 **[https://mithra-life-os.vercel.app](https://mithra-life-os.vercel.app)**
+
+---
+
 ## 📬 Contact
 
 **Hemasai Vattikuti** — Founder & Solo Developer
@@ -101,6 +114,12 @@ uvicorn main:app --reload
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemsaivattikuti)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
 [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:hemasaivattikuti25@gmail.com)
+
+---
+
+## 🔎 Keywords
+
+Productivity, React, FastAPI, Supabase, Gemini AI, Habit Tracker, Pomodoro, Journal, Offline-first, PWA, Life OS, Android App, Task Manager, Focus Timer, AI Assistant, Vector Database, RAG, Semantic Search
 
 ---
 
