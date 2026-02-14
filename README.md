@@ -109,11 +109,27 @@ uvicorn main:app --reload
 
 ## 📬 Contact
 
-**Hemasai Vattikuti** — Founder & Solo Developer
+<div align="center">
+
+<img src="./docs/assets/hemasai.jpeg" width="120" height="120" style="border-radius: 50%; object-fit: cover;" />
+
+### Hemasai Vattikuti
+**Founder & Solo Developer**
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemsaivattikuti)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
 [![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:hemasaivattikuti25@gmail.com)
+
+</div>
+
+---
+
+## 📱 Download Android App
+
+[![Download APK](https://img.shields.io/badge/Download_APK-v1.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases/download/v1.0.0/mithra-ai-v1.0.0.apk)
+
+**Direct Download:** [mithra-ai-v1.0.0.apk](./mithra-ai-v1.0.0.apk)
+
 
 ---
 
