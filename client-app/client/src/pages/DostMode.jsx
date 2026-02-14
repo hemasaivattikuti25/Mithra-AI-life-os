@@ -12,7 +12,8 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 /* =========================================
-// Only use API if explicitly configured
+   API Configuration
+   ========================================= */
 const API_BASE = import.meta.env.VITE_API_URL || null;
 const isAPIConfigured = !!API_BASE;
 
