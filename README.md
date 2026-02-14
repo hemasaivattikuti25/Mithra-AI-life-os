@@ -126,9 +126,10 @@ uvicorn main:app --reload
 
 ## 📱 Download Android App
 
-[![Download APK](https://img.shields.io/badge/Download_APK-v1.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases/download/v1.0.0/mithra-ai-v1.0.0.apk)
+[![Download APK](https://img.shields.io/badge/Download_APK-v1.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases/latest)
 
-**Direct Download:** [mithra-ai-v1.0.0.apk](./mithra-ai-v1.0.0.apk)
+**Direct Download:** Get the latest APK from [GitHub Releases](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases)
+
 
 
 ---
