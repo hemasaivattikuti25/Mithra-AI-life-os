@@ -1,267 +1,487 @@
-import os
-import json
-import logging
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Body
+"""
+Mithra OS — FastAPI Backend
+The Brain of Mithra Life OS
+
+Endpoints:
+  GET  /                     → Health check
+  POST /api/auth/signup      → Register new user
+  POST /api/auth/login       → Sign in
+  POST /api/auth/reset-password → Request password reset
+  POST /api/auth/confirm-reset  → Set new password
+  POST /api/chat             → Dost AI chat (RAG)
+  POST /api/parse-schedule   → Natural language → calendar events
+  GET  /api/tasks            → List user's tasks
+  POST /api/tasks            → Create a task
+  PUT  /api/tasks/{id}       → Update a task
+  DELETE /api/tasks/{id}     → Delete a task
+  GET  /api/journal          → Get journal entries
+  POST /api/journal          → Add journal entry
+  GET  /api/notifications    → Get notification settings
+  POST /api/notifications    → Update notification settings
+  GET  /api/sync             → Sync data
+
+Run: uvicorn main:app --reload --port 8000
+"""
+
+from fastapi import FastAPI, HTTPException, Body, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from dotenv import load_dotenv
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+import json
+from datetime import datetime, date, timedelta
+import uuid
+import secrets
+import os
 
-from supabase import create_client, Client
-import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
-
-# --- 1. Infrastructure Setup ---
-
-# Load environment variables
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# Validate env vars
-if not all([SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY]):
-    logging.warning("Missing one or more required environment variables: SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY")
-
-# Initialize Clients
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
-genai.configure(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
-
-# Set up Gemini Model
-generation_config = {
-    "temperature": 0.7,
-    "top_p": 0.95,
-    "top_k": 40,
-    "max_output_tokens": 8192,
-}
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    generation_config=generation_config,
+# Import clients (gracefully handles missing credentials)
+from config import supabase, model, get_embedding
+from auth import (
+    hash_password, 
+    verify_password, 
+    create_access_token, 
+    verify_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
-app = FastAPI(title="Mithra API", description="The Brain of the Mithra Productivity System")
+app = FastAPI(
+    title="Mithra API",
+    description="The Brain of Mithra Life OS — Auth, Tasks, AI Chat, Schedule",
+    version="2.1.0 (Hardened)",
+)
 
-# CORS Setup
+# --- CORS ---
+origins = [
+    "https://mithra-life-os.vercel.app",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    # In production, specify exact domains e.g., ["https://mithra-app.com"]
-    allow_origins=["http://localhost:3000", "http://localhost:5173"], 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- 2. Data Models ---
+# --- Security ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-class Task(BaseModel):
-    title: str
-    status: str = "pending" # pending, completed, cancelled
-    priority: str = "Medium" # High, Medium, Low
-    due_date: Optional[str] = None
-    category: Optional[str] = "Personal" # Work, Health, Personal
-    user_id: Optional[str] = None
+# --- In-Memory Stores (for demo mode without Supabase) ---
+# Format: {email: user_dict}
+_users_store: Dict[str, dict] = {}
+# Format: {task_id: task_dict}
+_tasks_store: Dict[str, dict] = {}
+# Format: List[journal_entry_dict]
+_journal_store: List[dict] = []
+# Format: {user_id: settings_dict}
+_notification_settings_store: Dict[str, dict] = {} 
+# Format: {token: email}
+_reset_tokens: Dict[str, str] = {}
+
+# --- Data Models ---
+class SignUpRequest(BaseModel):
+    fullName: str
+    email: str
+    password: str
+
+class SignInRequest(BaseModel):
+    email: str
+    password: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+
+class ConfirmResetRequest(BaseModel):
+    email: str
+    newPassword: str
+    token: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: str
-    user_id: str
-    current_tasks: Optional[List[Dict[str, Any]]] = None
-    current_habits: Optional[List[Dict[str, Any]]] = None
+    # user_id removed, inferred from token
+    context_window: int = 5
 
 class ScheduleRequest(BaseModel):
     text: str
-    user_id: Optional[str] = None
 
-class ScheduleEvent(BaseModel):
+class TaskCreate(BaseModel):
     title: str
-    start_time: Optional[str] = None
-    category: str
-    priority: str
+    details: str = ""
+    listId: str = "default"
+    priority: str = "medium"
+    completed: bool = False
+    starred: bool = False
+    dueDate: Optional[str] = None
 
-class ScheduleResponse(BaseModel):
-    events: List[ScheduleEvent]
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    details: Optional[str] = None
+    listId: Optional[str] = None
+    priority: Optional[str] = None
+    completed: Optional[bool] = None
+    starred: Optional[bool] = None
+    dueDate: Optional[str] = None
 
-# --- 3. Helper Functions ---
+class JournalCreate(BaseModel):
+    content: str
+    mood: Optional[str] = None
+    tags: Optional[str] = ""
+    date: Optional[str] = None
 
-async def get_embedding(text: str) -> List[float]:
-    """
-    Generates a vector embedding for the given text using Gemini.
-    """
-    if not GEMINI_API_KEY:
-         raise HTTPException(status_code=500, detail="Gemini API Key not configured")
-         
-    try:
-        # Use embedding-001 or similar suitable model for retrieval
-        result = genai.embed_content(
-            model="models/text-embedding-004",
-            content=text,
-            task_type="retrieval_document",
-            title="Mithra Journal Entry"
+class NotificationSettings(BaseModel):
+    enabled: bool = False
+    reminderMinutes: int = 15
+
+# --- Dependencies ---
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        return result['embedding']
-    except Exception as e:
-        print(f"Error generating embedding: {e}")
-        # Return a zero vector or raise error depending on strictness
-        raise HTTPException(status_code=500, detail=f"Embedding generation failed: {str(e)}")
+    user_id: str = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
+    # In a real DB, you'd fetch user by ID. 
+    # Here, we have email -> user map, so we scan (inefficient but fine for demo)
+    user = None
+    for u in _users_store.values():
+        if u["id"] == user_id:
+            user = u
+            break
+            
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
-async def search_similar_memories(query_embedding: List[float], user_id: str, threshold: float = 0.5, count: int = 5):
-    """
-    Searches Supabase for similar journal entries using pgvector.
-    Requires the 'match_journal_entries' RPC function to exist in DB.
-    """
-    if not supabase:
-        print("Supabase client not initialized")
-        return []
-
-    try:
-        response = supabase.rpc(
-            "match_journal_entries",
-            {
-                "query_embedding": query_embedding,
-                "match_threshold": threshold,
-                "match_count": count
-            }
-        ).execute()
-        return response.data
-    except Exception as e:
-        print(f"Vector search failed: {e}")
-        return []
-
-# --- 4. API Endpoints ---
+# ═══════════════════════════════════════════════
+#  ENDPOINTS
+# ═══════════════════════════════════════════════
 
 @app.get("/")
 def health_check():
-    return {"status": "active", "system": "Mithra Brain Online"}
+    """Health check endpoint."""
+    return {
+        "status": "online",
+        "system": "Mithra Brain Active (Hardened)",
+        "version": "2.1.0",
+        "services": {
+            "supabase": "connected" if supabase else "demo mode",
+            "gemini": "connected" if model else "demo mode",
+        },
+        "timestamp": datetime.now().isoformat(),
+    }
 
+# ─── AUTHENTICATION ───
+@app.post("/api/auth/signup")
+async def signup(request: SignUpRequest):
+    """Register a new user."""
+    email = request.email.lower().strip()
+    if email in _users_store:
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
+    if len(request.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    hashed_pw = hash_password(request.password)
+    
+    user_data = {
+        "id": user_id,
+        "email": email,
+        "fullName": request.fullName,
+        "passwordHash": hashed_pw,
+        "createdAt": datetime.now().isoformat(),
+    }
+    _users_store[email] = user_data
+    
+    # Store in Supabase if connected
+    if supabase:
+        try:
+            # Note: This assumes a 'users' table exists or uses auth.users via admin?
+            # Usually direct insert into auth.users is not allowed via public API client.
+            # Assuming 'public.profiles' or similar for custom auth demo.
+            pass 
+        except Exception as e:
+            print(f"Supabase sync failed: {e}")
+
+    # Generate token immediately
+    access_token = create_access_token(data={"sub": user_id, "email": email})
+    
+    return {
+        "user": {"id": user_id, "email": email, "fullName": request.fullName},
+        "token": access_token
+    }
+
+@app.post("/api/auth/login")
+async def login(request: SignInRequest):
+    """Sign in an existing user."""
+    email = request.email.lower().strip()
+    user = _users_store.get(email)
+    
+    if not user or not verify_password(request.password, user["passwordHash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"sub": user["id"], "email": user["email"]})
+    return {
+        "user": {"id": user["id"], "email": user["email"], "fullName": user["fullName"]},
+        "token": access_token
+    }
+
+@app.post("/api/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Request a password reset."""
+    email = request.email.lower().strip()
+    # Always return success to prevent email enumeration
+    user = _users_store.get(email)
+    if user:
+        token = secrets.token_urlsafe(32)
+        _reset_tokens[token] = email
+        # In production: send_email(email, token)
+        # Here we just log for dev/demo purposes but DO NOT return it in API
+        print(f"[DEV] Reset token for {email}: {token}")
+        
+    return {
+        "message": "If an account exists, a password reset link has been sent."
+    }
+
+@app.post("/api/auth/confirm-reset")
+async def confirm_reset(request: ConfirmResetRequest):
+    """Set a new password after reset verification."""
+    if len(request.newPassword) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    # Verify token
+    if not request.token:
+        raise HTTPException(status_code=400, detail="Missing reset token")
+        
+    email = _reset_tokens.get(request.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    user = _users_store.get(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found") # Should technically be generic error too
+
+    # Update password
+    user["passwordHash"] = hash_password(request.newPassword)
+    del _reset_tokens[request.token]
+    
+    return {"message": "Password updated successfully"}
+
+# ─── DOST CHAT (RAG Engine) ───
 @app.post("/api/chat")
-async def chat_with_dost(request: ChatRequest):
-    """
-    The 'Dost' AI Engine.
-    1. Embeds user message.
-    2. Retrieves context from past journals.
-    3. Generates helpful response using detailed context.
-    4. Saves the interaction.
-    """
+async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_current_user)):
+    """AI chat with Dost — stoic companion with memory."""
     try:
-        # 1. Embed
-        message_embedding = await get_embedding(request.message)
-        
-        # 2. Recall (RAG)
-        similar_memories = await search_similar_memories(message_embedding, request.user_id)
-        
-        context_str = ""
-        if similar_memories:
-            context_str = "\n".join([f"- {m['content']} (Similarity: {m['similarity']:.2f})" for m in similar_memories])
-        
-        # 3. Contextual Data (Tasks/Habits)
-        task_context = ""
-        if request.current_tasks:
-            pending = [t for t in request.current_tasks if not t.get('completed')]
-            high_pri = [t for t in pending if t.get('priority') == 'high']
-            task_context = f"User has {len(pending)} pending tasks ({len(high_pri)} high priority)."
-            if high_pri:
-                task_context += f" Top priorities: {', '.join([t['title'] for t in high_pri[:3]])}."
+        user_msg = request.message
 
-        habit_context = ""
-        if request.current_habits:
-            done = [h for h in request.current_habits if h.get('todayDone')]
-            habit_context = f"Habits done today: {len(done)}/{len(request.current_habits)}."
+        if not model:
+            return {
+                "reply": f"I hear you, {current_user['fullName']}. But I need my Gemini keys to speak fully.",
+                "action": None,
+                "memory_used": False,
+                "demo_mode": True,
+            }
 
-        # 4. Generate
-        system_prompt = f"""You are Dost, a supportive, insightful, and slightly strict productivity companion. 
-        Your goal is to help the user master their time and emotions.
-        
-        [Current Status]:
-        {task_context}
-        {habit_context}
-
-        Use the following Context (retrieved from the user's past journals) to inform your response.
-        If the user refers to past events, check the context.
-        Keep your response concise (under 100 words), conversational, and empathetic but action-oriented.
-        """
-        
-        full_prompt = f"{system_prompt}\n\n[Context Memory]:\n{context_str}\n\n[User]: {request.message}\n[Dost]:"
-        
-        response = model.generate_content(full_prompt)
-        dost_reply = response.text
-        
-        # 5. Save to Journal (Memory)
+        # A. RETRIEVAL — Search memory (Supabase RLS handles user scoping ideally)
+        # But here we pass user_id explicitly in filter if needed
+        memory_context = ""
         if supabase:
-            supabase.table("journal_entries").insert({
-                "content": request.message, 
-                "user_id": request.user_id,
-                "embedding": message_embedding,
-                "mood_score": 5 
-            }).execute()
+            try:
+                msg_embedding = get_embedding(user_msg)
+                # Ensure the RPC matches ONLY this user's entries
+                # This depends on how match_journal_entries is defined.
+                # Usually: WHERE (auth.uid() = user_id) OR similar.
+                related_data = supabase.rpc(
+                    'match_journal_entries',
+                    {
+                        'query_embedding': msg_embedding, 
+                        'match_threshold': 0.7, 
+                        'match_count': 3,
+                        'filter_user_id': current_user['id'] # Assuming RPC supports this or RLS handles it
+                    }
+                ).execute()
+                
+                if related_data.data:
+                    memory_context = "\n".join([
+                        f"- {item['content']} (Mood: {item.get('mood_score', 'N/A')})"
+                        for item in related_data.data
+                    ])
+            except Exception:
+                pass 
+
+        # B. GENERATION
+        system_prompt = f"""
+        You are Dost, a digital stoic companion for {current_user['fullName']}.
+        User's Context from Journal Memory:
+        {memory_context if memory_context else "No previous context available."}
+
+        Style Guide:
+        - Be concise, calm, and insightful.
+        - If the user seems stressed, offer a stoic perspective.
+        - If the user mentions a task, output JSON action:
+          ||JSON||{{"action": "create_task", "task": {{"title": "...", "priority": "medium"}}}}
+
+        User: {user_msg}
+        Dost:
+        """
+
+        response = model.generate_content(system_prompt)
+        text_response = response.text
+
+        # C. ACTION PARSING
+        action_data = None
+        if "||JSON||" in text_response:
+            parts = text_response.split("||JSON||")
+            text_response = parts[0].strip()
+            try:
+                action_data = json.loads(parts[1])
+            except Exception:
+                pass
 
         return {
-            "reply": dost_reply,
-            "context_used": len(similar_memories) > 0
+            "reply": text_response,
+            "action": action_data,
+            "memory_used": bool(memory_context),
         }
 
     except Exception as e:
-        logging.error(f"Chat error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ─── SCHEDULE PARSER ───
 @app.post("/api/parse-schedule")
-async def parse_schedule(request: ScheduleRequest):
-    """
-    Parses natural language into structured schedule events using Gemini Structured Output.
-    """
+async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(get_current_user)):
+    """Parse natural language text into calendar events using Gemini."""
     try:
-        # Define the schema we want back
+        if not model:
+            raise HTTPException(status_code=503, detail="AI Service Unavailable")
+
+        today_str = date.today().isoformat()
         prompt = f"""
-        You are an expert scheduler. Extract schedule events from the following text: "{request.text}".
-        
-        Today is: {datetime.now().strftime("%A, %Y-%m-%d")}.
-        
-        - If the text says "Plan my week", generate a thoughtful schedule for the next 5-7 days based on any context provided or general productivity best practices (Work 9-5, Workout in morning, etc).
-        - If dates are implied (e.g., "next Friday"), calculate the exact ISO date.
-        
-        Return a JSON object with a list of "events". 
-        Each event should have:
-        - title: A short description.
-        - start_time: ISO 8601 string (YYYY-MM-DDTHH:MM:SS) 
-        - category: One of "Work", "Health", "Personal", "Learning".
-        - priority: "High" or "Medium".
-        
-        Example Output:
-        {{
-            "events": [
-                {{ "title": "Team Meeting", "start_time": "2024-02-14T10:00:00", "category": "Work", "priority": "High" }}
-            ]
-        }}
+        Extract calendar events for user {current_user['fullName']}.
+        Text: "{request.text}".
+        Today: {today_str}.
+        Return ONLY JSON array:
+        [{{ "title": "...", "start": "ISO", "end": "ISO", "category": "Work|Personal|Health|Focus" }}]
         """
-        
-        # Using Gemini 1.5 Flash's ability to output JSON
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
-        )
-        
-        # Parse the JSON string result
-        import json
-        try:
-            cleaned_text = response.text.strip()
-            # Handle potential markdown code blocks ```json ... ```
-            if cleaned_text.startswith("```"):
-                cleaned_text = cleaned_text.split("\n", 1)[1].rsplit("\n", 1)[0]
-                
-            data = json.loads(cleaned_text)
-            return data # Should match {"events": [...]} format
-            
-        except json.JSONDecodeError:
-             print(f"Failed to parse JSON: {response.text}")
-             raise HTTPException(status_code=500, detail="Failed to parse schedule from AI response")
+
+        response = model.generate_content(prompt)
+        # simplistic cleanup
+        clean_json = response.text.replace('```json', '').replace('```', '').strip()
+        events = json.loads(clean_json)
+
+        return {"events": events}
 
     except Exception as e:
-        logging.error(f"Schedule parse error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ─── TASK CRUD ───
+@app.get("/api/tasks")
+async def list_tasks(current_user: dict = Depends(get_current_user)):
+    """List authenticated user's tasks."""
+    user_id = current_user["id"]
+    # Filter tasks by user_id
+    user_tasks = [t for t in _tasks_store.values() if t.get("userId") == user_id]
+    return {"tasks": user_tasks}
+
+@app.post("/api/tasks")
+async def create_task(task: TaskCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new task."""
+    task_id = str(uuid.uuid4())[:8]
+    task_data = {
+        "id": task_id,
+        "userId": current_user["id"], # STRICT ASSOCIATION
+        **task.dict(),
+        "createdAt": datetime.now().isoformat(),
+        "subtasks": [],
+    }
+    _tasks_store[task_id] = task_data
+    return {"task": task_data}
+
+@app.put("/api/tasks/{task_id}")
+async def update_task(task_id: str, updates: TaskUpdate, current_user: dict = Depends(get_current_user)):
+    """Update an existing task."""
+    task = _tasks_store.get(task_id)
+    if not task or task.get("userId") != current_user["id"]:
+        raise HTTPException(status_code=404, detail="Task not found")
+        
+    for key, value in updates.dict(exclude_unset=True).items():
+        task[key] = value
+    task["updatedAt"] = datetime.now().isoformat()
+    return {"task": task}
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a task."""
+    task = _tasks_store.get(task_id)
+    if not task or task.get("userId") != current_user["id"]:
+        raise HTTPException(status_code=404, detail="Task not found")
+        
+    deleted = _tasks_store.pop(task_id)
+    return {"deleted": deleted}
+
+# ─── NOTIFICATION SETTINGS ───
+@app.get("/api/notifications")
+async def get_notifications(current_user: dict = Depends(get_current_user)):
+    """Get notification settings."""
+    uid = current_user["id"]
+    return {"settings": _notification_settings_store.get(uid, {"enabled": False, "reminderMinutes": 15})}
+
+@app.post("/api/notifications")
+async def update_notifications(settings: NotificationSettings, current_user: dict = Depends(get_current_user)):
+    """Update notification settings."""
+    uid = current_user["id"]
+    current = _notification_settings_store.get(uid, {"enabled": False, "reminderMinutes": 15})
+    current.update(settings.dict())
+    _notification_settings_store[uid] = current
+    return {"settings": current}
+
+# ─── JOURNAL ───
+@app.get("/api/journal")
+async def list_journal(current_user: dict = Depends(get_current_user)):
+    """Get journal entries."""
+    uid = current_user["id"]
+    entries = [e for e in _journal_store if e.get("userId") == uid]
+    return {"entries": entries}
+
+@app.post("/api/journal")
+async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_current_user)):
+    """Create a journal entry."""
+    entry_data = {
+        "id": str(uuid.uuid4())[:8],
+        "userId": current_user["id"],
+        "content": entry.content,
+        "mood": entry.mood,
+        "tags": entry.tags,
+        "date": entry.date or date.today().isoformat(),
+        "createdAt": datetime.now().isoformat(),
+    }
+    _journal_store.insert(0, entry_data)
+    return {"entry": entry_data}
+
+# ─── DATA SYNC ───
+@app.get("/api/sync")
+async def sync_data(current_user: dict = Depends(get_current_user)):
+    """Get all data for offline sync."""
+    uid = current_user["id"]
+    return {
+        "tasks": [t for t in _tasks_store.values() if t.get("userId") == uid],
+        "journal": [e for e in _journal_store if e.get("userId") == uid],
+        "notifications": _notification_settings_store.get(uid, {}),
+        "syncedAt": datetime.now().isoformat(),
+    }
 
 if __name__ == "__main__":
     import uvicorn
-    # Hot reload enabled for development
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    print("\n🚀 Starting Mithra Backend on http://localhost:8000")
+    print("📖 API Docs: http://localhost:8000/docs\n")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

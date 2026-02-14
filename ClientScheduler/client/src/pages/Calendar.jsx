@@ -149,8 +149,10 @@ const computeEventColumns = (events) => {
   });
 
   groups.forEach(group => {
-    const colsUsed = new Set(group.map(e => eventMeta.get(e.id).col));
-    const totalCols = colsUsed.size;
+    // Determine the maximum column index used within this group
+    const maxColIndex = group.reduce((max, e) => Math.max(max, eventMeta.get(e.id).col), 0);
+    const totalCols = maxColIndex + 1;
+
     group.forEach(e => {
       eventMeta.get(e.id).totalCols = totalCols;
     });

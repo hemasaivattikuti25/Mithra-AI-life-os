@@ -12,17 +12,13 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 /* =========================================
-   DOST MODE — AI Companion with full power:
-   ✅ Data summarization (tasks, habits, mood, journal)
-   ✅ Create / edit / delete tasks, habits
-   ✅ Conflict detection for scheduling
-   ✅ Voice input (Web Speech API)
-   ✅ File import (CSV, Excel/xlsx, JPG/image)
-   ========================================= */
-
-// Only use API if explicitly configured - NEVER fall back to localhost
+// Only use API if explicitly configured
 const API_BASE = import.meta.env.VITE_API_URL || null;
 const isAPIConfigured = !!API_BASE;
+
+/* ═══════════════════════════════════════════════════════════════
+   DOST MODE — AI Agent
+   ═══════════════════════════════════════════════════════════════ */
 
 const INITIAL_MSG = [
   {
@@ -274,8 +270,8 @@ export default function DostMode() {
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
+  const [apiError, setApiError] = useState(null); // New error state
   const [isListening, setIsListening] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -283,7 +279,7 @@ export default function DostMode() {
   const {
     theme, tasks, habits,
     addTask, updateTask, deleteTask, toggleTask,
-    addHabit, updateHabit, deleteHabit, toggleHabit,
+    addHabit, updateHabit, deleteHabit,
   } = useData();
   const isLight = theme === 'light';
 
@@ -737,8 +733,9 @@ export default function DostMode() {
                 current_habits: habits.map(h => ({ title: h.title, streak: h.streak, todayDone: h.todayDone })),
               }, { timeout: 30000 });
               addAiMsg(res.data?.reply || "That's interesting! Tell me more.");
-            } catch {
-              addAiMsg(getSmartResponse());
+            } catch (error) {
+              setApiError({ message: "Connection failed", input: userInput });
+              addAiMsg("I'm having trouble connecting. Please check your internet or try again.", { isError: true });
             }
           } else if (isAppRelated) {
             addAiMsg(getSmartResponse());
@@ -945,7 +942,7 @@ export default function DostMode() {
               style={
                 msg.sender === 'user'
                   ? { background: 'var(--accent-color)', opacity: 0.9, backdropFilter: 'blur(20px) saturate(180%)' }
-                  : { background: 'var(--glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 0 15px var(--accent-glow)' }
+                  : { background: 'var(--surface-bg)', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
               }
             >
               {/* Text Content with markdown rendering */}
@@ -1075,6 +1072,26 @@ export default function DostMode() {
         ))}
       </div>
 
+      {/* ERROR / RETRY BANNER */}
+      <AnimatePresence>
+        {apiError && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-24 left-4 right-4 z-40 bg-red-500/90 backdrop-blur-md p-3 rounded-xl flex items-center justify-between text-white shadow-lg mx-auto max-w-2xl">
+            <div className="flex items-center gap-2.5 text-sm font-medium">
+              <AlertTriangle size={16} />
+              <span>{apiError.message}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setApiError(null)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"><X size={16} /></button>
+              <button onClick={() => { setInput(apiError.input); setApiError(null); }}
+                className="px-3 py-1.5 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-white/90 transition-colors shadow-sm">
+                Retry
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* INPUT AREA */}
       <div className="p-4 md:p-6 z-20"
         style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
@@ -1085,7 +1102,7 @@ export default function DostMode() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files..."}
+            placeholder={apiError ? "Tap Retry above or type a new message..." : (isListening ? "Listening... speak now 🎤" : "Add task, ask anything, or import files...")}
             className={`w-full text-[var(--text-primary)] rounded-full py-3.5 pl-5 pr-28 focus:outline-none focus:shadow-[0_0_20px_var(--accent-glow)] transition-all placeholder-[var(--text-dim)] text-sm md:text-base shadow-inner bg-black/5`}
             style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px) saturate(180%)' }}
           />

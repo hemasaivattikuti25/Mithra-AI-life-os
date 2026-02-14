@@ -199,14 +199,13 @@ const Heatmap = ({ habits, accentColor }) => {
 };
 
 /* ═══════════ HABIT CARD — always-visible edit & delete ═══════════ */
+/* ═══════════ HABIT CARD — always-visible edit & delete ═══════════ */
 const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
   const catConfig = CATEGORY_CONFIG[habit.category] || CATEGORY_CONFIG.Work;
   const Icon = catConfig.icon;
   const { theme } = useData();
   const isLight = theme === 'light';
   const habitColor = habit.color || catConfig.color;
-
-
 
   // Streak goal progress
   const goalProgress = habit.streakGoal ? Math.min(100, (habit.streak / habit.streakGoal) * 100) : 0;
@@ -220,7 +219,8 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
       transition={{ delay: index * 0.05, duration: 0.4, ease: luxuryEase }}
       className={clsx('glass-card glass-shine rounded-xl p-4 flex items-center gap-4 group transition-all relative', habit.todayDone && 'opacity-60')}
       style={{
-        background: `linear-gradient(135deg, color-mix(in srgb, ${habitColor}, transparent 85%), color-mix(in srgb, ${habitColor}, transparent 95%), transparent)`,
+        background: `linear-gradient(135deg, color-mix(in srgb, ${habitColor}, transparent 90%), transparent)`,
+        borderColor: `color-mix(in srgb, ${habitColor}, transparent 80%)`,
         borderLeft: `3px solid ${habitColor}`,
       }}
     >
@@ -259,7 +259,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
       {/* Always visible action buttons */}
       <div className="flex items-center gap-1.5">
         <button onClick={() => onEdit(habit)}
-          className="p-2 rounded-lg hover:bg-white/10 transition-all" style={{ color: 'var(--text-dim)' }} title="Edit">
+          className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-all" style={{ color: 'var(--text-dim)' }} title="Edit">
           <Pencil size={16} />
         </button>
         <button onClick={() => onDelete(habit.id)}
@@ -274,7 +274,7 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
           )}
           style={habit.todayDone ? {
             backgroundColor: habitColor,
-            color: 'var(--body-bg)',
+            color: 'var(--surface-bg)',
             boxShadow: `0 0 12px ${habitColor}`,
           } : {
             color: 'var(--text-dim)',

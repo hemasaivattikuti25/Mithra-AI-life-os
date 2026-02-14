@@ -51,9 +51,14 @@ class SyncEngine {
 
   _saveQueue(queue) {
     try { localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue)); }
-    catch { /* quota exceeded — drop oldest entries */
-      try { localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue.slice(-50))); }
-      catch {}
+    catch {
+      /* quota exceeded — drop oldest entries */
+      try {
+        const trimmed = queue.slice(-50);
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed));
+        this.notify('quota_exceeded', { dropped: queue.length - trimmed.length });
+      }
+      catch { }
     }
   }
 
@@ -102,7 +107,7 @@ class SyncEngine {
     }
 
     this._saveQueue(failed);
-    try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch {}
+    try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch { }
     this.syncInProgress = false;
     this.notify(failed.length > 0 ? 'partial' : 'synced');
   }
@@ -183,7 +188,7 @@ class SyncEngine {
         }
       });
 
-      try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch {}
+      try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch { }
       return Array.from(merged.values());
     } catch (e) {
       console.error(`[Sync] Table sync failed for ${table}:`, e);

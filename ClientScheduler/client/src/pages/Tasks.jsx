@@ -81,10 +81,11 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
       <motion.div initial={{ y: '100%', opacity: 0.8 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-md max-h-[85dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="w-full sm:max-w-md max-h-[85dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden glass-heavy glass-shine"
         style={{
           marginBottom: 'env(safe-area-inset-bottom)',
           background: 'var(--body-bg)',
+          borderColor: 'var(--glass-border)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
@@ -93,7 +94,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
           <div className="w-12 h-1.5 rounded-full bg-[var(--text-dim)] opacity-20" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-5">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-[var(--glass-border)]">
           <h3 className="text-lg font-medium text-[var(--text-primary)] flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-color)' }}>
               <CheckCircle2 size={18} style={{ color: 'var(--accent-color)' }} />
@@ -109,7 +110,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Task Title</label>
             <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="What needs to be done?"
-              className="glass-input" />
+              className="glass-input !bg-[var(--glass-bg)]" />
           </div>
 
           {/* Description */}
@@ -119,14 +120,14 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             </label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               placeholder="Add details about this task..." rows={3}
-              className="glass-input !text-sm resize-none" />
+              className="glass-input !text-sm resize-none !bg-[var(--glass-bg)]" />
           </div>
 
           {/* Category Dropdown */}
           <div className="relative">
             <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Category</label>
             <button onClick={() => setShowCatDropdown(!showCatDropdown)}
-              className="w-full glass-input !py-3 flex items-center justify-between">
+              className="w-full glass-input !py-3 flex items-center justify-between !bg-[var(--glass-bg)]">
               <span className="flex items-center gap-2.5">
                 <CatIcon size={16} style={{ color: selectedCat.color }} />
                 <span className="text-[var(--text-primary)] opacity-80">{selectedCat.name}</span>
@@ -136,7 +137,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             <AnimatePresence>
               {showCatDropdown && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl overflow-hidden z-20 shadow-lg">
+                  className="absolute top-full left-0 right-0 mt-1 glass-heavy rounded-xl overflow-hidden z-20 shadow-lg border border-[var(--glass-border)]">
                   {TASK_CATEGORIES.map(cat => (
                     <button key={cat.id} onClick={() => { setCategory(cat.id); setShowCatDropdown(false); }}
                       className={clsx('w-full px-4 py-3 flex items-center gap-2.5 text-sm transition-all',
@@ -155,15 +156,15 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
             <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-40">Priority</label>
             <div className="flex gap-2">
               {[
-                { key: 'low', label: 'LOW', color: '#22c55e', bgActive: 'bg-green-500/15 border-green-500/40', bgInactive: 'border-green-500/20 text-green-400/40' },
-                { key: 'medium', label: 'MEDIUM', color: '#f97316', bgActive: 'bg-orange-500/15 border-orange-500/40', bgInactive: 'border-orange-500/20 text-orange-400/40' },
-                { key: 'high', label: 'HIGH', color: '#ef4444', bgActive: 'bg-red-500/15 border-red-500/40', bgInactive: 'border-red-500/20 text-red-400/40' },
+                { key: 'low', label: 'LOW', color: '#22c55e', bgActive: 'bg-green-500/15 border-green-500/40', bgInactive: 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-40' },
+                { key: 'medium', label: 'MEDIUM', color: '#f97316', bgActive: 'bg-orange-500/15 border-orange-500/40', bgInactive: 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-40' },
+                { key: 'high', label: 'HIGH', color: '#ef4444', bgActive: 'bg-red-500/15 border-red-500/40', bgInactive: 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-40' },
               ].map(p => (
                 <button key={p.key} onClick={() => setPriority(p.key)}
                   className={clsx('flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wider border transition-all flex items-center justify-center gap-1.5',
                     priority === p.key ? p.bgActive : p.bgInactive)}>
-                  <Flag size={13} style={{ color: p.color }} />
-                  <span style={{ color: priority === p.key ? p.color : undefined }}>{p.label}</span>
+                  <Flag size={13} style={{ color: priority === p.key ? p.color : 'inherit' }} />
+                  <span style={{ color: priority === p.key ? p.color : 'inherit' }}>{p.label}</span>
                 </button>
               ))}
             </div>

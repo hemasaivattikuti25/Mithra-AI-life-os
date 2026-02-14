@@ -7,3 +7,6 @@ pydantic==2.6.0
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 pgvector==0.2.4
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart

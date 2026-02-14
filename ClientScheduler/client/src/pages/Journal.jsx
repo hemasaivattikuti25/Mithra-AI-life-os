@@ -247,7 +247,7 @@ const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
         entry.mood >= 8 ? 'border-[var(--accent-color)]/30 text-[var(--accent-color)] bg-[var(--accent-glow)]' :
           'border-[var(--glass-border)] text-[var(--text-dim)] bg-[var(--glass-bg)] opacity-50'
       )}>
-        {entry.mood}
+        {entry.mood}/10
       </div>
     </motion.div>
   );

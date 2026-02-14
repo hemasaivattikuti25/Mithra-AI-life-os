@@ -11,7 +11,58 @@ import { listGoogleEvents } from '../services/googleCalendar';
    shared across Calendar, Tasks, Habits, and Settings pages
    ═══════════════════════════════════════════════════════════════ */
 
+const mapTaskToDB = (t) => ({
+  id: t.id,
+  user_id: t.userId, // passed if available, strict schema
+  title: t.title,
+  details: t.details || '',
+  list_id: t.listId || 'default',
+  priority: t.priority || 'medium',
+  completed: t.completed || false,
+  starred: t.starred || false,
+  due_date: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+  recurrence: t.recurrence || 'none',
+  subtasks: t.subtasks || [],
+});
+
+const mapTaskFromDB = (t) => ({
+  id: t.id,
+  // userId not usually needed in frontend state unless multi-user view
+  title: t.title,
+  details: t.details || '',
+  listId: t.list_id || 'default',
+  priority: t.priority || 'medium',
+  completed: t.completed,
+  starred: t.starred,
+  dueDate: t.due_date ? new Date(t.due_date) : null,
+  recurrence: t.recurrence || 'none',
+  subtasks: t.subtasks || [],
+});
+
+const mapHabitToDB = (h) => ({
+  id: h.id,
+  title: h.title,
+  category: h.category || 'Personal',
+  streak: h.streak || 0,
+  best_streak: h.bestStreak || 0,
+  consistency: h.consistency || [],
+  today_done: h.todayDone || false,
+  focus_duration: h.focusDuration || 25,
+});
+
+const mapHabitFromDB = (h) => ({
+  id: h.id,
+  title: h.title,
+  category: h.category || 'Personal',
+  streak: h.streak || 0,
+  bestStreak: h.best_streak || 0,
+  consistency: h.consistency || [],
+  todayDone: h.today_done || false,
+  focusDuration: h.focus_duration || 25,
+});
+
 const DataContext = createContext(null);
+
 
 /* ═══════════════════════════════════════════════════════════════
    COLOR THEME PALETTES — Each palette defines accent colors
@@ -441,18 +492,7 @@ export function DataProvider({ children }) {
           .eq('user_id', userId);
 
         if (cloudTasks && cloudTasks.length > 0) {
-          const mapped = cloudTasks.map(t => ({
-            id: t.id,
-            title: t.title,
-            details: t.details || '',
-            listId: t.list_id || 'default',
-            completed: t.completed,
-            starred: t.starred,
-            priority: t.priority || 'low',
-            dueDate: t.due_date ? new Date(t.due_date) : null,
-            subtasks: t.subtasks || [],
-            recurrence: t.recurrence || 'none',
-          }));
+          const mapped = cloudTasks.map(mapTaskFromDB);
           setTasks(mapped);
         }
 
@@ -463,16 +503,7 @@ export function DataProvider({ children }) {
           .eq('user_id', userId);
 
         if (cloudHabits && cloudHabits.length > 0) {
-          const mapped = cloudHabits.map(h => ({
-            id: h.id,
-            title: h.title,
-            category: h.category || 'Personal',
-            streak: h.streak || 0,
-            bestStreak: h.best_streak || 0,
-            consistency: h.consistency || [],
-            todayDone: h.today_done || false,
-            focusDuration: h.focus_duration || 25,
-          }));
+          const mapped = cloudHabits.map(mapHabitFromDB);
           setHabits(mapped);
         }
 
@@ -655,34 +686,12 @@ export function DataProvider({ children }) {
   /* ── Task CRUD (with cloud sync) ── */
   const addTask = useCallback((task) => {
     setTasks(prev => [...prev, task]);
-    syncToCloud('tasks', 'upsert', {
-      id: task.id,
-      title: task.title,
-      details: task.details || '',
-      list_id: task.listId || 'default',
-      completed: task.completed || false,
-      starred: task.starred || false,
-      priority: task.priority || 'low',
-      due_date: task.dueDate ? new Date(task.dueDate).toISOString() : null,
-      subtasks: task.subtasks || [],
-      recurrence: task.recurrence || 'none',
-    });
+    syncToCloud('tasks', 'upsert', mapTaskToDB(task));
   }, [syncToCloud]);
 
   const updateTask = useCallback((updated) => {
     setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-    syncToCloud('tasks', 'upsert', {
-      id: updated.id,
-      title: updated.title,
-      details: updated.details || '',
-      list_id: updated.listId || 'default',
-      completed: updated.completed || false,
-      starred: updated.starred || false,
-      priority: updated.priority || 'low',
-      due_date: updated.dueDate ? new Date(updated.dueDate).toISOString() : null,
-      subtasks: updated.subtasks || [],
-      recurrence: updated.recurrence || 'none',
-    });
+    syncToCloud('tasks', 'upsert', mapTaskToDB(updated));
   }, [syncToCloud]);
 
   const deleteTask = useCallback((id) => {
@@ -722,30 +731,12 @@ export function DataProvider({ children }) {
   /* ── Habit CRUD (with cloud sync) ── */
   const addHabit = useCallback((habit) => {
     setHabits(prev => [...prev, habit]);
-    syncToCloud('habits', 'upsert', {
-      id: habit.id,
-      title: habit.title,
-      category: habit.category || 'Personal',
-      streak: habit.streak || 0,
-      best_streak: habit.bestStreak || 0,
-      consistency: habit.consistency || [],
-      today_done: habit.todayDone || false,
-      focus_duration: habit.focusDuration || 25,
-    });
+    syncToCloud('habits', 'upsert', mapHabitToDB(habit));
   }, [syncToCloud]);
 
   const updateHabit = useCallback((updated) => {
     setHabits(prev => prev.map(h => h.id === updated.id ? updated : h));
-    syncToCloud('habits', 'upsert', {
-      id: updated.id,
-      title: updated.title,
-      category: updated.category || 'Personal',
-      streak: updated.streak || 0,
-      best_streak: updated.bestStreak || 0,
-      consistency: updated.consistency || [],
-      today_done: updated.todayDone || false,
-      focus_duration: updated.focusDuration || 25,
-    });
+    syncToCloud('habits', 'upsert', mapHabitToDB(updated));
   }, [syncToCloud]);
 
   const deleteHabit = useCallback((id) => {
@@ -757,38 +748,65 @@ export function DataProvider({ children }) {
   const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 180, 365];
   const [lastMilestone, setLastMilestone] = useState(null);
 
+  /* ── Journal Cleanup & Quota Listeners ── */
+  useEffect(() => {
+    // 1. Clean up demo journal data
+    const stored = loadFromStorage('journal', []);
+    if (stored && stored.length > 0) {
+      // Rule: Delete if content contains "Welcome to Mithra" (demo text)
+      const cleaned = stored.filter(entry => !entry.content?.includes("Welcome to Mithra"));
+      if (cleaned.length !== stored.length) {
+        saveToStorage('journal', cleaned);
+        console.log('[Mithra] Cleaned up demo journal entries');
+      }
+    }
+
+    // 2. Listen for quota exceeded
+    const unsub = syncEngine.subscribe((event, data) => {
+      if (event === 'quota_exceeded') {
+        fireNotification('Sync Warning', `Storage full. Dropped ${data.dropped} offline changes.`, 'quota');
+      }
+    });
+    return () => unsub();
+  }, [fireNotification]);
+
   const toggleHabit = useCallback((id) => {
     setHabits(prev => prev.map(h => {
       if (h.id !== id) return h;
+
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
       const willBeDone = !h.todayDone;
-      const newStreak = willBeDone ? h.streak + 1 : Math.max(0, h.streak - 1);
+      const alreadyLogged = h.consistency && h.consistency.includes(todayStr);
+
+      let newStreak = h.streak;
+      let newConsistency = h.consistency || [];
+
+      if (willBeDone) {
+        if (!alreadyLogged) {
+          newStreak = h.streak + 1;
+          newConsistency = [...newConsistency, todayStr];
+        }
+      } else {
+        if (alreadyLogged) {
+          newStreak = Math.max(0, h.streak - 1);
+          newConsistency = newConsistency.filter(d => d !== todayStr);
+        }
+      }
+
       const updated = {
         ...h,
         todayDone: willBeDone,
         streak: newStreak,
         bestStreak: Math.max(h.bestStreak || 0, newStreak),
-        consistency: willBeDone
-          ? [...h.consistency, format(new Date(), 'yyyy-MM-dd')]
-          : h.consistency.filter(d => d !== format(new Date(), 'yyyy-MM-dd')),
+        consistency: newConsistency,
       };
 
-      // Check for streak milestones
-      if (willBeDone && STREAK_MILESTONES.includes(newStreak)) {
+      if (willBeDone && !alreadyLogged && STREAK_MILESTONES.includes(newStreak)) {
         setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
         setTimeout(() => setLastMilestone(null), 5000);
       }
 
-      // Sync the toggled habit to cloud
-      syncToCloud('habits', 'upsert', {
-        id: updated.id,
-        title: updated.title,
-        category: updated.category,
-        streak: updated.streak,
-        best_streak: updated.bestStreak,
-        consistency: updated.consistency,
-        today_done: updated.todayDone,
-        focus_duration: updated.focusDuration,
-      });
+      syncToCloud('habits', 'upsert', mapHabitToDB(updated));
       return updated;
     }));
   }, [syncToCloud]);
@@ -815,16 +833,15 @@ export function DataProvider({ children }) {
   const habitCalendarEvents = useMemo(() => {
     if (!syncSettings.syncHabitsToCalendar) return [];
     const todayDate = new Date();
-    const dayOfWeek = todayDate.getDay(); // 0=Sun, 1=Mon...
-    let slotHour = 7; // Fallback start hour if no scheduleTime
+    const dayOfWeek = todayDate.getDay();
+    let currentSlot = 7;
 
     return habits
       .filter(h => {
-        // Only show habits scheduled for today (based on repeatDays)
         if (h.repeatDays && h.repeatDays.length > 0) {
           return h.repeatDays.includes(dayOfWeek);
         }
-        return true; // If no repeat days set, show every day
+        return true;
       })
       .map(h => {
         let startHour, startMin;
@@ -833,9 +850,9 @@ export function DataProvider({ children }) {
           startHour = sh;
           startMin = sm || 0;
         } else {
-          startHour = slotHour;
+          startHour = currentSlot;
           startMin = 0;
-          slotHour += 1;
+          currentSlot += 1;
         }
 
         const evt = {

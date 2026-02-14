@@ -12,6 +12,9 @@ export default defineConfig({
     assetsDir: 'assets',
     // Performance optimizations
     minify: 'esbuild', // Use default esbuild (faster, no extra dependency)
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     // Code splitting for better caching
     rollupOptions: {
       output: {
