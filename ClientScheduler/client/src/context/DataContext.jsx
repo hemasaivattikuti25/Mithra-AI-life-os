@@ -776,20 +776,25 @@ export function DataProvider({ children }) {
 
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const willBeDone = !h.todayDone;
-      const alreadyLogged = h.consistency && h.consistency.includes(todayStr);
+      const consistency = h.consistency || [];
+      const alreadyDoneToday = consistency.includes(todayStr);
 
       let newStreak = h.streak;
-      let newConsistency = h.consistency || [];
+      let newConsistency = consistency;
 
       if (willBeDone) {
-        if (!alreadyLogged) {
+        if (!alreadyDoneToday) {
           newStreak = h.streak + 1;
-          newConsistency = [...newConsistency, todayStr];
+          newConsistency = [...consistency, todayStr];
+        } else {
+          // If explicitly marked done but already in consistency list (re-toggle),
+          // ensure we don't double count, streak stays same
+          newStreak = h.streak;
         }
       } else {
-        if (alreadyLogged) {
+        if (alreadyDoneToday) {
           newStreak = Math.max(0, h.streak - 1);
-          newConsistency = newConsistency.filter(d => d !== todayStr);
+          newConsistency = consistency.filter(d => d !== todayStr);
         }
       }
 
@@ -801,7 +806,7 @@ export function DataProvider({ children }) {
         consistency: newConsistency,
       };
 
-      if (willBeDone && !alreadyLogged && STREAK_MILESTONES.includes(newStreak)) {
+      if (willBeDone && !alreadyDoneToday && STREAK_MILESTONES.includes(newStreak)) {
         setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
         setTimeout(() => setLastMilestone(null), 5000);
       }
