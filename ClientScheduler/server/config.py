@@ -25,7 +25,11 @@ def _init_supabase():
             print("✅ Supabase connected")
         except Exception as e:
             print(f"⚠️  Supabase init failed: {e}")
+            if os.getenv("ENVIRONMENT") == "production":
+                raise RuntimeError(f"Supabase init failed in production: {e}")
     else:
+        if os.getenv("ENVIRONMENT") == "production":
+            raise RuntimeError("Supabase credentials missing in production.")
         print("ℹ️  Supabase not configured — running in demo mode")
 
 def _init_gemini():

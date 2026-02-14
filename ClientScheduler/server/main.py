@@ -312,8 +312,8 @@ async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_
                     'match_journal_entries',
                     {
                         'query_embedding': msg_embedding, 
-                        'match_threshold': 0.7, 
-                        'match_count': 3,
+                        'match_threshold': 0.5, 
+                        'match_count': 5,
                         'filter_user_id': current_user['id'] # Assuming RPC supports this or RLS handles it
                     }
                 ).execute()
