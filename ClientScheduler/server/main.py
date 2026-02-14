@@ -51,6 +51,13 @@ app = FastAPI(
     version="2.1.0 (Hardened)",
 )
 
+# --- Security Checks ---
+import sys
+if os.getenv("ENVIRONMENT") == "production":
+    if not supabase:
+        print("FATAL: Supabase credentials missing in production.")
+        raise RuntimeError("Supabase credentials missing in production.")
+
 # --- CORS ---
 origins = [
     "https://mithra-life-os.vercel.app",
