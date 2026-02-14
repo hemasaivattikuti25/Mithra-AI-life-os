@@ -199,7 +199,6 @@ const Heatmap = ({ habits, accentColor }) => {
 };
 
 /* ═══════════ HABIT CARD — always-visible edit & delete ═══════════ */
-/* ═══════════ HABIT CARD — always-visible edit & delete ═══════════ */
 const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
   const catConfig = CATEGORY_CONFIG[habit.category] || CATEGORY_CONFIG.Work;
   const Icon = catConfig.icon;
