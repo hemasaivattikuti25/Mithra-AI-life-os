@@ -1,130 +1,109 @@
-
 <div align="center">
-  <img src="ClientScheduler/client/public/assets/logo.png" alt="Mithra AI Logo" width="120" height="120" style="border-radius: 24px; border: 4px solid #06b6d4;">
 
-  <h1 style="font-size: 3rem; margin-top: 20px;">Mithra AI</h1>
+<img src="./server/assets/logo.png" width="72" height="72" />
 
-  <p style="font-size: 1.2rem; max-width: 600px;">
-    <strong>The Ultimate Life Operating System — Precision Built for High Performance.</strong>
-  </p>
+# Mithra AI — Life Operating System
 
-  <p>
-    <a href="https://mithra-life-os.vercel.app">
-      <img src="https://img.shields.io/badge/Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
-    </a>
-    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues">
-      <img src="https://img.shields.io/github/issues/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fa5252" alt="Issues">
-    </a>
-    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers">
-      <img src="https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fab005" alt="Stars">
-    </a>
-    <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=228be6" alt="License">
-    </a>
-  </p>
+**Tasks · Habits · Calendar · Journal · Focus · AI Companion**
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mithra-life-os.vercel.app)
+[![Stars](https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fab005)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers)
+[![License](https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=228be6)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fa5252)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues)
+
 </div>
 
 ---
 
-## 🚀 About The Project
+> Most productivity apps make you manage the app. **Mithra manages your life.**
 
-**Mithra AI** is not just another productivity app; it's a comprehensive **Life Operating System** designed to eliminate chaos. It seamlessly integrates tasks, habits, calendar, journaling, and a focus timer into one unified, aesthetically pleasing workspace.
+Mithra is a full-stack AI Life Operating System that unifies everything —
+tasks, habits, calendar, journal, and an AI companion with real memory —
+into one offline-first workspace. Built solo, from scratch.
 
-Powered by a proprietary NLP model ("Dost"), Mithra understands your workload and helps you plan your day with a single sentence.
+---
 
-<div align="center">
-  <img src="ClientScheduler/client/public/assets/home_1.png" alt="Mithra AI Dashboard" width="100%" style="border-radius: 12px; border: 1px solid #333;">
-</div>
+## ✨ Features
 
-### ✨ Key Features
-
-| Feature | Description | Preview |
-| :--- | :--- | :--- |
-| **Unified Workspace** | A central dashboard giving you a bird's-eye view of your entire life. Tasks, habits, and mood—all in one place. | <img src="ClientScheduler/client/public/assets/home_2.png" width="200"> |
-| **Smart Tasks** | Create tasks with deep hierarchies, priorities, and deadlines. Filter by category and let AI suggest your next move. | <img src="ClientScheduler/client/public/assets/tasks.png" width="200"> |
-| **Consistency Hub** | Track your habits with GitHub-style streak graphs. Visualize your progress and stay motivated. | <img src="ClientScheduler/client/public/assets/habbits.png" width="200"> |
-| **Mood Journal** | Log your thoughts and track your emotional well-being over time. Discover what makes you happy. | <img src="ClientScheduler/client/public/assets/journals.png" width="200"> |
-| **Focus Timer** | A built-in Pomodoro timer to help you enter deep work states. Track your focus sessions and efficiency. | <img src="ClientScheduler/client/public/assets/focus_timer.png" width="200"> |
-| **Dost AI** | Your personal AI companion. Chat with Dost to organize your day, get advice, and clear your mind. | <img src="ClientScheduler/client/public/assets/dosth(ai).png" width="200"> |
+| Module | What it does |
+|--------|-------------|
+| 🤖 **Dost AI** | AI companion powered by Gemini + RAG vector memory from your journal |
+| ✅ **Tasks** | Full CRUD, subtasks, priorities, recurring, CSV/Excel import |
+| 🔥 **Habits** | GitHub-style 365-day consistency heatmap, streak milestones |
+| 📅 **Calendar** | Google Calendar sync, Day/Week/Month views, collision-free layout |
+| 📓 **Journal** | Mood tracking, mind pattern analysis, weekly trend chart |
+| ⏱️ **Focus** | Pomodoro timer + stopwatch, custom sessions, session history |
+| 🌐 **Offline-first** | Custom sync engine — works without internet, syncs on reconnect |
+| 📱 **Android app** | Native APK via Capacitor |
 
 ---
 
 ## 🛠️ Tech Stack
 
-This project is built using the following technologies:
+**Frontend:** React 18 · Vite · Tailwind CSS · Framer Motion · Capacitor
 
-| Category | Technology |
-| :--- | :--- |
-| **Frontend** | ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white) |
-| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi) ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white) |
-| **Database** | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white) |
-| **Deployment** | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) |
+**Backend:** FastAPI · Python · bcrypt · JWT Auth
+
+**Database:** Supabase (PostgreSQL + pgvector) · Row Level Security
+
+**AI:** Gemini 1.5 Flash · RAG (vector embeddings + semantic search)
+
+**Deploy:** Vercel (frontend) · Railway (backend)
 
 ---
 
-## 💻 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- Node.js v18+
+- Python 3.10+
+- Supabase account (free tier works)
+- Gemini API key (free at ai.google.dev)
 
-*   **Node.js** (v18 or higher)
-*   **Python** (v3.10 or higher)
-*   **Supabase Account**
+### 1. Clone
+```bash
+git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
+cd Mithra-AI-life-os
+```
 
-### Installation
+### 2. Frontend
+```bash
+cd client
+npm install
+cp .env.example .env   # add your Supabase keys
+npm run dev
+```
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
-    cd Mithra-AI-life-os
-    ```
+### 3. Backend (optional — for AI features)
+```bash
+cd server
+pip install -r requirements.txt
+cp .env.example .env   # add GEMINI_API_KEY, SUPABASE_URL, JWT_SECRET
+uvicorn main:app --reload
+```
 
-2.  **Frontend Setup**
-    ```bash
-    cd ClientScheduler/client
-    npm install
-    npm run dev
-    ```
+---
 
-3.  **Backend Setup** (Optional for local AI)
-    ```bash
-    cd ../../server
-    pip install -r requirements.txt
-    python main.py
-    ```
+## 🔒 Security
+
+- Passwords hashed with **bcrypt** (passlib)
+- Stateless **JWT authentication** (30-day tokens)
+- **Row Level Security** enabled on all Supabase tables
+- CORS locked to production domain only
+- No secrets in source code
 
 ---
 
-## 🤝 Contributing
-
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
----
 ## 📬 Contact
-**Hemasai Vattikuti** - Founder & Developer
 
-<p align="center">
-  <img src="ClientScheduler/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="150" height="150" style="border-radius: 50%; border: 4px solid #06b6d4;">
-</p>
+**Hemasai Vattikuti** — Founder & Solo Developer
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemsaivattikuti)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:hemasaivattikuti25@gmail.com)
+
+---
 
 <div align="center">
-  
-### **AI Engineer | Full Stack Developer**
-
-<a href="https://www.linkedin.com/in/hemsaivattikuti">
-  <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
-</a>
-<a href="https://github.com/hemasaivattikuti25">
-  <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
-</a>
-<a href="mailto:hemasaivattikuti25@gmail.com">
-  <img src="https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail" />
-</a>
-
-
+  Built with ❤️ in India &nbsp;·&nbsp; MIT License
 </div>
