@@ -24,13 +24,9 @@ def _init_supabase():
             supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
             print("✅ Supabase connected")
         except Exception as e:
-            print(f"⚠️  Supabase init failed: {e}")
-            if os.getenv("ENVIRONMENT") == "production":
-                raise RuntimeError(f"Supabase init failed in production: {e}")
+            raise RuntimeError(f"FATAL: Supabase init failed: {e}")
     else:
-        if os.getenv("ENVIRONMENT") == "production":
-            raise RuntimeError("Supabase credentials missing in production.")
-        print("ℹ️  Supabase not configured — running in demo mode")
+        raise RuntimeError("FATAL: Supabase credentials missing. STARTUP ABORTED.")
 
 def _init_gemini():
     global model
@@ -43,12 +39,13 @@ def _init_gemini():
         except Exception as e:
             print(f"⚠️  Gemini init failed: {e}")
     else:
-        print("ℹ️  Gemini API not configured — AI features in demo mode")
+        print("⚠️  Warning: Gemini API key missing. AI features will be disabled.")
 
 def get_embedding(text: str):
     """Generates vector embedding for RAG memory using Gemini."""
     if not GEMINI_API_KEY or "your-" in GEMINI_API_KEY:
-        return [0.0] * 768  # dummy embedding
+        print("⚠️  Embedding skipped: No Gemini Key")
+        return [0.0] * 768  # dummy embedding to prevent crash, but search will fail
     try:
         import google.generativeai as genai
         result = genai.embed_content(
@@ -58,7 +55,8 @@ def get_embedding(text: str):
             title="Mithra Memory"
         )
         return result['embedding']
-    except Exception:
+    except Exception as e:
+        print(f"⚠️  Embedding failed: {e}")
         return [0.0] * 768
 
 # Initialize on import

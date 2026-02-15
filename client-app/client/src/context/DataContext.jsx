@@ -748,6 +748,47 @@ export function DataProvider({ children }) {
   const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 180, 365];
   const [lastMilestone, setLastMilestone] = useState(null);
 
+  /* ── Habit Consistency Helpers ── */
+  const getTodayStr = () => format(new Date(), 'yyyy-MM-dd');
+
+  const calculateStreak = (consistency) => {
+    if (!consistency || consistency.length === 0) return 0;
+    const sorted = [...consistency].sort().reverse();
+    const todayStr = getTodayStr();
+    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+
+    // If consecutive chain is broken (neither today nor yesterday is present), streak is 0
+    if (sorted[0] !== todayStr && sorted[0] !== yesterdayStr) return 0;
+
+    let streak = 0;
+    let current = new Date(sorted[0]);
+    for (let i = 0; i < sorted.length; i++) {
+      if (isSameDay(new Date(sorted[i]), current)) {
+        streak++;
+        current = subDays(current, 1);
+      } else break;
+    }
+    return streak;
+  };
+
+  const validateHabitState = useCallback((list) => {
+    const todayStr = getTodayStr();
+    return list.map(h => {
+      const consistency = h.consistency || [];
+      const actuallyDone = consistency.includes(todayStr);
+      const recalcStreak = calculateStreak(consistency);
+      if (h.todayDone !== actuallyDone || h.streak !== recalcStreak) {
+        return { ...h, todayDone: actuallyDone, streak: recalcStreak, bestStreak: Math.max(h.bestStreak || 0, recalcStreak) };
+      }
+      return h;
+    });
+  }, []);
+
+  // Validate on mount
+  useEffect(() => {
+    setHabits(prev => validateHabitState(prev));
+  }, [validateHabitState]);
+
   /* ── Journal Cleanup & Quota Listeners ── */
   useEffect(() => {
     // 1. Clean up demo journal data
@@ -774,39 +815,29 @@ export function DataProvider({ children }) {
     setHabits(prev => prev.map(h => {
       if (h.id !== id) return h;
 
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const willBeDone = !h.todayDone;
+      const todayStr = getTodayStr();
       const consistency = h.consistency || [];
-      const alreadyDoneToday = consistency.includes(todayStr);
+      const alreadyDone = consistency.includes(todayStr);
 
-      let newStreak = h.streak;
       let newConsistency = consistency;
-
-      if (willBeDone) {
-        if (!alreadyDoneToday) {
-          newStreak = h.streak + 1;
-          newConsistency = [...consistency, todayStr];
-        } else {
-          // If explicitly marked done but already in consistency list (re-toggle),
-          // ensure we don't double count, streak stays same
-          newStreak = h.streak;
-        }
+      if (alreadyDone) {
+        newConsistency = consistency.filter(d => d !== todayStr);
       } else {
-        if (alreadyDoneToday) {
-          newStreak = Math.max(0, h.streak - 1);
-          newConsistency = consistency.filter(d => d !== todayStr);
-        }
+        newConsistency = [...consistency, todayStr];
       }
+
+      const newStreak = calculateStreak(newConsistency);
+      const isDone = !alreadyDone;
 
       const updated = {
         ...h,
-        todayDone: willBeDone,
+        todayDone: isDone,
         streak: newStreak,
         bestStreak: Math.max(h.bestStreak || 0, newStreak),
         consistency: newConsistency,
       };
 
-      if (willBeDone && !alreadyDoneToday && STREAK_MILESTONES.includes(newStreak)) {
+      if (isDone && !alreadyDone && STREAK_MILESTONES.includes(newStreak)) {
         setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
         setTimeout(() => setLastMilestone(null), 5000);
       }

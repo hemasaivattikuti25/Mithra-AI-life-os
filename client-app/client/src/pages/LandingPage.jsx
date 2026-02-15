@@ -92,18 +92,20 @@ export default function LandingPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+        <div className="min-h-screen bg-black text-white font-sans selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
 
-            {/* Ambient Background - Deep Space feel */}
+            {/* Ambient Background - Neon Blue & Deep Space */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-900/10 rounded-full blur-[120px] opacity-20"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-cyan-900/10 rounded-full blur-[120px] opacity-20"></div>
-                {/* Grid Overlay */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 contrast-150"></div>
+                <div className="absolute top-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-blue-600/20 rounded-full blur-[150px] opacity-40 mix-blend-screen"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-cyan-500/10 rounded-full blur-[150px] opacity-30 mix-blend-screen"></div>
+                <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[800px] h-[800px] bg-indigo-900/10 rounded-full blur-[180px] opacity-20"></div>
+
+                {/* Grid Overlay for Tech feel */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
             </div>
 
             {/* Navbar */}
-            <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#030014]/80 backdrop-blur-xl">
+            <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-[0_0_15px_rgba(6,182,212,0.3)] group-hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-shadow duration-300">
@@ -223,7 +225,7 @@ export default function LandingPage() {
                     >
                         <motion.div
                             style={{ rotateX: x, rotateY: y }}
-                            className="relative rounded-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0A0C10] overflow-hidden"
+                            className="relative rounded-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-zinc-950 overflow-hidden"
                         >
                             <div className="absolute top-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
                             <img
@@ -232,7 +234,7 @@ export default function LandingPage() {
                                 className="w-full h-auto opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                             />
                             {/* Reflection Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#030014] via-transparent to-transparent opacity-40"></div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-40"></div>
                         </motion.div>
                         {/* Glow underneath */}
                         <div className="absolute -inset-10 bg-cyan-500/20 blur-[100px] opacity-20 -z-10 rounded-full"></div>
@@ -306,7 +308,7 @@ export default function LandingPage() {
 
                                 {/* Image Preview (Bottom aligned) */}
                                 <div className="relative mt-4 rounded-lg overflow-hidden border border-white/5 group-hover:border-cyan-500/30 transition-colors">
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#030014] to-transparent opacity-50 z-10"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50 z-10"></div>
                                     <img
                                         src={feature.image}
                                         alt={feature.title}
@@ -320,7 +322,7 @@ export default function LandingPage() {
             </section>
 
             {/* AI Spotlight Section */}
-            <section className="py-32 px-6 relative overflow-hidden bg-[#050505]">
+            <section className="py-32 px-6 relative overflow-hidden bg-black">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[400px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
                 <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center relative z-10">
@@ -355,7 +357,7 @@ export default function LandingPage() {
                     {/* Mock Chat Interface */}
                     <div className="relative">
                         <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-2xl blur opacity-20"></div>
-                        <div className="relative rounded-2xl bg-[#0A0C10] border border-white/10 p-6 shadow-2xl">
+                        <div className="relative rounded-2xl bg-zinc-950 border border-white/10 p-6 shadow-2xl">
                             <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-500"></div>
@@ -464,7 +466,7 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 px-6 border-t border-white/5 bg-[#030014]">
+            <footer className="py-12 px-6 border-t border-white/5 bg-black">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded bg-gradient-to-br from-cyan-500 to-blue-600"></div>
@@ -479,6 +481,6 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
-        </div>
+        </div >
     );
 }

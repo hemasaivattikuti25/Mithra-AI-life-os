@@ -35,26 +35,21 @@ function parseIntent(input, tasks, habits) {
   const lower = input.toLowerCase().trim();
 
   // ── CREATE TASK ──
-  const addTaskPatterns = [
-    /(?:add|create|new|make)\s+(?:a\s+)?task[:\s]+(.+)/i,
-    /(?:add|create)\s+(?:a\s+)?(?:new\s+)?todo[:\s]+(.+)/i,
-    /(?:remind me to|i need to|i have to)\s+(.+)/i,
-  ];
-  for (const p of addTaskPatterns) {
-    const m = input.match(p);
-    if (m) {
-      const rest = m[1].trim();
-      const byMatch = rest.match(/(.+?)\s+by\s+(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/i);
-      let title = rest, dueDate = new Date();
-      if (byMatch) {
-        title = byMatch[1].trim();
-        dueDate = parseFuzzyDate(byMatch[2]);
-      }
-      let priority = 'medium';
-      if (/urgent|asap|critical|important/i.test(rest)) priority = 'high';
-      if (/low\s*priority|whenever|eventually/i.test(rest)) priority = 'low';
-      return { type: 'create_task', title, dueDate, priority };
+  const addTaskMatch = input.match(/(?:add|create|new|make)\s+(?:a\s+)?(?:task|todo)[:\s]+(.+)/i) ||
+    input.match(/(?:remind me to|i need to|i have to)\s+(.+)/i);
+
+  if (addTaskMatch) {
+    const rest = addTaskMatch[1].trim();
+    const byMatch = rest.match(/(.+?)\s+by\s+(tomorrow|today|next\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/i);
+    let title = rest, dueDate = new Date();
+    if (byMatch) {
+      title = byMatch[1].trim();
+      dueDate = parseFuzzyDate(byMatch[2]);
     }
+    let priority = 'medium';
+    if (/urgent|asap|critical|important|high/i.test(rest)) priority = 'high';
+    if (/low\s*priority|whenever|eventually/i.test(rest)) priority = 'low';
+    return { type: 'create_task', title, dueDate, priority };
   }
 
   // ── CREATE HABIT ──
@@ -68,38 +63,34 @@ function parseIntent(input, tasks, habits) {
     return { type: 'create_habit', title, duration, category };
   }
 
-  // ── DELETE TASK ──
-  const deleteTaskMatch = input.match(/(?:delete|remove|cancel)\s+(?:the\s+)?task[:\s]*(.+)/i);
-  if (deleteTaskMatch) {
-    const query = deleteTaskMatch[1].trim().toLowerCase();
-    const found = tasks.find(t => t.title.toLowerCase().includes(query));
-    return { type: 'delete_task', query, found };
+  // ── DELETE OPERATIONS ──
+  const deleteMatch = input.match(/(?:delete|remove|cancel|stop)\s+(?:the\s+)?(task|habit)[:\s]*(.+)/i);
+  if (deleteMatch) {
+    const type = deleteMatch[1].toLowerCase();
+    const query = deleteMatch[2].trim().toLowerCase();
+    if (type === 'task') {
+      const found = tasks.find(t => t.title.toLowerCase().includes(query));
+      return { type: 'delete_task', query, found };
+    } else {
+      const found = habits.find(h => h.title.toLowerCase().includes(query));
+      return { type: 'delete_habit', query, found };
+    }
   }
 
-  // ── DELETE HABIT ──
-  const deleteHabitMatch = input.match(/(?:delete|remove|stop)\s+(?:the\s+)?habit[:\s]*(.+)/i);
-  if (deleteHabitMatch) {
-    const query = deleteHabitMatch[1].trim().toLowerCase();
-    const found = habits.find(h => h.title.toLowerCase().includes(query));
-    return { type: 'delete_habit', query, found };
-  }
+  // ── EDIT OPERATIONS ──
+  const editMatch = input.match(/(?:edit|update|change|rename)\s+(?:the\s+)?(task|habit)[:\s]*(.+?)(?:\s+to\s+(.+))?$/i);
+  if (editMatch) {
+    const type = editMatch[1].toLowerCase();
+    const query = editMatch[2].trim().toLowerCase();
+    const newValue = editMatch[3]?.trim();
 
-  // ── EDIT TASK ──
-  const editTaskMatch = input.match(/(?:edit|update|change|rename)\s+(?:the\s+)?task[:\s]*(.+?)(?:\s+to\s+(.+))?$/i);
-  if (editTaskMatch) {
-    const query = editTaskMatch[1].trim().toLowerCase();
-    const newValue = editTaskMatch[2]?.trim();
-    const found = tasks.find(t => t.title.toLowerCase().includes(query));
-    return { type: 'edit_task', query, newValue, found };
-  }
-
-  // ── EDIT HABIT ──
-  const editHabitMatch = input.match(/(?:edit|update|change)\s+(?:the\s+)?habit[:\s]*(.+?)(?:\s+to\s+(.+))?$/i);
-  if (editHabitMatch) {
-    const query = editHabitMatch[1].trim().toLowerCase();
-    const newValue = editHabitMatch[2]?.trim();
-    const found = habits.find(h => h.title.toLowerCase().includes(query));
-    return { type: 'edit_habit', query, newValue, found };
+    if (type === 'task') {
+      const found = tasks.find(t => t.title.toLowerCase().includes(query));
+      return { type: 'edit_task', query, newValue, found };
+    } else {
+      const found = habits.find(h => h.title.toLowerCase().includes(query));
+      return { type: 'edit_habit', query, newValue, found };
+    }
   }
 
   // ── COMPLETE TASK ──
@@ -109,7 +100,7 @@ function parseIntent(input, tasks, habits) {
     return { type: 'complete_task', query, found };
   }
 
-  // ── HABIT STATUS ── (check before summarize to avoid false matches)
+  // ── HABIT STATUS ── 
   if (/how.*(?:are|is).*(?:my\s+)?habits?|habit.*status|my\s+habits?|habits?\s+status|show.*habits?|habits?\??$/i.test(lower)) {
     return { type: 'habit_status' };
   }
@@ -124,15 +115,15 @@ function parseIntent(input, tasks, habits) {
     return { type: 'mood_check' };
   }
 
-  // ── SUMMARIZE ── (check after specific queries)
-  if (/summar|overview|daily.*report|weekly.*report|recap|my\s+day\b|today.*glance/i.test(lower)) {
+  // ── SUMMARIZE ── 
+  if (/summar|overview|daily.*report|weekly.*report|recap|my\s+day|today.*glance/i.test(lower)) {
     return { type: 'summarize' };
   }
 
   // ── SMART RESPONSES ──
-  if (/hello|hi|hey|what's up|howdy/i.test(lower)) return { type: 'greeting' };
-  if (/stress|overwhelm|anxious|worried/i.test(lower)) return { type: 'wellbeing' };
-  if (/motivat|lazy|procrastinat|can't start/i.test(lower)) return { type: 'motivation' };
+  if (/hello|hi|hey|what's up|howdy|good\s*(?:morning|afternoon|evening)/i.test(lower)) return { type: 'greeting' };
+  if (/stress|overwhelm|anxious|worried|tired|exhausted/i.test(lower)) return { type: 'wellbeing' };
+  if (/motivat|lazy|procrastinat|can't start|stuck/i.test(lower)) return { type: 'motivation' };
   if (/focus|pomodoro|concentrate|distract/i.test(lower)) return { type: 'focus' };
   if (/thank|thanks|appreciate/i.test(lower)) return { type: 'thanks' };
 
@@ -931,65 +922,75 @@ export default function DostMode() {
         {messages.map((msg) => (
           <motion.div
             key={msg.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start items-end gap-2'}`}
           >
-            <div className={`max-w-[85%] md:max-w-md p-4 rounded-2xl relative overflow-hidden shadow-sm
+            {msg.sender === 'ai' && (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg transform translate-y-[-5px]">
+                <Sparkles size={14} className="text-white" />
+              </div>
+            )}
+
+            <div className={`max-w-[85%] md:max-w-lg p-5 relative overflow-hidden shadow-sm transition-all
               ${msg.sender === 'user'
-                ? ''
-                : 'text-[var(--text-primary)]'
+                ? 'rounded-2xl rounded-tr-sm text-white'
+                : 'rounded-2xl rounded-tl-sm text-[var(--text-primary)]'
               }`}
               style={
                 msg.sender === 'user'
-                  ? { background: 'var(--accent-color)', opacity: 0.9, backdropFilter: 'blur(20px) saturate(180%)' }
-                  : { background: 'var(--surface-bg)', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
+                  ? { background: 'var(--accent-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }
+                  : { background: 'var(--surface-bg)', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }
               }
             >
               {/* Text Content with markdown rendering */}
-              <div className="leading-relaxed text-sm md:text-base">{renderContent(msg.content)}</div>
+              <div className={clsx("leading-relaxed text-[15px]", msg.sender === 'ai' ? 'font-light' : 'font-normal')}>
+                {renderContent(msg.content)}
+              </div>
 
               {/* Timestamp */}
-              <div className={`text-[10px] mt-2 ${msg.sender === 'user' ? 'text-white/40 text-right' : 'text-[var(--text-dim)]/40'}`}>
+              <div className={`text-[10px] mt-2.5 flex items-center gap-1 opacity-60 ${msg.sender === 'user' ? 'justify-end text-white' : 'text-[var(--text-dim)]'}`}>
                 {formatMsgTime(msg.id)}
               </div>
 
               {/* WIDGET: Task Created */}
               {msg.type === 'task_created' && msg.taskData && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="mt-3 p-3 rounded-lg flex items-center gap-3"
-                  style={{ background: isLight ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.1)' }}>
-                  <Plus size={16} className="text-green-500" />
-                  <span className="text-sm font-medium">{msg.taskData.title}</span>
-                  <span className="ml-auto text-[10px] text-green-400 font-bold uppercase">Added</span>
-                </motion.div>
+                <div className="mt-4 p-3.5 rounded-xl border border-white/10 bg-black/5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                    <CheckCircle2 size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{msg.taskData.title}</p>
+                    <p className="text-xs opacity-60">{format(new Date(msg.taskData.dueDate), 'MMM d')} • {msg.taskData.priority}</p>
+                  </div>
+                </div>
               )}
 
               {/* WIDGET: Habit Created */}
               {msg.type === 'habit_created' && msg.habitData && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="mt-3 p-3 rounded-lg flex items-center gap-3"
-                  style={{ background: isLight ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.1)' }}>
-                  <Flame size={16} className="text-orange-500" />
-                  <span className="text-sm font-medium">{msg.habitData.title}</span>
-                  <span className="ml-auto text-[10px] text-accent-visor font-bold uppercase">New Habit</span>
-                </motion.div>
+                <div className="mt-4 p-3.5 rounded-xl border border-white/10 bg-black/5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500">
+                    <Flame size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{msg.habitData.title}</p>
+                    <p className="text-xs opacity-60">{msg.habitData.focusDuration} min/day</p>
+                  </div>
+                </div>
               )}
 
               {/* WIDGET: Action Feedback (Deleted) */}
               {msg.type === 'action' && msg.actionData && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="mt-3 p-3 bg-red-900/20 rounded-lg flex items-center gap-3">
+                <div className="mt-4 p-3.5 bg-red-500/10 rounded-xl flex items-center gap-3 border border-red-500/20">
                   <Trash2 size={16} className="text-red-500" />
-                  <span className="text-sm text-red-200 line-through">{msg.actionData.task}</span>
-                  <span className="ml-auto text-xs text-red-400 font-bold uppercase">Removed</span>
-                </motion.div>
+                  <span className="text-sm text-red-400 line-through opacity-80">{msg.actionData.task}</span>
+                </div>
               )}
 
               {/* WIDGET: Image preview */}
               {msg.imageUrl && (
-                <img src={msg.imageUrl} alt="Imported" className="mt-3 rounded-lg max-h-40 object-cover w-full" />
+                <img src={msg.imageUrl} alt="Imported" className="mt-3 rounded-xl border border-white/10 max-h-48 object-cover w-full" />
               )}
             </div>
           </motion.div>

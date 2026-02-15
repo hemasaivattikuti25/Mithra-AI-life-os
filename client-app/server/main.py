@@ -76,16 +76,8 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-# --- In-Memory Stores (Demo Fallback) ---
-_users_store: Dict[str, dict] = {}
-_tasks_store: Dict[str, dict] = {}
-_journal_store: List[dict] = []
-_notification_settings_store: Dict[str, dict] = {} 
-_reset_tokens: Dict[str, str] = {}
-
-# Only use stores if NOT in production or specific demo flag
-USE_MEMORY_STORE = (os.getenv("ENVIRONMENT") != "production") and (not supabase)
-
+# --- In-Memory Stores REMOVED ---
+# Strict Supabase Persistence Enforced
 
 # --- Dependencies ---
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
@@ -100,26 +92,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token payload")
     
-    # In production with Supabase, trust the token (stateless auth)
-    # OR optionally fetch profile to ensure user still exists/is active
-    if supabase:
-        # Just return the payload info to avoid extra DB hit, or fetch basics
-        return {
-            "id": user_id,
-            "email": payload.get("email"),
-            "fullName": payload.get("fullName", "User") 
-        }
-
-    # Fallback for demo mode
-    user = None
-    for u in _users_store.values():
-        if u["id"] == user_id:
-            user = u
-            break
-            
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
+    # Stateless Auth: Trust the signed JWT
+    return {
+        "id": user_id,
+        "email": payload.get("email"),
+        "fullName": payload.get("fullName", "User") 
+    }
 
 # ═══════════════════════════════════════════════
 #  ENDPOINTS
@@ -130,11 +108,11 @@ def health_check():
     """Health check endpoint."""
     return {
         "status": "online",
-        "system": "Mithra Brain Active (Hardened)",
-        "version": "2.2.0 (Supabase Native)",
+        "system": "Mithra Brain Active (Production)",
+        "version": "3.0.0 (Supabase Only)",
         "services": {
-            "supabase": "connected" if supabase else "demo mode",
-            "gemini": "connected" if model else "demo mode",
+            "supabase": "connected" if supabase else "ERROR",
+            "gemini": "connected" if model else "disabled",
         },
         "timestamp": datetime.now().isoformat(),
     }
@@ -142,112 +120,70 @@ def health_check():
 # ─── AUTHENTICATION ───
 @app.post("/api/auth/signup")
 async def signup(request: SignUpRequest):
-    """Register a new user."""
+    """Register a new user directly in Supabase."""
     email = request.email.lower().strip()
     
-    if supabase:
-        try:
-            # 1. Create auth user
-            auth_response = supabase.auth.sign_up({
-                "email": email,
-                "password": request.password,
-                "options": {
-                    "data": { "full_name": request.fullName }
-                }
-            })
-            
-            if not auth_response.user:
-                raise HTTPException(status_code=400, detail="Signup failed")
-                
-            user_id = auth_response.user.id
-            
-            # 2. Use ID to issue our OWN token (keeping existing contract)
-            access_token = create_access_token(data={"sub": user_id, "email": email, "fullName": request.fullName})
-            
-            return {
-                "user": {"id": user_id, "email": email, "fullName": request.fullName},
-                "token": access_token
+    try:
+        # 1. Create auth user
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": request.password,
+            "options": {
+                "data": { "full_name": request.fullName }
             }
-        except Exception as e:
-            # Check for existing user error
-            if "already registered" in str(e).lower() or "unique constraint" in str(e).lower():
-                 raise HTTPException(status_code=400, detail="An account with this email already exists")
-            raise HTTPException(status_code=400, detail=str(e))
-    
-    # Demo Mode Fallback
-    if email in _users_store:
-        raise HTTPException(status_code=400, detail="An account with this email already exists")
-    if len(request.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
-    hashed_pw = hash_password(request.password)
-    
-    user_data = {
-        "id": user_id,
-        "email": email,
-        "fullName": request.fullName,
-        "passwordHash": hashed_pw,
-        "createdAt": datetime.now().isoformat(),
-    }
-    _users_store[email] = user_data
-    
-    access_token = create_access_token(data={"sub": user_id, "email": email, "fullName": request.fullName})
-    
-    return {
-        "user": {"id": user_id, "email": email, "fullName": request.fullName},
-        "token": access_token
-    }
+        })
+        
+        if not auth_response.user:
+            raise HTTPException(status_code=400, detail="Signup failed")
+            
+        user_id = auth_response.user.id
+        
+        # 2. Use ID to issue our OWN token (keeping existing contract)
+        access_token = create_access_token(data={"sub": user_id, "email": email, "fullName": request.fullName})
+        
+        return {
+            "user": {"id": user_id, "email": email, "fullName": request.fullName},
+            "token": access_token
+        }
+    except Exception as e:
+        # Check for existing user error
+        if "already registered" in str(e).lower() or "unique constraint" in str(e).lower():
+                raise HTTPException(status_code=400, detail="An account with this email already exists")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/auth/login")
 async def login(request: SignInRequest):
-    """Sign in an existing user."""
+    """Sign in an existing user via Supabase."""
     email = request.email.lower().strip()
     
-    if supabase:
-        try:
-            # Verify against Supabase Auth
-            auth_response = supabase.auth.sign_in_with_password({
-                "email": email, 
-                "password": request.password
-            })
+    try:
+        # Verify against Supabase Auth
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": email, 
+            "password": request.password
+        })
+        
+        if not auth_response.user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
             
-            if not auth_response.user:
-                raise HTTPException(status_code=401, detail="Invalid credentials")
-                
-            user = auth_response.user
-            full_name = user.user_metadata.get("full_name", "User")
-            
-            # Issue our OWN token
-            access_token = create_access_token(data={"sub": user.id, "email": email, "fullName": full_name})
-            
-            return {
-                "user": {"id": user.id, "email": email, "fullName": full_name},
-                "token": access_token
-            }
-        except Exception:
-             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-    # Demo Mode Fallback
-    user = _users_store.get(email)
-    if not user or not verify_password(request.password, user["passwordHash"]):
-        raise HTTPException(
+        user = auth_response.user
+        full_name = user.user_metadata.get("full_name", "User")
+        
+        # Issue our OWN token
+        access_token = create_access_token(data={"sub": user.id, "email": email, "fullName": full_name})
+        
+        return {
+            "user": {"id": user.id, "email": email, "fullName": full_name},
+            "token": access_token
+        }
+    except Exception:
+            raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    access_token = create_access_token(data={"sub": user["id"], "email": user["email"], "fullName": user.get("fullName")})
-    return {
-        "user": {"id": user["id"], "email": user["email"], "fullName": user.get("fullName")},
-        "token": access_token
-    }
 
-# (Password reset endpoints omitted for brevity/unchanged - keeping demo logic acceptable for now)
+# (Password reset endpoints omitted for brevity/unchanged)
 @app.post("/api/auth/reset-password")
 async def reset_password(request: ResetPasswordRequest):
     # Stub for now
@@ -269,41 +205,46 @@ async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_
                 "reply": f"I hear you, {current_user['fullName']}. But I need my Gemini keys to speak fully.",
                 "action": None,
                 "memory_used": False,
-                "demo_mode": True,
+                "demo_mode": False,
             }
 
         memory_context = ""
-        if supabase:
-            try:
-                msg_embedding = get_embedding(user_msg)
-                related_data = supabase.rpc(
-                    'match_journal_entries',
-                    {
-                        'query_embedding': msg_embedding, 
-                        'match_threshold': 0.5, 
-                        'match_count': 5,
-                        'filter_user_id': current_user['id']
-                    }
-                ).execute()
-                
-                if related_data.data:
-                    memory_context = "\n".join([
-                        f"- {item['content']} (Mood: {item.get('mood_score', 'N/A')})"
-                        for item in related_data.data
-                    ])
-            except Exception:
-                pass 
+        try:
+            msg_embedding = get_embedding(user_msg)
+            # Ensure we match against THIS user's data
+            related_data = supabase.rpc(
+                'match_journal_entries',
+                {
+                    'query_embedding': msg_embedding, 
+                    'match_threshold': 0.5, 
+                    'match_count': 5,
+                    'filter_user_id': current_user['id']
+                }
+            ).execute()
+            
+            if related_data.data:
+                memory_context = "\n".join([
+                    f"- {item['content']} (Mood: {item.get('mood_score', 'N/A')})"
+                    for item in related_data.data
+                ])
+        except Exception as e:
+            print(f"RAG Error: {e}") 
 
         system_prompt = f"""
-        You are Dost, a digital stoic companion for {current_user['fullName']}.
-        User's Context from Journal Memory:
-        {memory_context if memory_context else "No previous context available."}
+        You are Dost, a stoic digital companion for {current_user['fullName']}.
+        
+        ### Context from Journal (RAG):
+        {memory_context if memory_context else "No recent journal entries found."}
 
-        Style Guide:
-        - Be concise, calm, and insightful.
-        - If the user seems stressed, offer a stoic perspective.
-        - If the user mentions a task, output JSON action:
-          ||JSON||{{"action": "create_task", "task": {{"title": "...", "priority": "medium"}}}}
+        ### Style Guidelines:
+        1. **Tone**: Calm, reflective, insightful, and stoic. 
+        2. **Format**: Use **Markdown** effectively. Use bold for emphasis, bullet points for lists, and quote blocks for wisdom.
+        3. **Brevity**: Be concise but meaningful. Avoid flowery language.
+
+        ### Functionality:
+        - If the user asks to *create* a specific task or habit, and strict details are provided, output a JSON action block at the END.
+        - Format: ||JSON||{{"action": "create_task", "task": {{"title": "...", "priority": "medium", "due_date": "tomorrow"}}}}
+        - Only output JSON if the intent is clear and actionable. Otherwise, just guide them.
 
         User: {user_msg}
         Dost:
@@ -317,8 +258,14 @@ async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_
             parts = text_response.split("||JSON||")
             text_response = parts[0].strip()
             try:
-                action_data = json.loads(parts[1])
+                # Clean up any potential markdown code blocks around the JSON
+                json_str = parts[1].strip()
+                if json_str.startswith('```json'): json_str = json_str[7:]
+                if json_str.startswith('```'): json_str = json_str[3:]
+                if json_str.endswith('```'): json_str = json_str[:-3]
+                action_data = json.loads(json_str.strip())
             except Exception:
+                print(f"Failed to parse JSON action from: {parts[1]}")
                 pass
 
         return {
@@ -358,37 +305,28 @@ async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(
 async def list_tasks(current_user: dict = Depends(get_current_user)):
     """List authenticated user's tasks."""
     user_id = current_user["id"]
-    
-    if supabase:
-        try:
-            # Fetch tasks converting snake_case DB fields to camelCase output if needed
-            # OR just return as is and frontend handles it (frontend expects specific format?)
-            # Frontend expects: id, userId, title, details, listId, priority, completed, starred, dueDate, recurrence
-            response = supabase.table("tasks").select("*").eq("user_id", user_id).execute()
-            
-            # Map DB to Frontend format
-            tasks = []
-            for t in response.data:
-                tasks.append({
-                    "id": t["id"],
-                    "userId": t["user_id"],
-                    "title": t["title"],
-                    "details": t.get("details", ""),
-                    "listId": t.get("list_id", "default"),
-                    "priority": t.get("priority", "medium"),
-                    "completed": t.get("completed", False),
-                    "starred": t.get("starred", False),
-                    "dueDate": t.get("due_date"),
-                    "recurrence": t.get("recurrence", "none"),
-                    "subtasks": t.get("subtasks", [])
-                })
-            return {"tasks": tasks}
-        except Exception as e:
-             raise HTTPException(status_code=500, detail=str(e))
-
-    # Demo Fallback
-    user_tasks = [t for t in _tasks_store.values() if t.get("userId") == user_id]
-    return {"tasks": user_tasks}
+    try:
+        response = supabase.table("tasks").select("*").eq("user_id", user_id).execute()
+        
+        # Map DB to Frontend format
+        tasks = []
+        for t in response.data:
+            tasks.append({
+                "id": t["id"],
+                "userId": t["user_id"],
+                "title": t["title"],
+                "details": t.get("details", ""),
+                "listId": t.get("list_id", "default"),
+                "priority": t.get("priority", "medium"),
+                "completed": t.get("completed", False),
+                "starred": t.get("starred", False),
+                "dueDate": t.get("due_date"),
+                "recurrence": t.get("recurrence", "none"),
+                "subtasks": t.get("subtasks", [])
+            })
+        return {"tasks": tasks}
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/tasks")
 async def create_task(task: TaskCreate, current_user: dict = Depends(get_current_user)):
@@ -396,192 +334,119 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
     user_id = current_user["id"]
     task_id = str(uuid.uuid4())
     
-    if supabase:
-        try:
-            task_db_data = {
-                "id": task_id,
-                "user_id": user_id,
-                "title": task.title,
-                "details": task.details,
-                "list_id": task.listId,
-                "priority": task.priority,
-                "completed": task.completed,
-                "starred": task.starred,
-                "due_date": task.dueDate,
-                "subtasks": []
-            }
-            supabase.table("tasks").insert(task_db_data).execute()
-            
-            # Return frontend format
-            auth_task_data = {
-                "id": task_id,
-                "userId": user_id,
-                **task.dict(),
-                "createdAt": datetime.now().isoformat(),
-                "subtasks": []
-            }
-            return {"task": auth_task_data}
-        except Exception as e:
+    try:
+        db_task = {
+            "id": task_id,
+            "user_id": user_id,
+            "title": task.title,
+            "details": task.details,
+            "list_id": task.listId,
+            "priority": task.priority,
+            "completed": task.completed,
+            "starred": task.starred,
+            "due_date": task.dueDate,
+            "recurrence": task.recurrence,
+            "subtasks": task.subtasks
+        }
+        supabase.table("tasks").insert(db_task).execute()
+        return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
+    except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    # Demo Fallback
-    task_id = str(uuid.uuid4())[:8]
-    task_data = {
-        "id": task_id,
-        "userId": user_id, 
-        **task.dict(),
-        "createdAt": datetime.now().isoformat(),
-        "subtasks": [],
-    }
-    _tasks_store[task_id] = task_data
-    return {"task": task_data}
-
 @app.put("/api/tasks/{task_id}")
-async def update_task(task_id: str, updates: TaskUpdate, current_user: dict = Depends(get_current_user)):
-    """Update an existing task."""
+async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depends(get_current_user)):
+    """Update a task."""
     user_id = current_user["id"]
     
-    if supabase:
-        try:
-            # Convert fields to snake_case
-            db_updates = {}
-            if updates.title is not None: db_updates["title"] = updates.title
-            if updates.details is not None: db_updates["details"] = updates.details
-            if updates.listId is not None: db_updates["list_id"] = updates.listId
-            if updates.priority is not None: db_updates["priority"] = updates.priority
-            if updates.completed is not None: db_updates["completed"] = updates.completed
-            if updates.starred is not None: db_updates["starred"] = updates.starred
-            if updates.dueDate is not None: db_updates["due_date"] = updates.dueDate
-            
-            response = supabase.table("tasks").update(db_updates).eq("id", task_id).eq("user_id", user_id).execute()
-            if not response.data:
-                 raise HTTPException(status_code=404, detail="Task not found")
-                 
-            # Re-fetch or simplistic mapping
-            updated_task = response.data[0]
-            mapped = {
-                "id": updated_task["id"],
-                "userId": updated_task["user_id"],
-                "title": updated_task["title"],
-                "details": updated_task.get("details", ""),
-                "listId": updated_task.get("list_id", "default"),
-                "priority": updated_task.get("priority", "medium"),
-                "completed": updated_task.get("completed", False),
-                "starred": updated_task.get("starred", False),
-                "dueDate": updated_task.get("due_date"),
-                "recurrence": updated_task.get("recurrence", "none"),
-                "subtasks": updated_task.get("subtasks", [])
-            }
-            return {"task": mapped}
-        except Exception as e:
-            raise HTTPException(status_code=404, detail=str(e))
-
-    # Demo Fallback
-    task = _tasks_store.get(task_id)
-    if not task or task.get("userId") != user_id:
-        raise HTTPException(status_code=404, detail="Task not found")
+    try:
+        # Verify ownership via RLS or explicit check? RLS is safer but let's be implicit
+        db_task = {
+            "title": task.title,
+            "details": task.details,
+            "list_id": task.listId,
+            "priority": task.priority,
+            "completed": task.completed,
+            "starred": task.starred,
+            "due_date": task.dueDate,
+            "recurrence": task.recurrence,
+            "subtasks": task.subtasks
+        }
+        response = supabase.table("tasks").update(db_task).eq("id", task_id).eq("user_id", user_id).execute()
         
-    for key, value in updates.dict(exclude_unset=True).items():
-        task[key] = value
-    task["updatedAt"] = datetime.now().isoformat()
-    return {"task": task}
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Task not found or owned by another user")
+            
+        return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/tasks/{task_id}")
 async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a task."""
     user_id = current_user["id"]
     
-    if supabase:
-        try:
-            response = supabase.table("tasks").delete().eq("id", task_id).eq("user_id", user_id).execute()
-            if not response.data:
-                 raise HTTPException(status_code=404, detail="Task not found")
-            return {"deleted": response.data[0]}
-        except Exception as e:
-             raise HTTPException(status_code=500, detail=str(e))
-
-    # Demo Fallback
-    task = _tasks_store.get(task_id)
-    if not task or task.get("userId") != user_id:
-        raise HTTPException(status_code=404, detail="Task not found")
-        
-    deleted = _tasks_store.pop(task_id)
-    return {"deleted": deleted}
+    try:
+        response = supabase.table("tasks").delete().eq("id", task_id).eq("user_id", user_id).execute()
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return {"deleted": task_id}
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 # ─── NOTIFICATION SETTINGS ───
 @app.get("/api/notifications")
 async def get_notifications(current_user: dict = Depends(get_current_user)):
     """Get notification settings."""
     user_id = current_user["id"]
-    
-    if supabase:
-        try:
-            # Check for notification_settings table
-            response = supabase.table("notification_settings").select("*").eq("user_id", user_id).execute()
-            if response.data:
-                data = response.data[0]
-                return {"settings": {"enabled": data.get("enabled", False), "reminderMinutes": data.get("reminder_minutes", 15)}}
-            else:
-                return {"settings": {"enabled": False, "reminderMinutes": 15}}
-        except Exception:
-             return {"settings": {"enabled": False, "reminderMinutes": 15}}
-
-    # Demo Fallback
-    return {"settings": _notification_settings_store.get(user_id, {"enabled": False, "reminderMinutes": 15})}
+    try:
+        # Check for notification_settings table
+        response = supabase.table("notification_settings").select("*").eq("user_id", user_id).execute()
+        if response.data:
+            data = response.data[0]
+            return {"settings": {"enabled": data.get("enabled", False), "reminderMinutes": data.get("reminder_minutes", 15)}}
+        else:
+            return {"settings": {"enabled": False, "reminderMinutes": 15}}
+    except Exception:
+            return {"settings": {"enabled": False, "reminderMinutes": 15}}
 
 @app.post("/api/notifications")
 async def update_notifications(settings: NotificationSettings, current_user: dict = Depends(get_current_user)):
     """Update notification settings."""
     user_id = current_user["id"]
-    
-    if supabase:
-        try:
-            upsert_data = {
-                "user_id": user_id,
-                "enabled": settings.enabled,
-                "reminder_minutes": settings.reminderMinutes
-            }
-            supabase.table("notification_settings").upsert(upsert_data).execute()
-            return {"settings": settings.dict()}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Demo Fallback
-    current = _notification_settings_store.get(user_id, {"enabled": False, "reminderMinutes": 15})
-    current.update(settings.dict())
-    _notification_settings_store[user_id] = current
-    return {"settings": current}
+    try:
+        upsert_data = {
+            "user_id": user_id,
+            "enabled": settings.enabled,
+            "reminder_minutes": settings.reminderMinutes
+        }
+        supabase.table("notification_settings").upsert(upsert_data).execute()
+        return {"settings": settings.dict()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ─── JOURNAL ───
 @app.get("/api/journal")
 async def list_journal(current_user: dict = Depends(get_current_user)):
     """Get journal entries."""
     user_id = current_user["id"]
-    
-    if supabase:
-        try:
-            # Map fields back if necessary, but journal entry looks consistent
-            # DB: user_id, content, mood, tags, date, embedding
-            response = supabase.table("journal_entries").select("id, user_id, content, mood, tags, date, created_at").eq("user_id", user_id).order("date", desc=True).execute()
-            
-            entries = []
-            for e in response.data:
-                entries.append({
-                    "id": e["id"],
-                    "userId": e["user_id"],
-                    "content": e["content"],
-                    "mood": e["mood"],
-                    "tags": e["tags"],
-                    "date": e["date"],
-                    "createdAt": e["created_at"]
-                })
-            return {"entries": entries}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Demo Fallback
-    entries = [e for e in _journal_store if e.get("userId") == user_id]
-    return {"entries": entries}
+    try:
+        # DB: user_id, content, mood, tags, date, embedding
+        response = supabase.table("journal_entries").select("id, user_id, content, mood, tags, date, created_at").eq("user_id", user_id).order("date", desc=True).execute()
+        
+        entries = []
+        for e in response.data:
+            entries.append({
+                "id": e["id"],
+                "userId": e["user_id"],
+                "content": e["content"],
+                "mood": e["mood"],
+                "tags": e["tags"],
+                "date": e["date"],
+                "createdAt": e["created_at"]
+            })
+        return {"entries": entries}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/journal")
 async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_current_user)):
@@ -589,47 +454,33 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
     user_id = current_user["id"]
     encoded_id = str(uuid.uuid4())
     
-    if supabase:
-        try:
-            # Generate Embedding
-            embedding = get_embedding(entry.content)
-            
-            db_entry = {
-                "id": encoded_id,
-                "user_id": user_id,
-                "content": entry.content,
-                "mood": entry.mood,
-                "tags": entry.tags,
-                "date": entry.date or date.today().isoformat(),
-                "embedding": embedding
-            }
-            supabase.table("journal_entries").insert(db_entry).execute()
-            
-            return_entry = {
-                "id": encoded_id,
-                "userId": user_id,
-                "content": entry.content,
-                "mood": entry.mood,
-                "tags": entry.tags,
-                "date": entry.date or date.today().isoformat(),
-                "createdAt": datetime.now().isoformat()
-            }
-            return {"entry": return_entry}
-        except Exception as e:
-             raise HTTPException(status_code=500, detail=str(e))
-
-    # Demo Fallback
-    entry_data = {
-        "id": encoded_id[:8],
-        "userId": user_id,
-        "content": entry.content,
-        "mood": entry.mood,
-        "tags": entry.tags,
-        "date": entry.date or date.today().isoformat(),
-        "createdAt": datetime.now().isoformat(),
-    }
-    _journal_store.insert(0, entry_data)
-    return {"entry": entry_data}
+    try:
+        # Generate Embedding
+        embedding = get_embedding(entry.content)
+        
+        db_entry = {
+            "id": encoded_id,
+            "user_id": user_id,
+            "content": entry.content,
+            "mood": entry.mood,
+            "tags": entry.tags,
+            "date": entry.date or date.today().isoformat(),
+            "embedding": embedding
+        }
+        supabase.table("journal_entries").insert(db_entry).execute()
+        
+        return_entry = {
+            "id": encoded_id,
+            "userId": user_id,
+            "content": entry.content,
+            "mood": entry.mood,
+            "tags": entry.tags,
+            "date": entry.date or date.today().isoformat(),
+            "createdAt": datetime.now().isoformat()
+        }
+        return {"entry": return_entry}
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 # ─── DATA SYNC ───
 @app.get("/api/sync")
@@ -637,35 +488,19 @@ async def sync_data(current_user: dict = Depends(get_current_user)):
     """Get all data for offline sync."""
     user_id = current_user["id"]
     
-    if supabase:
-        # Full sync pull
-        try:
-            tasks_res = supabase.table("tasks").select("*").eq("user_id", user_id).execute()
-            journal_res = supabase.table("journal_entries").select("*").eq("user_id", user_id).execute()
-            notif_res = supabase.table("notification_settings").select("*").eq("user_id", user_id).execute()
-            
-            # Use raw DB format for sync endpoint? Or mapped?
-            # Sync endpoint usually expects simple structure.
-            # We'll return roughly raw structure but camelCase keys for consistency with frontend?
-            # Frontend SyncEngine expects what? It expects list of items.
-            
-            return {
-                "tasks": tasks_res.data,
-                "journal": journal_res.data,
-                "notifications": notif_res.data[0] if notif_res.data else {},
-                "syncedAt": datetime.now().isoformat(),
-            }
-        except Exception:
-            return {} # Or raise
-
-    # Demo Fallback
-    uid = current_user["id"]
-    return {
-        "tasks": [t for t in _tasks_store.values() if t.get("userId") == uid],
-        "journal": [e for e in _journal_store if e.get("userId") == uid],
-        "notifications": _notification_settings_store.get(uid, {}),
-        "syncedAt": datetime.now().isoformat(),
-    }
+    try:
+        tasks_res = supabase.table("tasks").select("*").eq("user_id", user_id).execute()
+        journal_res = supabase.table("journal_entries").select("*").eq("user_id", user_id).execute()
+        notif_res = supabase.table("notification_settings").select("*").eq("user_id", user_id).execute()
+        
+        return {
+            "tasks": tasks_res.data,
+            "journal": journal_res.data,
+            "notifications": notif_res.data[0] if notif_res.data else {},
+            "syncedAt": datetime.now().isoformat(),
+        }
+    except Exception:
+        return {} 
 
 if __name__ == "__main__":
     import uvicorn
