@@ -365,7 +365,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
           {/* Habit Name */}
           <div>
             <label className="text-xs uppercase tracking-wider font-bold mb-2 block" style={{ color: 'var(--text-dim)' }}>Habit Name</label>
-            <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="e.g. Morning Run, Read 30 pages..." className="glass-input !text-base" />
+            <input ref={titleRef} value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} placeholder="e.g. Morning Run, Read 30 pages..." className="glass-input !text-base !bg-[var(--glass-bg)]" />
           </div>
 
           {/* Category */}
@@ -419,7 +419,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
               <div className="relative flex-1">
                 <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-dim)' }} />
                 <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-                  className="glass-input !py-2.5 !pl-9 !text-sm w-full" />
+                  className="glass-input !py-2.5 !pl-9 !text-sm w-full !bg-[var(--glass-bg)]" />
               </div>
               <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>
                 {scheduleTime ? (() => { const [h, m] = scheduleTime.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`; })() : ''}

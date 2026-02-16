@@ -502,7 +502,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Add title"
-                  className="glass-input !text-lg !font-light"
+                  className="glass-input !text-lg !font-light !bg-[var(--glass-bg)]"
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                 />
               </div>
@@ -525,10 +525,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                   <label className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 block opacity-50">Start</label>
                   <div className="flex gap-2">
                     <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                      className="glass-input !py-2 !px-3 !text-sm flex-1" />
+                      className="glass-input !py-2 !px-3 !text-sm flex-1 !bg-[var(--glass-bg)]" />
                     {!allDay && (
                       <input type="time" value={startTime} onChange={e => handleStartTimeChange(e.target.value)}
-                        className="glass-input !py-2 !px-3 !text-sm !w-auto" />
+                        className="glass-input !py-2 !px-3 !text-sm !w-auto !bg-[var(--glass-bg)]" />
                     )}
                   </div>
                 </div>
@@ -541,10 +541,10 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
                   <label className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 block opacity-50">End</label>
                   <div className="flex gap-2">
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                      className="glass-input !py-2 !px-3 !text-sm flex-1" />
+                      className="glass-input !py-2 !px-3 !text-sm flex-1 !bg-[var(--glass-bg)]" />
                     {!allDay && (
                       <input type="time" value={endTime} onChange={e => handleEndTimeChange(e.target.value)}
-                        className="glass-input !py-2 !px-3 !text-sm !w-auto" />
+                        className="glass-input !py-2 !px-3 !text-sm !w-auto !bg-[var(--glass-bg)]" />
                     )}
                   </div>
                 </div>
@@ -554,7 +554,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
               <div className="flex items-center gap-3">
                 <MapPin size={16} className="text-[var(--text-dim)] opacity-40 flex-shrink-0" />
                 <input value={location} onChange={e => setLocation(e.target.value)}
-                  placeholder="Add location" className="flex-1 glass-input !py-2 !px-3 !text-sm" />
+                  placeholder="Add location" className="flex-1 glass-input !py-2 !px-3 !text-sm !bg-[var(--glass-bg)]" />
               </div>
 
               {/* Color Picker */}
@@ -573,7 +573,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
               <div>
                 <label className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2 block opacity-60">Repeat</label>
                 <select value={repeat} onChange={e => setRepeat(e.target.value)}
-                  className="glass-input !py-2.5 !text-sm appearance-none cursor-pointer">
+                  className="glass-input !py-2.5 !text-sm appearance-none cursor-pointer !bg-[var(--glass-bg)]">
                   {REPEAT_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-[var(--body-bg)] text-[var(--text-primary)]">{opt}</option>)}
                 </select>
               </div>

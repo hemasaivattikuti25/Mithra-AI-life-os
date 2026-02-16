@@ -470,7 +470,7 @@ body.keyboard-open .md\:hidden:last-child {
 
 /* Glass Input Utility */
 .glass-input {
-  @apply w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-dim)]/50 focus:border-[var(--accent-color)] focus:bg-[var(--glass-bg-hover)] focus:shadow-[0_0_20px_var(--accent-glow)];
+  @apply w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-dim)] placeholder:opacity-50 focus:border-[var(--accent-color)] focus:bg-[var(--glass-bg-hover)] focus:shadow-[0_0_20px_var(--accent-glow)];
 }
 
 /* Smooth hover lift for interactive cards */
