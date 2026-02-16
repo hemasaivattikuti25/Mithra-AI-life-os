@@ -88,7 +88,7 @@
   --color-black: 248 250 252;
   /* Off-white */
   --color-surface: 255 255 255;
-  
+
   /* Semantic Mappings */
   --body-bg: #F8FAFC;
   --surface-bg: #ffffff;
@@ -117,16 +117,41 @@
 }
 
 /* Background overrides - REMOVED MAROON, Forcing Neutrals */
-[data-theme="light"] .bg-\[\#0A0A0A\] { background-color: var(--body-bg) !important; }
-[data-theme="light"] .bg-\[\#0a0a0a\] { background-color: var(--body-bg) !important; }
-[data-theme="light"] .bg-\[\#1a1a1a\] { background-color: #f0ebe6 !important; }
-[data-theme="light"] .bg-\[\#2a2a2a\] { background-color: #e8e0d8 !important; }
-[data-theme="light"] .bg-\[\#111\] { background-color: #f5f1ed !important; }
+[data-theme="light"] .bg-\[\#0A0A0A\] {
+  background-color: var(--body-bg) !important;
+}
+
+[data-theme="light"] .bg-\[\#0a0a0a\] {
+  background-color: var(--body-bg) !important;
+}
+
+[data-theme="light"] .bg-\[\#1a1a1a\] {
+  background-color: #f0ebe6 !important;
+}
+
+[data-theme="light"] .bg-\[\#2a2a2a\] {
+  background-color: #e8e0d8 !important;
+}
+
+[data-theme="light"] .bg-\[\#111\] {
+  background-color: #f5f1ed !important;
+}
 
 /* Neutralize the Pink/Maroon classes to Blue/Cyan in Light Mode */
-[data-theme="light"] .bg-\[\#C2185B\] { background-color: var(--accent-color) !important; }
-[data-theme="light"] .bg-\[\#4A0404\] { background-color: #e2e8f0 !important; } /* Was Maroon, now Slate */
-[data-theme="light"] .bg-\[\#F2EBE3\] { background-color: #1e293b !important; } /* Was Dark Maroon, now Dark Slate */
+[data-theme="light"] .bg-\[\#C2185B\] {
+  background-color: var(--accent-color) !important;
+}
+
+[data-theme="light"] .bg-\[\#4A0404\] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Was Maroon, now Slate */
+[data-theme="light"] .bg-\[\#F2EBE3\] {
+  background-color: #1e293b !important;
+}
+
+/* Was Dark Maroon, now Dark Slate */
 
 
 [data-theme="light"] .bg-\[\#4A0404\]\/10 {
@@ -441,6 +466,11 @@ body.keyboard-open .md\:hidden:last-child {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Glass Input Utility */
+.glass-input {
+  @apply w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-dim)]/50 focus:border-[var(--accent-color)] focus:bg-[var(--glass-bg-hover)] focus:shadow-[0_0_20px_var(--accent-glow)];
 }
 
 /* Smooth hover lift for interactive cards */
