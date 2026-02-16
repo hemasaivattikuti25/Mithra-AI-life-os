@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { format, addDays, startOfDay, setHours, setMinutes } from 'date-fns';
+import { format, addDays, subDays, isSameDay, startOfDay, setHours, setMinutes } from 'date-fns';
 import { scheduleNotification, isNative, requestNotificationPermission as nativeRequestPermission } from '../native';
 import { syncEngine } from '../services/syncEngine';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';

@@ -5,7 +5,7 @@ import {
   Activity, Clock, Zap, Target, Dumbbell, BookOpen, Code, Brain,
   Heart, Trash2, TrendingUp, Pencil, Timer
 } from 'lucide-react';
-import { format, subDays, isSameDay, eachDayOfInterval, startOfYear } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, startOfYear } from 'date-fns';
 import clsx from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
 

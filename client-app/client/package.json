@@ -43,6 +43,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@emotion/is-prop-valid": "^1.4.0",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",

@@ -7,7 +7,7 @@ import {
   User, Briefcase, Heart, Hash, BarChart3, Target, TrendingUp, Zap
 } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast, startOfDay, addDays, subDays } from 'date-fns';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { useData } from '../context/DataContext';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';

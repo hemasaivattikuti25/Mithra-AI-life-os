@@ -21,6 +21,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const HabitFocusHub = lazy(() => import('./pages/HabitFocusHub'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+const PromoVideo = lazy(() => import('./pages/PromoVideo'));
 
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
 const PageLoader = () => (
@@ -165,6 +166,7 @@ function AppRoutes() {
         {/* Public Pages */}
         <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Terms /></Suspense>} />
+        <Route path="/promo-video" element={<Suspense fallback={<PageLoader />}><PromoVideo /></Suspense>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
