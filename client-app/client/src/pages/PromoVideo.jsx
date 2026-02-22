@@ -505,7 +505,7 @@ function Scene7({ elapsed }) {
 
 // SCENE 8 — CTA
 function Scene8({ elapsed }) {
-    const url = "mithra-life-os.vercel.app";
+    const url = "mithra-lifeos.com";
     const visibleUrl = url.slice(0, Math.min(url.length, Math.floor(elapsed / 60)));
     const showGithub = elapsed > 2000;
     const showBio = elapsed > 3500;
