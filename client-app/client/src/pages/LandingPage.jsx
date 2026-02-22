@@ -474,10 +474,10 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex gap-8 text-xs text-gray-400 font-medium">
-                        <a href="#" className="hover:text-white">Privacy</a>
-                        <a href="#" className="hover:text-white">Terms</a>
-                        <a href="#" className="hover:text-white">Twitter</a>
-                        <a href="#" className="hover:text-white">Email</a>
+                        <a href="/privacy" className="hover:text-white">Privacy Policy</a>
+                        <a href="/terms" className="hover:text-white">Terms of Service</a>
+                        <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noreferrer" className="hover:text-white">GitHub</a>
+                        <a href="mailto:hemasaivattikuti25@gmail.com" className="hover:text-white">Contact</a>
                     </div>
                 </div>
             </footer>
