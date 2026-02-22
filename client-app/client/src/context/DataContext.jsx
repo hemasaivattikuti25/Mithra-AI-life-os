@@ -4,6 +4,7 @@ import { scheduleNotification, isNative, requestNotificationPermission as native
 import { syncEngine } from '../services/syncEngine';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 import { listGoogleEvents } from '../services/googleCalendar';
+import { useAuth } from './AuthContext';
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED DATA CONTEXT
