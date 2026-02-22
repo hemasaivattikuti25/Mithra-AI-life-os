@@ -60,8 +60,11 @@ if os.getenv("ENVIRONMENT") == "production":
 
 # --- CORS ---
 origins = [
+    "https://mithra-lifeos.com",
+    "https://www.mithra-lifeos.com",
     "https://mithra-life-os.vercel.app",
     "http://localhost:5173",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
