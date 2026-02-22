@@ -292,6 +292,11 @@ async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(
         Today: {today_str}.
         Return ONLY JSON array:
         [{{ "title": "...", "start": "ISO", "end": "ISO", "category": "Work|Personal|Health|Focus" }}]
+        
+        CRITICAL RULES FOR "end":
+        1. If the user says "for 3 hours" or specifies a duration, you MUST add exactly that duration to the "start" time to calculate the "end" time. Do not default to 1 hour!
+        2. If the user says until a specific time (e.g. "until 5pm"), calculate the exact "end" ISO timestamp.
+        3. Only default to 1 hour if the user has absolutely not mentioned any length of time.
         """
         response = model.generate_content(prompt)
         clean_json = response.text.replace('```json', '').replace('```', '').strip()

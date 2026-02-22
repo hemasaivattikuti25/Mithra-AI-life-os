@@ -337,7 +337,8 @@ const INITIAL_TASKS = [];
 
 /* ── initial habits ── */
 function generateConsistency(probability) {
-  const start = new Date(today.getFullYear(), 0, 1);
+  const start = new Date(new Date().getFullYear(), 0, 1);
+  const today = new Date();
   const days = [];
   let d = new Date(start);
   while (d <= today) {
@@ -347,7 +348,6 @@ function generateConsistency(probability) {
   return days;
 }
 
-/* ── initial habits — empty for new users ── */
 const INITIAL_HABITS = [];
 
 /* ── initial lists ── */
@@ -368,6 +368,8 @@ const HABIT_CATEGORY_MAP = {
 
 /* ═══════════════════════════════════════════════════════════════ */
 export function DataProvider({ children }) {
+  const { user } = useAuth();
+
   // Tasks — load from localStorage, fall back to initial data
   const [tasks, setTasks] = useState(() => {
     const stored = loadFromStorage('tasks', null);
@@ -469,6 +471,15 @@ export function DataProvider({ children }) {
   // Persist tasks and habits to localStorage
   useEffect(() => { saveToStorage('tasks', tasks); }, [tasks]);
   useEffect(() => { saveToStorage('habits', habits); }, [habits]);
+
+  // Wipe memory on logout to prevent data crossover between user sessions
+  useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setHabits([]);
+      hasPulledRef.current = false;
+    }
+  }, [user]);
 
   /* ══════════════════════════════════════════════════════════════
      SUPABASE SYNC — Pull on mount, push on CRUD
@@ -865,46 +876,61 @@ export function DataProvider({ children }) {
       }));
   }, [tasks, syncSettings.syncTasksToCalendar]);
 
-  /* ── Generate calendar events from habits (today only) ── */
+  /* ── Generate calendar events from habits (60-day static window) ── */
   const habitCalendarEvents = useMemo(() => {
     if (!syncSettings.syncHabitsToCalendar) return [];
-    const todayDate = new Date();
-    const dayOfWeek = todayDate.getDay();
-    let currentSlot = 7;
 
-    return habits
-      .filter(h => {
-        if (h.repeatDays && h.repeatDays.length > 0) {
-          return h.repeatDays.includes(dayOfWeek);
-        }
-        return true;
-      })
-      .map(h => {
-        let startHour, startMin;
-        if (h.scheduleTime) {
-          const [sh, sm] = h.scheduleTime.split(':').map(Number);
-          startHour = sh;
-          startMin = sm || 0;
-        } else {
-          startHour = currentSlot;
-          startMin = 0;
-          currentSlot += 1;
+    const events = [];
+    const daysToRender = 60; // Render habits for 15 days past + 45 days future
+    // Anchor the start point to exactly 15 days ago so the grid is stable
+    const todayStart = new Date();
+    todayStart.setDate(todayStart.getDate() - 15);
+    todayStart.setHours(0, 0, 0, 0);
+
+    habits.forEach((h, index) => {
+      // Stagger start hours for different habits: 6 AM, 7 AM, etc. if no scheduleTime
+      let baseHour = 6 + index;
+      let baseMin = 0;
+      if (h.scheduleTime) {
+        const [sh, sm] = h.scheduleTime.split(':').map(Number);
+        baseHour = sh;
+        baseMin = sm || 0;
+      }
+
+      for (let i = 0; i < daysToRender; i++) {
+        const targetDate = addDays(todayStart, i);
+        // Only render if the habit is scheduled for this day of the week
+        if (h.repeatDays && h.repeatDays.length > 0 && !h.repeatDays.includes(targetDate.getDay())) {
+          continue;
         }
 
-        const evt = {
-          id: `habit-${h.id}`,
-          title: `${h.todayDone ? '✅' : '🔄'} ${h.title}`,
-          start: setMinutes(setHours(startOfDay(todayDate), startHour), startMin),
-          end: setMinutes(setHours(startOfDay(todayDate), startHour), startMin + (h.focusDuration || 25)),
+        // Only mark "todayDone" if we are rendering today's event and the habit is actually done
+        const isTodayEvent = targetDate.toDateString() === new Date().toDateString();
+        // Check historical consistency or today's status
+        const isPastEvent = targetDate < new Date().setHours(0, 0, 0, 0);
+        let isDone = false;
+        if (isTodayEvent) {
+          isDone = h.todayDone;
+        } else if (isPastEvent && h.consistency) {
+          isDone = h.consistency.includes(format(targetDate, 'yyyy-MM-dd'));
+        }
+
+        events.push({
+          id: `habit-${h.id}-day-${i}`,
+          title: `${isDone ? '✅' : '🔄'} ${h.title}`,
+          start: setMinutes(setHours(targetDate, baseHour), baseMin),
+          end: setMinutes(setHours(targetDate, baseHour), baseMin + (h.focusDuration || 25)),
           category: HABIT_CATEGORY_MAP[h.category] || 'Focus',
           location: '',
           description: `Streak: ${h.streak} days | Duration: ${h.focusDuration || 25}m`,
           isHabit: true,
-          todayDone: h.todayDone,
+          todayDone: isDone,
           habitColor: h.color,
-        };
-        return evt;
-      });
+        });
+      }
+    });
+
+    return events;
   }, [habits, syncSettings.syncHabitsToCalendar]);
 
   /* ── Sync toggles ── */
