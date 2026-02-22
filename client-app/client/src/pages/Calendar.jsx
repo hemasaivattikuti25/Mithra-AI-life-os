@@ -71,7 +71,7 @@ const exportEventsAsICS = (events) => {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Mithra AI//Life OS//EN',
+    'PRODID:-//Mithra Life OS//EN',
     'CALSCALE:GREGORIAN',
   ];
   events.forEach(evt => {

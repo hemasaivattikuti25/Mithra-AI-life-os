@@ -616,7 +616,7 @@ export default function Settings() {
               </div>
               <div>
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>About</div>
-                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Mithra AI v1.0.0</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Mithra Life OS v1.0.0</div>
               </div>
             </div>
           </div>

@@ -201,7 +201,7 @@ function Scene2({ elapsed }) {
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                 animation: "fadeInUp 0.5s 0.2s ease both",
                 fontFamily: "'Space Grotesk', sans-serif",
-            }}>MITHRA AI</div>
+            }}>MITHRA LIFE OS</div>
             {showSub && (
                 <div style={{
                     fontSize: 18, color: "rgba(255,255,255,0.6)",
@@ -758,7 +758,7 @@ export default function PromoVideo() {
                                 <div style={{
                                     fontSize: 28, fontWeight: 900, color: "#fff",
                                     letterSpacing: "-1px", textAlign: "center",
-                                }}>Mithra AI</div>
+                                }}>Mithra Life OS</div>
                                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
                                     45-second video background
                                 </div>

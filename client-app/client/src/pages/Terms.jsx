@@ -38,7 +38,7 @@ export default function Terms() {
                         <section>
                             <h2 className="text-lg font-semibold text-white mb-3">1. Agreement to Terms</h2>
                             <p>
-                                By accessing or using Mithra AI, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, then you may not access the Service.
+                                By accessing or using Mithra Life OS, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, then you may not access the Service.
                             </p>
                         </section>
 
@@ -52,7 +52,7 @@ export default function Terms() {
                         <section>
                             <h2 className="text-lg font-semibold text-white mb-3">3. Intellectual Property</h2>
                             <p>
-                                The Service and its original content (excluding Content provided by users), features, and functionality are and will remain the exclusive property of Mithra AI and its licensors.
+                                The Service and its original content (excluding Content provided by users), features, and functionality are and will remain the exclusive property of Mithra Life OS and its licensors.
                             </p>
                         </section>
 
@@ -66,7 +66,7 @@ export default function Terms() {
                         <section>
                             <h2 className="text-lg font-semibold text-white mb-3">5. Limitation of Liability</h2>
                             <p>
-                                In no event shall Mithra AI, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
+                                In no event shall Mithra Life OS, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
                             </p>
                         </section>
 

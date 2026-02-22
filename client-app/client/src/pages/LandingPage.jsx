@@ -470,7 +470,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded bg-gradient-to-br from-cyan-500 to-blue-600"></div>
-                        <span className="font-semibold text-sm tracking-wide">Mithra AI © 2026</span>
+                        <span className="font-semibold text-sm tracking-wide">Mithra Life OS © 2026</span>
                     </div>
 
                     <div className="flex gap-8 text-xs text-gray-400 font-medium">

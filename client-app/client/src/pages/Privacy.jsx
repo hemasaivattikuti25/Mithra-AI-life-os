@@ -38,7 +38,7 @@ export default function Privacy() {
                         <section>
                             <h2 className="text-lg font-semibold text-white mb-3">1. Introduction</h2>
                             <p>
-                                Welcome to Mithra AI ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
+                                Welcome to Mithra Life OS ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
                             </p>
                         </section>
 
