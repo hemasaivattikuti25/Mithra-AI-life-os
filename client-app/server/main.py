@@ -7,7 +7,7 @@ import logging
 from core.config import supabase, model
 from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router
-from routers import calendar_router
+from routers import calendar_router, workspace_router
 from services.warmup import start_warmup_worker
 
 # Structured logging
@@ -53,6 +53,7 @@ app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
 app.include_router(calendar_router.router, prefix="/api/calendar", tags=["Google Calendar"])
+app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"])
 
 # --- Health Check ---
 @app.get("/")

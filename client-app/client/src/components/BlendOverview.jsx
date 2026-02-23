@@ -42,13 +42,13 @@ export const BlendOverview = ({ workspaceId }) => {
         </div>
     );
 
-    if (members.length < 2) {
+    if (!members || members.length < 2) {
         return (
             <div className="rounded-2xl p-6 text-center border border-dashed border-[var(--glass-border)]" style={{ background: 'var(--glass-bg)' }}>
                 <Users className="w-8 h-8 mx-auto mb-3 text-[var(--accent-color)] opacity-50" />
                 <h2 className="text-base font-bold text-[var(--text-primary)] mb-1">Waiting for your Blend partner</h2>
                 <p className="text-[var(--text-dim)] text-xs mb-3">
-                    {members.length === 1
+                    {members?.length === 1
                         ? "Share the invite link above — once they join, you'll see your habit synergy here!"
                         : "Invite a friend to blend your habits!"}
                 </p>
@@ -56,7 +56,8 @@ export const BlendOverview = ({ workspaceId }) => {
         );
     }
 
-    const [a, b] = members.slice(0, 2);
+    const a = members[0];
+    const b = members[1];
 
     return (
         <motion.div
