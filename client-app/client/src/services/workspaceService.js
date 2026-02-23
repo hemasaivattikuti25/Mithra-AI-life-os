@@ -129,6 +129,7 @@ export const workspaceService = {
                 .select('workspace_id, role')
                 .eq('user_id', userId);
             console.log(`[Blend Service] workspace_members query finished in ${(performance.now() - start1).toFixed(2)}ms. Error:`, err1);
+            console.log('[DEBUG] memberships result:', memberships, 'error:', err1);
 
             if (err1) {
                 console.error('[Blend] Get memberships error:', err1);
