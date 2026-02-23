@@ -1,87 +1,90 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../services/supabaseClient';
-import { Flame } from 'lucide-react';
+import { Flame, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { workspaceService } from '../services/workspaceService';
 
 export const BlendOverview = ({ workspaceId }) => {
-    const [membersData, setMembersData] = useState([]);
+    const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!workspaceId) return;
+        if (!workspaceId) { setLoading(false); return; }
 
-        const fetchBlend = async () => {
+        const fetchMembers = async () => {
             try {
-                // Fetch users and their profiles in this workspace
-                const { data, error } = await supabase
-                    .from('workspace_members')
-                    .select(`
-                        user_id,
-                        profiles:user_id(full_name, avatar_url)
-                    `)
-                    .eq('workspace_id', workspaceId);
-
-                if (error) throw error;
-
-                // Set default avatar/name if profile is null
-                const cleanData = data.map(d => ({
-                    user_id: d.user_id,
-                    full_name: d.profiles?.full_name || 'User',
-                    avatarUrl: d.profiles?.avatar_url || null
-                }));
-
-                setMembersData(cleanData);
+                const data = await workspaceService.getMembers(workspaceId);
+                setMembers(data || []);
             } catch (err) {
-                console.error("Failed to fetch blend overview:", err);
+                console.error('[BlendOverview] Failed to fetch members:', err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchBlend();
+        fetchMembers();
     }, [workspaceId]);
 
-    if (loading) return <div className="animate-pulse h-32 bg-[var(--glass-bg)] rounded-2xl w-full" />;
+    // Loading skeleton
+    if (loading) return (
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--glass-bg)' }}>
+            <div className="h-5 w-40 rounded-lg animate-pulse" style={{ background: 'var(--glass-border)' }} />
+            <div className="flex justify-between px-8">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-16 h-16 rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
+                    <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--glass-border)' }} />
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-16 h-16 rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
+                    <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--glass-border)' }} />
+                </div>
+            </div>
+            <div className="h-2.5 w-full rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
+        </div>
+    );
 
-    if (membersData.length < 2) {
+    if (members.length < 2) {
         return (
-            <div className="glass-card p-6 rounded-2xl text-center">
-                <h2 className="text-xl font-bold mb-2">Mithra Blend</h2>
-                <p className="text-[var(--text-dim)] text-sm mb-4">Invite a friend to blend your habits!</p>
-                <button className="px-4 py-2 bg-[var(--accent-glow)] text-[var(--accent-color)] rounded-lg text-sm font-semibold">
-                    Copy Invite Link
-                </button>
+            <div className="rounded-2xl p-6 text-center border border-dashed border-[var(--glass-border)]" style={{ background: 'var(--glass-bg)' }}>
+                <Users className="w-8 h-8 mx-auto mb-3 text-[var(--accent-color)] opacity-50" />
+                <h2 className="text-base font-bold text-[var(--text-primary)] mb-1">Waiting for your Blend partner</h2>
+                <p className="text-[var(--text-dim)] text-xs mb-3">
+                    {members.length === 1
+                        ? "Share the invite link above — once they join, you'll see your habit synergy here!"
+                        : "Invite a friend to blend your habits!"}
+                </p>
             </div>
         );
     }
+
+    const [a, b] = members.slice(0, 2);
 
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 rounded-2xl"
+            className="rounded-2xl p-6 border border-[var(--glass-border)]"
+            style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}
         >
-            <h2 className="text-xl font-bold mb-6 text-[var(--accent-color)]">Habit Blend Synergy</h2>
+            <h2 className="text-lg font-bold mb-6 text-[var(--accent-color)]">Habit Blend Synergy</h2>
             <div className="flex justify-between items-center gap-4 px-4 w-full">
-                {membersData.slice(0, 2).map((member, idx) => (
-                    <div key={member.user_id} className="flex flex-col items-center flex-1">
+                {[a, b].map((member) => (
+                    <div key={member.userId} className="flex flex-col items-center flex-1">
                         {member.avatarUrl ? (
-                            <img src={member.avatarUrl} alt={member.full_name} className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-[var(--glass-border)]" />
+                            <img src={member.avatarUrl} alt={member.fullName} className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-[var(--glass-border)]" />
                         ) : (
                             <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold border-2 border-[var(--glass-border)] bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg">
-                                {member.full_name.substring(0, 2).toUpperCase()}
+                                {member.fullName.substring(0, 2).toUpperCase()}
                             </div>
                         )}
-                        <span className="mt-3 text-sm font-medium text-[var(--text-primary)]">{member.full_name}</span>
+                        <span className="mt-3 text-sm font-medium text-[var(--text-primary)]">{member.fullName}</span>
                         <div className="flex items-center gap-1.5 text-orange-400 mt-1">
                             <Flame size={14} className="fill-orange-500/20" />
-                            <span className="font-bold text-xs">{idx === 0 ? '12' : '8'} Day Streak</span>
+                            <span className="font-bold text-xs">Active</span>
                         </div>
                     </div>
                 ))}
             </div>
             <div className="mt-8 w-full bg-[var(--glass-border)] h-2.5 rounded-full overflow-hidden flex shadow-inner">
-                {/* Visual synergy bar (mocked proportions for MVP) */}
                 <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: '60%' }}
@@ -96,7 +99,7 @@ export const BlendOverview = ({ workspaceId }) => {
                 />
             </div>
             <p className="text-center text-xs text-[var(--text-dim)] mt-4 mb-2">
-                You and {membersData[1]?.full_name} have a <span className="text-[var(--text-primary)] font-semibold">74%</span> habit synergy score!
+                You and {b.fullName} are blended! Habit synergy data coming soon.
             </p>
         </motion.div>
     );

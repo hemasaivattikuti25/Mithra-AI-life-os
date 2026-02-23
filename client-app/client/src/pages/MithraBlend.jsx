@@ -68,10 +68,11 @@ export default function MithraBlend() {
         setJoining(true);
         setError('');
         try {
-            const wsId = await workspaceService.joinWorkspace(joinHash.trim(), user.id);
+            const result = await workspaceService.joinWorkspace(joinHash.trim(), user.id);
+            if (result.alreadyMember) {
+                setError('You are already a member of this workspace!');
+            }
             await load();
-            const joined = workspaces.find(w => w.id === wsId);
-            if (joined) setActiveWorkspace(joined);
             setJoinHash('');
             setShowJoin(false);
         } catch (err) {
@@ -228,8 +229,8 @@ export default function MithraBlend() {
                                 key={ws.id}
                                 onClick={() => setActiveWorkspace(ws)}
                                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${activeWorkspace?.id === ws.id
-                                        ? 'bg-[var(--accent-glow)] border-[var(--accent-color)] text-[var(--accent-color)]'
-                                        : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)]'
+                                    ? 'bg-[var(--accent-glow)] border-[var(--accent-color)] text-[var(--accent-color)]'
+                                    : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)]'
                                     }`}
                             >
                                 {ws.name}

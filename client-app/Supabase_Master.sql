@@ -221,29 +221,49 @@ CREATE TABLE IF NOT EXISTS public.workspace_members (
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 
--- Workspace viewing policy (members only)
+-- Workspace: authenticated users can CREATE workspaces
+DROP POLICY IF EXISTS "Create workspaces" ON public.workspaces;
+CREATE POLICY "Create workspaces" ON public.workspaces
+  FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+-- Workspace: members can VIEW their workspaces
 DROP POLICY IF EXISTS "View workspaces if member" ON public.workspaces;
 CREATE POLICY "View workspaces if member" ON public.workspaces
   FOR SELECT USING (
     id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid())
   );
 
--- Only owners can update
+-- Workspace: anyone can look up a workspace by share_link_hash (needed for join flow)
+DROP POLICY IF EXISTS "Lookup workspace by hash" ON public.workspaces;
+CREATE POLICY "Lookup workspace by hash" ON public.workspaces
+  FOR SELECT USING (true);
+
+-- Workspace: only owners can update
 DROP POLICY IF EXISTS "Update workspaces if owner" ON public.workspaces;
 CREATE POLICY "Update workspaces if owner" ON public.workspaces
   FOR UPDATE USING (created_by = auth.uid());
 
--- Members can see who else is in the workspace
+-- Workspace: only owners can delete
+DROP POLICY IF EXISTS "Delete workspaces if owner" ON public.workspaces;
+CREATE POLICY "Delete workspaces if owner" ON public.workspaces
+  FOR DELETE USING (created_by = auth.uid());
+
+-- Members: can see who else is in their shared workspaces
 DROP POLICY IF EXISTS "View workspace members" ON public.workspace_members;
 CREATE POLICY "View workspace members" ON public.workspace_members
   FOR SELECT USING (
     workspace_id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid())
   );
 
--- Users can join a workspace (insert themselves)
+-- Members: users can join a workspace (insert themselves)
 DROP POLICY IF EXISTS "Insert workspace member" ON public.workspace_members;
 CREATE POLICY "Insert workspace member" ON public.workspace_members
   FOR INSERT WITH CHECK (user_id = auth.uid());
+
+-- Members: users can leave a workspace (delete themselves)
+DROP POLICY IF EXISTS "Delete workspace member" ON public.workspace_members;
+CREATE POLICY "Delete workspace member" ON public.workspace_members
+  FOR DELETE USING (user_id = auth.uid());
 
 
 -- ============================================================
