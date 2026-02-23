@@ -20,10 +20,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name text DEFAULT '',
   email text,
   avatar_url text,
-  plan text CHECK (plan IN ('free', 'pro')) DEFAULT 'free',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+
+-- Add plan column if table already exists without it
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan text DEFAULT 'free';
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
@@ -85,10 +87,12 @@ CREATE TABLE IF NOT EXISTS public.journal_entries (
   mood integer,
   tags text,
   embedding vector(768),
-  workspace_id uuid,  -- Added for Mithra Blend support
   date date DEFAULT CURRENT_DATE,
   created_at timestamptz DEFAULT now()
 );
+
+-- Add workspace_id if table already exists without it
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS workspace_id uuid;
 
 ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 
@@ -146,11 +150,16 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   due_date date,
   recurrence text DEFAULT 'none',
   subtasks jsonb DEFAULT '[]',
-  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_tasks_workspace ON public.tasks(workspace_id) WHERE workspace_id IS NOT NULL;
+-- Add workspace_id if table already exists without it
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_tasks_workspace ON public.tasks(workspace_id) WHERE workspace_id IS NOT NULL;
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
@@ -181,11 +190,16 @@ CREATE TABLE IF NOT EXISTS public.habits (
   streak integer DEFAULT 0,
   best_streak integer DEFAULT 0,
   consistency jsonb DEFAULT '[]',
-  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_habits_workspace ON public.habits(workspace_id) WHERE workspace_id IS NOT NULL;
+-- Add workspace_id if table already exists without it
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_habits_workspace ON public.habits(workspace_id) WHERE workspace_id IS NOT NULL;
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 
