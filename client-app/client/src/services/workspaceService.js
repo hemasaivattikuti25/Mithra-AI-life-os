@@ -9,35 +9,52 @@ import { supabase } from './supabaseClient';
 export const workspaceService = {
     createWorkspace: async (name, userId) => {
         try {
-            // 1. Generate hash
-            const shareHash = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+            // Step 1: Verify profile exists before inserting workspace
+            const { data: profile, error: profileErr } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
 
-            // 2. Insert Workspace
+            if (profileErr || !profile) {
+                console.warn('[Blend] Profile not found, attempting auto-recovery upsert...');
+                // Auto-fix: create the missing profile
+                const { data: userData } = await supabase.auth.getUser();
+                const u = userData?.user;
+                if (u) {
+                    await supabase.from('profiles').upsert({
+                        id: u.id,
+                        email: u.email,
+                        display_name: u.user_metadata?.full_name || u.email.split('@')[0],
+                        avatar_url: u.user_metadata?.avatar_url || null
+                    });
+                    console.log('[Blend] Profile auto-recovery successful.');
+                } else {
+                    throw new Error('Profile not found and could not be created. Please log out and log back in.');
+                }
+            }
+
+            // Step 2: Create workspace
+            const shareHash = Math.random().toString(36).slice(2, 14);
+
             const { data: ws, error: wsErr } = await supabase
                 .from('workspaces')
-                .insert({ name, owner_id: userId, share_link_hash: shareHash })
+                .insert({ name: name.trim(), owner_id: userId, share_link_hash: shareHash })
                 .select()
                 .single();
 
-            if (wsErr) {
-                console.error('[Blend] Supabase insert workspace error:', wsErr);
-                throw new Error(`Create workspace failed: ${wsErr.message} (Code: ${wsErr.code})`);
-            }
+            if (wsErr) throw new Error(`Workspace insert failed: ${wsErr.message} (Code: ${wsErr.code})`);
 
-            // 3. Insert Owner Member
+            // Step 3: Add owner as member
             const { error: memErr } = await supabase
                 .from('workspace_members')
                 .insert({ workspace_id: ws.id, user_id: userId, role: 'owner' });
 
-            if (memErr) {
-                console.error('[Blend] Supabase insert member error:', memErr);
-                throw new Error(`Add owner member failed: ${memErr.message} (Code: ${memErr.code})`);
-            }
+            if (memErr) throw new Error(`Member insert failed: ${memErr.message} (Code: ${memErr.code})`);
 
             return ws;
         } catch (err) {
             console.error('[Blend] createWorkspace FATAL:', err);
-            // Propagate exact message up to the UI
             throw err;
         }
     },

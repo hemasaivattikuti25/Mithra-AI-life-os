@@ -318,7 +318,6 @@ ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- GOOGLE CALENDAR TOKENS
 CREATE POLICY "Users manage own calendar tokens" ON public.google_calendar_tokens FOR ALL USING (auth.uid() = user_id);
 
 -- NOTIFICATION SETTINGS
@@ -346,6 +345,11 @@ CREATE POLICY "View workspace members" ON public.workspace_members FOR SELECT US
 
 CREATE POLICY "Manage workspace members" ON public.workspace_members FOR ALL USING (
     user_id = auth.uid() 
+    OR EXISTS (SELECT 1 FROM public.workspaces w WHERE w.id = workspace_id AND w.owner_id = auth.uid())
+);
+
+CREATE POLICY "Insert workspace members" ON public.workspace_members FOR INSERT WITH CHECK (
+    user_id = auth.uid()
     OR EXISTS (SELECT 1 FROM public.workspaces w WHERE w.id = workspace_id AND w.owner_id = auth.uid())
 );
 
@@ -380,6 +384,25 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.workspaces;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
+
+-- ============================================
+-- SECTION 12: RESTORE ORPHANED PROFILES
+-- ============================================
+-- If `DROP TABLE profiles CASCADE` wiped existing profiles,
+-- this query rematches them to their `auth.users` row
+-- to prevent foreign key errors on `owner_id`.
+
+INSERT INTO public.profiles (id, email, display_name, avatar_url)
+SELECT 
+  u.id,
+  u.email,
+  COALESCE(u.raw_user_meta_data->>'full_name', split_part(u.email, '@', 1)),
+  u.raw_user_meta_data->>'avatar_url'
+FROM auth.users u
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.profiles p WHERE p.id = u.id
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
 -- END OF MASTER SCRIPT
