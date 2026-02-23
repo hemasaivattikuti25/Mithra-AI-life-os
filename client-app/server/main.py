@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 
 from core.config import supabase, model
+from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router
 
 app = FastAPI(
@@ -33,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Rate Limiter (AI: 20/min, Auth: 10/min, Default: 60/min) ---
+app.add_middleware(RateLimitMiddleware)
 
 # --- Routers ---
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])

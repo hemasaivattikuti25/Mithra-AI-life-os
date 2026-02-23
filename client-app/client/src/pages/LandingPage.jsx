@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 const luxe = [0.22, 1, 0.36, 1];
+const lightSpring = { stiffness: 80, damping: 30 };
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMATED COUNTER — Counts up to a number on scroll
@@ -329,7 +330,7 @@ export default function LandingPage() {
                         animate={{ opacity: 1, rotateX: 0, y: 0 }}
                         transition={{ delay: 0.6, duration: 1.2, type: 'spring', bounce: 0.15 }}
                         className="relative max-w-6xl mx-auto group"
-                        style={{ perspective: 1200 }}
+                        style={{ perspective: 1000 }}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
                     >
@@ -346,7 +347,7 @@ export default function LandingPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent opacity-50" />
                         </motion.div>
                         {/* Glow */}
-                        <div className="absolute -inset-16 bg-cyan-500/15 blur-[120px] opacity-30 -z-10 rounded-full" />
+                        <div className="absolute -inset-12 bg-cyan-500/12 blur-[80px] opacity-25 -z-10 rounded-full" />
                     </motion.div>
                 </motion.div>
             </main>

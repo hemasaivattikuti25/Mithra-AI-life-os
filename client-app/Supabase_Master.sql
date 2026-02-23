@@ -267,7 +267,71 @@ CREATE POLICY "Delete workspace member" ON public.workspace_members
 
 
 -- ============================================================
--- 9. GRANT PERMISSIONS
+-- 9. USAGE TRACKING (for rate limits & future paywall)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.usage_tracking (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  date date DEFAULT CURRENT_DATE NOT NULL,
+  ai_calls integer DEFAULT 0,
+  tokens_used integer DEFAULT 0,
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, date)
+);
+
+ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own usage" ON public.usage_tracking;
+CREATE POLICY "Users can manage own usage"
+  ON public.usage_tracking
+  USING (auth.uid() = user_id);
+
+-- Helper: increment AI usage for today (call from backend after each AI request)
+CREATE OR REPLACE FUNCTION public.increment_ai_usage(
+  p_user_id uuid,
+  p_tokens integer DEFAULT 0
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.usage_tracking (user_id, date, ai_calls, tokens_used, updated_at)
+  VALUES (p_user_id, CURRENT_DATE, 1, p_tokens, NOW())
+  ON CONFLICT (user_id, date)
+  DO UPDATE SET
+    ai_calls = usage_tracking.ai_calls + 1,
+    tokens_used = usage_tracking.tokens_used + p_tokens,
+    updated_at = NOW();
+END;
+$$;
+
+-- Helper: check if user is within daily limit (for paywall)
+CREATE OR REPLACE FUNCTION public.check_daily_limit(
+  p_user_id uuid,
+  p_max_calls integer DEFAULT 50
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_calls integer;
+BEGIN
+  SELECT COALESCE(ai_calls, 0) INTO current_calls
+  FROM public.usage_tracking
+  WHERE user_id = p_user_id AND date = CURRENT_DATE;
+
+  RETURN COALESCE(current_calls, 0) < p_max_calls;
+END;
+$$;
+
+
+-- ============================================================
+-- 10. GRANT PERMISSIONS
 -- ============================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
@@ -277,3 +341,4 @@ GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role
 -- ============================================================
 -- Done! Your Mithra Life OS database is fully set up.
 -- ============================================================
+

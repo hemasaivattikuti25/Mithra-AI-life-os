@@ -2,8 +2,42 @@ import React from 'react';
 
 /**
  * Reusable shimmer skeleton components for loading states.
- * Usage: <DashboardSkeleton />, <TasksSkeleton />, etc.
+ *
+ * Primitives:     <SkeletonText />, <SkeletonCard />, <SkeletonList />
+ * Page presets:   <DashboardSkeleton />, <TasksSkeleton />, etc.
  */
+
+/* ─── Primitives ─── */
+
+export const SkeletonText = ({ className = '', width = 'w-32', height = 'h-4' }) => (
+    <div
+        className={`rounded-lg animate-pulse ${width} ${height} ${className}`}
+        style={{ background: 'var(--glass-border, rgba(255,255,255,0.06))' }}
+    />
+);
+
+export const SkeletonCard = ({ children, className = '' }) => (
+    <div
+        className={`rounded-2xl p-6 border border-[var(--glass-border)] ${className}`}
+        style={{ background: 'var(--glass-bg, rgba(20,20,30,0.6))' }}
+    >
+        {children}
+    </div>
+);
+
+export const SkeletonList = ({ rows = 4, className = '' }) => (
+    <div className={`space-y-3 ${className}`}>
+        {[...Array(rows)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+                <SkeletonText width="w-5" height="h-5" className="rounded-md flex-shrink-0" />
+                <SkeletonText width="flex-1" height="h-5" className="flex-1" />
+                <SkeletonText width="w-16" height="h-4" className="rounded-full" />
+            </div>
+        ))}
+    </div>
+);
+
+/* ─── Internal helpers ─── */
 
 const Bone = ({ className = '' }) => (
     <div
