@@ -61,7 +61,7 @@ async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(ge
             "name": req.name,
             "owner_id": user_id
         }
-        res = supabase.table("workspaces").insert(data).execute()
+        res = supabase.table("workspaces").insert(data).select().execute()
         if not res.data:
             raise HTTPException(status_code=500, detail="Failed to create workspace")
             
@@ -72,7 +72,7 @@ async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(ge
             "workspace_id": workspace["id"],
             "user_id": user_id,
             "role": "owner"
-        }).execute()
+        }).select().execute()
         
         workspace["share_link_hash"] = generate_share_hash(workspace["id"])
         
@@ -110,7 +110,7 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
             "workspace_id": target_ws_id,
             "user_id": user_id,
             "role": "member"
-        }).execute()
+        }).select().execute()
         
         return {"success": True, "workspaceId": target_ws_id}
     except HTTPException:
