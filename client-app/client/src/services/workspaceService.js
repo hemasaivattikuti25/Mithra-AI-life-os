@@ -102,11 +102,16 @@ export const workspaceService = {
 
     getWorkspaces: async (userId) => {
         try {
+            console.log('[Blend Service] getWorkspaces START for user:', userId);
             // Query 1: Get memberships
+            console.log('[Blend Service] Firing workspace_members query...');
+
+            const start1 = performance.now();
             const { data: memberships, error: err1 } = await supabase
                 .from('workspace_members')
                 .select('workspace_id, role')
                 .eq('user_id', userId);
+            console.log(`[Blend Service] workspace_members query finished in ${(performance.now() - start1).toFixed(2)}ms. Error:`, err1);
 
             if (err1) {
                 console.error('[Blend] Get memberships error:', err1);
@@ -116,12 +121,16 @@ export const workspaceService = {
             if (!memberships || memberships.length === 0) return [];
 
             const workspaceIds = memberships.map(m => m.workspace_id);
+            console.log('[Blend Service] Found workspace IDs:', workspaceIds);
 
             // Query 2: Get workspace details
+            console.log('[Blend Service] Firing workspaces query...');
+            const start2 = performance.now();
             const { data: workspaces, error: err2 } = await supabase
                 .from('workspaces')
                 .select('id, name, share_link_hash, owner_id, created_at')
                 .in('id', workspaceIds);
+            console.log(`[Blend Service] workspaces query finished in ${(performance.now() - start2).toFixed(2)}ms. Error:`, err2);
 
             if (err2) {
                 console.error('[Blend] Get workspaces error:', err2);
