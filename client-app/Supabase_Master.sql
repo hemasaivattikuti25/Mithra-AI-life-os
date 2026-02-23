@@ -78,7 +78,113 @@ CREATE TRIGGER on_auth_user_created
 
 
 -- ============================================================
--- 4. JOURNAL ENTRIES + VECTOR SEARCH (for Dost AI / RAG)
+-- 4. MITHRA BLEND — WORKSPACES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.workspaces (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  created_by uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  share_link_hash text UNIQUE NOT NULL,
+  created_at timestamptz DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.workspace_members (
+  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text CHECK (role IN ('owner', 'member')) DEFAULT 'member',
+  joined_at timestamptz DEFAULT NOW(),
+  PRIMARY KEY (workspace_id, user_id)
+);
+
+-- Helper function to avoid infinite recursion in RLS policies
+-- SECURITY DEFINER bypasses RLS while checking membership
+CREATE OR REPLACE FUNCTION public.check_membership(p_workspace_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM workspace_members
+    WHERE workspace_id = p_workspace_id
+    AND user_id = auth.uid()
+  );
+END;
+$$;
+
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+
+-- Workspace: authenticated users can CREATE workspaces
+DROP POLICY IF EXISTS "Create workspaces" ON public.workspaces;
+CREATE POLICY "Create workspaces" ON public.workspaces
+  FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+-- Workspace: members can VIEW their workspaces
+DROP POLICY IF EXISTS "View workspaces if member" ON public.workspaces;
+CREATE POLICY "View workspaces if member" ON public.workspaces
+  FOR SELECT USING (
+    public.check_membership(id)
+  );
+
+-- Workspace: anyone can look up a workspace by share_link_hash (needed for join flow)
+DROP POLICY IF EXISTS "Lookup workspace by hash" ON public.workspaces;
+CREATE POLICY "Lookup workspace by hash" ON public.workspaces
+  FOR SELECT USING (true);
+
+-- Workspace: only owners can update
+DROP POLICY IF EXISTS "Update workspaces if owner" ON public.workspaces;
+CREATE POLICY "Update workspaces if owner" ON public.workspaces
+  FOR UPDATE USING (created_by = auth.uid());
+
+-- Workspace: only owners can delete
+DROP POLICY IF EXISTS "Delete workspaces if owner" ON public.workspaces;
+CREATE POLICY "Delete workspaces if owner" ON public.workspaces
+  FOR DELETE USING (created_by = auth.uid());
+
+-- Members: can see who else is in their shared workspaces
+DROP POLICY IF EXISTS "View workspace members" ON public.workspace_members;
+CREATE POLICY "View workspace members" ON public.workspace_members
+  FOR SELECT USING (
+    public.check_membership(workspace_id)
+  );
+
+-- Members: users can join a workspace (insert themselves)
+DROP POLICY IF EXISTS "Insert workspace member" ON public.workspace_members;
+CREATE POLICY "Insert workspace member" ON public.workspace_members
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+-- Members: users can leave a workspace (delete themselves)
+DROP POLICY IF EXISTS "Delete workspace member" ON public.workspace_members;
+CREATE POLICY "Delete workspace member" ON public.workspace_members
+  FOR DELETE USING (user_id = auth.uid());
+
+
+-- ============================================================
+-- 5. GOOGLE CALENDAR TOKENS (secure OAuth storage)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.google_calendar_tokens (
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  token_type text DEFAULT 'Bearer',
+  expires_at timestamptz NOT NULL,
+  scope text,
+  calendar_id text DEFAULT 'primary',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.google_calendar_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own calendar tokens" ON public.google_calendar_tokens;
+CREATE POLICY "Users manage own calendar tokens" ON public.google_calendar_tokens
+  USING (auth.uid() = user_id);
+
+
+-- ============================================================
+-- 6. JOURNAL ENTRIES + VECTOR SEARCH (for Dost AI / RAG)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.journal_entries (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -99,7 +205,13 @@ ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own journal" ON public.journal_entries;
 CREATE POLICY "Users can manage own journal"
   ON public.journal_entries
-  USING (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR (
+      workspace_id IS NOT NULL
+      AND public.check_membership(workspace_id)
+    )
+  );
 
 -- Vector search function used by the Dost AI backend
 DROP FUNCTION IF EXISTS match_journal_entries;
@@ -136,7 +248,7 @@ $$;
 
 
 -- ============================================================
--- 5. TASKS TABLE (with workspace support)
+-- 7. TASKS TABLE (with workspace support)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.tasks (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -171,15 +283,13 @@ CREATE POLICY "Users can manage own tasks"
     auth.uid() = user_id
     OR (
       workspace_id IS NOT NULL
-      AND workspace_id IN (
-        SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()
-      )
+      AND public.check_membership(workspace_id)
     )
   );
 
 
 -- ============================================================
--- 6. HABITS TABLE (with workspace support)
+-- 8. HABITS TABLE (with workspace support)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.habits (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -211,15 +321,13 @@ CREATE POLICY "Users can manage own habits"
     auth.uid() = user_id
     OR (
       workspace_id IS NOT NULL
-      AND workspace_id IN (
-        SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()
-      )
+      AND public.check_membership(workspace_id)
     )
   );
 
 
 -- ============================================================
--- 7. NOTIFICATION SETTINGS
+-- 9. NOTIFICATION SETTINGS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.notification_settings (
   user_id uuid REFERENCES auth.users(id) PRIMARY KEY,
@@ -237,96 +345,7 @@ CREATE POLICY "Users can manage own notifications"
 
 
 -- ============================================================
--- 8. MITHRA BLEND — WORKSPACES
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.workspaces (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name text NOT NULL,
-  created_by uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  share_link_hash text UNIQUE NOT NULL,
-  created_at timestamptz DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.workspace_members (
-  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text CHECK (role IN ('owner', 'member')) DEFAULT 'member',
-  joined_at timestamptz DEFAULT NOW(),
-  PRIMARY KEY (workspace_id, user_id)
-);
-
-ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
-
--- Workspace: authenticated users can CREATE workspaces
-DROP POLICY IF EXISTS "Create workspaces" ON public.workspaces;
-CREATE POLICY "Create workspaces" ON public.workspaces
-  FOR INSERT WITH CHECK (auth.uid() = created_by);
-
--- Workspace: members can VIEW their workspaces
-DROP POLICY IF EXISTS "View workspaces if member" ON public.workspaces;
-CREATE POLICY "View workspaces if member" ON public.workspaces
-  FOR SELECT USING (
-    id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid())
-  );
-
--- Workspace: anyone can look up a workspace by share_link_hash (needed for join flow)
-DROP POLICY IF EXISTS "Lookup workspace by hash" ON public.workspaces;
-CREATE POLICY "Lookup workspace by hash" ON public.workspaces
-  FOR SELECT USING (true);
-
--- Workspace: only owners can update
-DROP POLICY IF EXISTS "Update workspaces if owner" ON public.workspaces;
-CREATE POLICY "Update workspaces if owner" ON public.workspaces
-  FOR UPDATE USING (created_by = auth.uid());
-
--- Workspace: only owners can delete
-DROP POLICY IF EXISTS "Delete workspaces if owner" ON public.workspaces;
-CREATE POLICY "Delete workspaces if owner" ON public.workspaces
-  FOR DELETE USING (created_by = auth.uid());
-
--- Members: can see who else is in their shared workspaces
-DROP POLICY IF EXISTS "View workspace members" ON public.workspace_members;
-CREATE POLICY "View workspace members" ON public.workspace_members
-  FOR SELECT USING (
-    workspace_id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid())
-  );
-
--- Members: users can join a workspace (insert themselves)
-DROP POLICY IF EXISTS "Insert workspace member" ON public.workspace_members;
-CREATE POLICY "Insert workspace member" ON public.workspace_members
-  FOR INSERT WITH CHECK (user_id = auth.uid());
-
--- Members: users can leave a workspace (delete themselves)
-DROP POLICY IF EXISTS "Delete workspace member" ON public.workspace_members;
-CREATE POLICY "Delete workspace member" ON public.workspace_members
-  FOR DELETE USING (user_id = auth.uid());
-
-
--- ============================================================
--- 8b. GOOGLE CALENDAR TOKENS (secure OAuth storage)
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.google_calendar_tokens (
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  access_token text NOT NULL,
-  refresh_token text NOT NULL,
-  token_type text DEFAULT 'Bearer',
-  expires_at timestamptz NOT NULL,
-  scope text,
-  calendar_id text DEFAULT 'primary',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.google_calendar_tokens ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users manage own calendar tokens" ON public.google_calendar_tokens;
-CREATE POLICY "Users manage own calendar tokens" ON public.google_calendar_tokens
-  USING (auth.uid() = user_id);
-
-
--- ============================================================
--- 9. PLANS & SUBSCRIPTIONS (Multi-tier SaaS)
+-- 10. PLANS & SUBSCRIPTIONS (Multi-tier SaaS)
 -- ============================================================
 
 -- Plan definitions: single source of truth for limits
