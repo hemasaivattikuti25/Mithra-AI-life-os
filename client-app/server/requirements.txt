@@ -3,8 +3,8 @@ uvicorn[standard]
 supabase
 google-generativeai
 python-dotenv
-passlib[bcrypt]
 bcrypt
-python-jose[cryptography]
+PyJWT
 python-multipart
 chromadb
+pydantic

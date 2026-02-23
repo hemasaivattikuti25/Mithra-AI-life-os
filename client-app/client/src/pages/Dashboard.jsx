@@ -343,7 +343,6 @@ export default function Dashboard() {
         style={{
           background: 'var(--glass-bg)',
           backdropFilter: 'blur(40px)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
           boxShadow: isLight ? '0 10px 40px rgba(0,0,0,0.05)' : '0 20px 60px rgba(0,0,0,0.4)',
         }}
       >
@@ -377,7 +376,7 @@ export default function Dashboard() {
             >
               {greeting.text},&nbsp;
               <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-color)] to-[var(--accent-secondary)]">
-                {profile?.fullName || 'there'}
+                {profile?.fullName || 'User'}
               </span>
             </motion.h1>
 

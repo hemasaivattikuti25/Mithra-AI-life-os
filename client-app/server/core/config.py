@@ -24,9 +24,11 @@ def _init_supabase():
             supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
             print("✅ Supabase connected")
         except Exception as e:
-            raise RuntimeError(f"FATAL: Supabase init failed: {e}")
+            print(f"⚠️  Supabase init failed: {e}")
+            supabase = None
     else:
-        raise RuntimeError("FATAL: Supabase credentials missing. STARTUP ABORTED.")
+        print("⚠️  Warning: Supabase credentials missing. App starting in degraded state.")
+        supabase = None
 
 def _init_gemini():
     global model

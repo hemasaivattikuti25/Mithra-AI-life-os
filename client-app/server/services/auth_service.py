@@ -1,13 +1,13 @@
 
-from passlib.context import CryptContext
-from jose import jwt, JWTError
+import bcrypt
+import jwt
+from jwt.exceptions import PyJWTError as JWTError
 from datetime import datetime, timedelta
 from typing import Optional
 import os
 
 # --- Configuration ---
 import sys
-import os
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 SECRET_KEY = os.getenv("JWT_SECRET")
@@ -23,16 +23,18 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
 
-# --- Password Hashing ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# --- Password Hashing (Python 3.13+ safe) ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 def hash_password(password: str) -> str:
     """Hash a password for storage."""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 # --- JWT Token ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

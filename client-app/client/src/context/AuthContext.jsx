@@ -81,30 +81,18 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    const resolveProfileName = (supabaseUser, dbProfile) => {
+      const metadata = supabaseUser?.user_metadata || {};
+      const full = dbProfile?.full_name || metadata.full_name || metadata.name;
+      if (full) return full;
+      if (supabaseUser?.email) return supabaseUser.email.split('@')[0];
+      return 'User';
+    };
+
     // Check for existing session on mount
     const initSession = async () => {
       try {
-        // If we have an OAuth code, we need to wait for Supabase's auto-exchange 
-        // (which happens async) before we declare 'loading' over.
-        const hasCode = new URLSearchParams(window.location.search).has('code');
-
-        let session = null;
-
-        if (hasCode) {
-          // Poll for session - give auto-exchange time to complete
-          for (let i = 0; i < 5; i++) {
-            const { data } = await supabase.auth.getSession();
-            if (data?.session) {
-              session = data.session;
-              break;
-            }
-            await new Promise(r => setTimeout(r, 800)); // wait 800ms between checks
-          }
-        } else {
-          // Normal load
-          const { data } = await supabase.auth.getSession();
-          session = data?.session;
-        }
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
           const supaUser = {
@@ -122,24 +110,20 @@ export function AuthProvider({ children }) {
               .eq('id', session.user.id)
               .single();
 
-            if (profileData) {
-              setProfile(prev => ({
-                ...prev,
-                fullName: profileData.full_name || prev.fullName,
-                email: session.user.email,
-                avatarUrl: profileData.avatar_url || prev.avatarUrl,
-                dateJoined: profileData.created_at || prev.dateJoined,
-              }));
-            } else {
-              // Fallback for new OAuth users where profile might not exist yet
-              setProfile(prev => ({
-                ...prev,
-                fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
-                email: session.user.email,
-                avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
-              }));
-            }
+            setProfile(prev => ({
+              ...prev,
+              fullName: resolveProfileName(session.user, profileData),
+              email: session.user.email,
+              avatarUrl: profileData?.avatar_url || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+              dateJoined: profileData?.created_at || prev.dateJoined,
+            }));
           } catch (err) {
+            setProfile(prev => ({
+              ...prev,
+              fullName: resolveProfileName(session.user, null),
+              email: session.user.email,
+              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+            }));
             console.warn('[Mithra] Profile fetch warning:', err);
           }
         }
@@ -172,14 +156,23 @@ export function AuthProvider({ children }) {
           };
           setUser(supaUser);
 
+          // Instant optimistic update
+          setProfile(prev => ({
+            ...prev,
+            fullName: resolveProfileName(session.user, null),
+            email: session.user.email,
+            avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
+          }));
+
           // Force navigation to dashboard if we're on landing page or auth page
           // This fixes the issue where OAuth redirects to root but doesn't navigate
           const currentHash = window.location.hash;
           if (!currentHash || currentHash === '#/' || currentHash === '#/auth') {
             window.location.hash = '#/dashboard';
           }
+          setLoading(false);
 
-          // Pull profile logic...
+          // Background fetch for db profile to avoid UI blocking
           try {
             const { data: profileData } = await supabase
               .from('profiles')
@@ -190,23 +183,13 @@ export function AuthProvider({ children }) {
             if (profileData) {
               setProfile(prev => ({
                 ...prev,
-                fullName: profileData.full_name || session.user.user_metadata?.full_name || prev.fullName,
-                email: session.user.email,
-                avatarUrl: profileData.avatar_url || session.user.user_metadata?.avatar_url || prev.avatarUrl,
+                fullName: resolveProfileName(session.user, profileData),
+                avatarUrl: profileData.avatar_url || prev.avatarUrl,
                 dateJoined: profileData.created_at || prev.dateJoined,
-              }));
-            } else {
-              // New OAuth user — set profile from metadata
-              setProfile(prev => ({
-                ...prev,
-                fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || prev.fullName,
-                email: session.user.email,
-                avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
               }));
             }
           } catch { }
 
-          setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setLoading(false);
