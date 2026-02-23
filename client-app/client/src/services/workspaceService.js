@@ -4,6 +4,16 @@ import { supabase } from './supabaseClient';
  * Workspace Service — Manages Mithra Blend workspaces
  * All operations are null-safe (gracefully handles offline/no-supabase mode)
  */
+
+// Timeout wrapper — prevents Supabase queries from hanging forever
+const withTimeout = (promise, ms = 8000) =>
+    Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), ms)
+        ),
+    ]);
+
 export const workspaceService = {
     createWorkspace: async (name, userId) => {
         if (!supabase) throw new Error('Supabase not configured. Cannot create workspace in offline mode.');
@@ -11,11 +21,13 @@ export const workspaceService = {
         const shareHash = crypto.randomUUID().replace(/-/g, '').substring(0, 12);
 
         // Step 1: Insert workspace
-        const { data: workspace, error } = await supabase
-            .from('workspaces')
-            .insert({ name, created_by: userId, share_link_hash: shareHash })
-            .select()
-            .single();
+        const { data: workspace, error } = await withTimeout(
+            supabase
+                .from('workspaces')
+                .insert({ name, created_by: userId, share_link_hash: shareHash })
+                .select()
+                .single()
+        );
 
         if (error) {
             console.error('[Blend] Create workspace failed:', error);
@@ -23,9 +35,11 @@ export const workspaceService = {
         }
 
         // Step 2: Auto-join creator as owner
-        const { error: memberError } = await supabase
-            .from('workspace_members')
-            .insert({ workspace_id: workspace.id, user_id: userId, role: 'owner' });
+        const { error: memberError } = await withTimeout(
+            supabase
+                .from('workspace_members')
+                .insert({ workspace_id: workspace.id, user_id: userId, role: 'owner' })
+        );
 
         if (memberError) {
             console.error('[Blend] Auto-join as owner failed:', memberError);
@@ -47,11 +61,13 @@ export const workspaceService = {
             shareHash = match ? match[1] : shareHashOrUrl;
         }
 
-        const { data: workspace, error: wsError } = await supabase
-            .from('workspaces')
-            .select('id, name')
-            .eq('share_link_hash', shareHash)
-            .single();
+        const { data: workspace, error: wsError } = await withTimeout(
+            supabase
+                .from('workspaces')
+                .select('id, name')
+                .eq('share_link_hash', shareHash)
+                .single()
+        );
 
         if (wsError || !workspace) {
             console.error('[Blend] Workspace lookup failed:', wsError);
@@ -59,20 +75,24 @@ export const workspaceService = {
         }
 
         // Check if already a member
-        const { data: existing } = await supabase
-            .from('workspace_members')
-            .select('workspace_id')
-            .eq('workspace_id', workspace.id)
-            .eq('user_id', userId)
-            .maybeSingle();
+        const { data: existing } = await withTimeout(
+            supabase
+                .from('workspace_members')
+                .select('workspace_id')
+                .eq('workspace_id', workspace.id)
+                .eq('user_id', userId)
+                .maybeSingle()
+        );
 
         if (existing) {
             return { id: workspace.id, name: workspace.name, alreadyMember: true };
         }
 
-        const { error: joinError } = await supabase
-            .from('workspace_members')
-            .insert({ workspace_id: workspace.id, user_id: userId, role: 'member' });
+        const { error: joinError } = await withTimeout(
+            supabase
+                .from('workspace_members')
+                .insert({ workspace_id: workspace.id, user_id: userId, role: 'member' })
+        );
 
         if (joinError) {
             console.error('[Blend] Join failed:', joinError);
@@ -85,42 +105,56 @@ export const workspaceService = {
     getWorkspaces: async (userId) => {
         if (!supabase) return [];
 
-        const { data, error } = await supabase
-            .from('workspace_members')
-            .select('workspace_id, role, workspaces(id, name, share_link_hash, created_by, created_at)')
-            .eq('user_id', userId);
+        try {
+            const { data, error } = await withTimeout(
+                supabase
+                    .from('workspace_members')
+                    .select('workspace_id, role, workspaces(id, name, share_link_hash, created_by, created_at)')
+                    .eq('user_id', userId)
+            );
 
-        if (error) {
-            console.error('[Blend] Get workspaces failed:', error);
+            if (error) {
+                console.error('[Blend] Get workspaces failed:', error);
+                return [];
+            }
+
+            // Flatten the nested response
+            return (data || [])
+                .map(d => d.workspaces)
+                .filter(Boolean);
+        } catch (err) {
+            console.error('[Blend] Get workspaces error:', err.message);
             return [];
         }
-
-        // Flatten the nested response
-        return (data || [])
-            .map(d => d.workspaces)
-            .filter(Boolean);
     },
 
     getMembers: async (workspaceId) => {
         if (!supabase) return [];
 
-        const { data, error } = await supabase
-            .from('workspace_members')
-            .select('user_id, role, joined_at, profiles:user_id(full_name, avatar_url, email)')
-            .eq('workspace_id', workspaceId);
+        try {
+            const { data, error } = await withTimeout(
+                supabase
+                    .from('workspace_members')
+                    .select('user_id, role, joined_at, profiles:user_id(full_name, avatar_url, email)')
+                    .eq('workspace_id', workspaceId)
+            );
 
-        if (error) {
-            console.error('[Blend] Get members failed:', error);
+            if (error) {
+                console.error('[Blend] Get members failed:', error);
+                return [];
+            }
+
+            return (data || []).map(d => ({
+                userId: d.user_id,
+                role: d.role,
+                joinedAt: d.joined_at,
+                fullName: d.profiles?.full_name || 'User',
+                avatarUrl: d.profiles?.avatar_url || null,
+                email: d.profiles?.email || '',
+            }));
+        } catch (err) {
+            console.error('[Blend] Get members error:', err.message);
             return [];
         }
-
-        return (data || []).map(d => ({
-            userId: d.user_id,
-            role: d.role,
-            joinedAt: d.joined_at,
-            fullName: d.profiles?.full_name || 'User',
-            avatarUrl: d.profiles?.avatar_url || null,
-            email: d.profiles?.email || '',
-        }));
     },
 };
