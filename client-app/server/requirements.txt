@@ -1,6 +1,10 @@
 fastapi
-uvicorn
+uvicorn[standard]
 supabase
 google-generativeai
-pydantic
 python-dotenv
+passlib[bcrypt]
+bcrypt
+python-jose[cryptography]
+python-multipart
+chromadb
