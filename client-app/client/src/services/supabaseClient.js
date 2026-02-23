@@ -22,6 +22,14 @@ if (!isConfigured) {
 
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      fetch: (url, options) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        return fetch(url, { ...options, signal: controller.signal })
+          .finally(() => clearTimeout(timeoutId));
+      }
+    },
     auth: {
       autoRefreshToken: true,
       persistSession: true,
