@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     Layout as LayoutIcon, MessageSquare, Calendar as CalendarIcon,
@@ -10,6 +10,8 @@ import { useAuth } from '../context/AuthContext';
 import { hapticLight } from '../native';
 import NetworkStatus from './NetworkStatus';
 import SyncStatus from './SyncStatus';
+
+const OnboardingTour = lazy(() => import('./OnboardingTour'));
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
@@ -47,22 +49,22 @@ const ProfileName = () => {
 
 /* ═══ NAV ITEMS ═══ */
 const navItems = [
-    { path: '/dashboard', label: 'Home', icon: LayoutIcon },
-    { path: '/habits', label: 'Habits', icon: Activity },
-    { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
-    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/journal', label: 'Journal', icon: BookOpen },
-    { path: '/dost', label: 'Dost Mode', icon: MessageSquare },
-    { path: '/blend', label: 'Blend', icon: Users },
+    { path: '/dashboard', label: 'Home', icon: LayoutIcon, id: 'nav-dashboard' },
+    { path: '/habits', label: 'Habits', icon: Activity, id: 'nav-habits' },
+    { path: '/calendar', label: 'Calendar', icon: CalendarIcon, id: 'nav-calendar' },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare, id: 'nav-tasks' },
+    { path: '/journal', label: 'Journal', icon: BookOpen, id: 'nav-journal' },
+    { path: '/dost', label: 'Dost Mode', icon: MessageSquare, id: 'nav-dost' },
+    { path: '/blend', label: 'Blend', icon: Users, id: 'nav-blend' },
 ];
 
 /* Bottom bar items (subset for mobile) — Settings moved to top-right */
 const bottomNavItems = [
-    { path: '/dashboard', label: 'Home', icon: LayoutIcon },
-    { path: '/habits', label: 'Habits', icon: Activity },
-    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/dost', label: 'Dost', icon: MessageSquare },
-    { path: '/blend', label: 'Blend', icon: Users },
+    { path: '/dashboard', label: 'Home', icon: LayoutIcon, id: 'nav-dashboard' },
+    { path: '/habits', label: 'Habits', icon: Activity, id: 'nav-habits' },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare, id: 'nav-tasks' },
+    { path: '/dost', label: 'Dost', icon: MessageSquare, id: 'nav-dost' },
+    { path: '/blend', label: 'Blend', icon: Users, id: 'nav-blend' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -96,7 +98,7 @@ const DesktopSidebar = () => {
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                        <NavLink key={item.path} to={item.path}
+                        <NavLink key={item.path} to={item.path} id={item.id}
                             className="relative flex items-center p-3 rounded-xl transition-all duration-200 group">
                             {isActive && (<motion.div layoutId="sidebar-tab-pill" className="absolute inset-0 rounded-xl bg-[var(--accent-glow)] border border-[var(--glass-border)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
                             {isActive && (<motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--accent-color)] shadow-[0_0_10px_var(--accent-glow)]" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />)}
@@ -231,7 +233,7 @@ const MobileBottomNav = () => {
                 {bottomNavItems.map(item => {
                     const isActive = location.pathname === item.path;
                     return (
-                        <NavLink key={item.path} to={item.path} onClick={() => hapticLight()}
+                        <NavLink key={item.path} to={item.path} id={`mobile-${item.id}`} onClick={() => hapticLight()}
                             className="flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl relative transition-all min-w-[56px]">
                             {isActive && (
                                 <motion.div layoutId="bottom-nav-pill"
@@ -275,6 +277,9 @@ export const Layout = ({ children }) => {
                 </div>
             </main>
             <MobileBottomNav />
+            <Suspense fallback={null}>
+                <OnboardingTour />
+            </Suspense>
         </div>
     );
 };

@@ -5,10 +5,13 @@ import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
+import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton } from './components/LoadingSkeleton';
+import OnboardingTour from './components/OnboardingTour';
 import SearchDialog from './components/SearchDialog';
 import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
+import { initAnalytics } from './services/analytics';
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -155,15 +158,15 @@ function AppRoutes() {
         <Route path="/login" element={<Navigate to="/auth" replace />} />
         <Route path="/reset-password" element={<AuthPage isPasswordReset={true} />} />
 
-        {/* Protected app routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/dost" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><DostMode /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraCalendar /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/tasks" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraTasks /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/habits" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><HabitFocusHub /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/journal" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraJournal /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><Settings /></Suspense></Layout></ProtectedRoute>} />
-        <Route path="/blend" element={<ProtectedRoute><Layout><Suspense fallback={<PageLoader />}><MithraBlend /></Suspense></Layout></ProtectedRoute>} />
+        {/* Protected app routes — page-specific skeleton fallbacks */}
+        <Route path="/dashboard" element={<ProtectedRoute><Layout><Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/dost" element={<ProtectedRoute><Layout><Suspense fallback={<PageSkeleton />}><DostMode /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><Layout><Suspense fallback={<PageSkeleton />}><MithraCalendar /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><Layout><Suspense fallback={<TasksSkeleton />}><MithraTasks /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/habits" element={<ProtectedRoute><Layout><Suspense fallback={<HabitsSkeleton />}><HabitFocusHub /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/journal" element={<ProtectedRoute><Layout><Suspense fallback={<JournalSkeleton />}><MithraJournal /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></Layout></ProtectedRoute>} />
+        <Route path="/blend" element={<ProtectedRoute><Layout><Suspense fallback={<PageSkeleton />}><MithraBlend /></Suspense></Layout></ProtectedRoute>} />
 
         {/* Public Pages */}
         <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
@@ -178,6 +181,9 @@ function AppRoutes() {
 }
 
 function App() {
+  // Initialize analytics on app mount (no-op if key not set)
+  useEffect(() => { initAnalytics(); }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
