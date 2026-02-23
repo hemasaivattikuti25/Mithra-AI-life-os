@@ -128,12 +128,15 @@ class SyncEngine {
         break;
       }
       case 'update': {
-        const { error } = await supabase.from(op.table).update(op.data).match(op.match);
+        const { id, ...updateData } = op.data;
+        const { error } = await supabase.from(op.table).update(updateData).eq('id', id);
         if (error) throw error;
         break;
       }
       case 'delete': {
-        const { error } = await supabase.from(op.table).delete().match(op.match);
+        const id = op.data?.id || op.match?.id;
+        if (!id) throw new Error('Delete requires an id');
+        const { error } = await supabase.from(op.table).delete().eq('id', id);
         if (error) throw error;
         break;
       }

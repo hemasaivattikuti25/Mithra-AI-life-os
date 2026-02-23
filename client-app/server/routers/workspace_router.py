@@ -6,7 +6,7 @@ import uuid
 import hashlib
 
 from core.config import supabase
-from routers.auth_router import get_current_user
+from core.security import get_current_user
 
 logger = logging.getLogger("workspace_router")
 router = APIRouter()
@@ -26,24 +26,29 @@ async def list_workspaces(current_user: dict = Depends(get_current_user)):
     """List all workspaces the user is a part of (owner or member)."""
     user_id = current_user["id"]
     try:
-        # Get workspaces where user is owner
-        owned = supabase.table("workspaces").select("*").eq("owner_id", user_id).execute()
+        # Step 1: Get all memberships for the user with their role
+        memberships = supabase.table("workspace_members").select("workspace_id, role").eq("user_id", user_id).execute()
         
-        # Get workspaces where user is a member
-        memberships = supabase.table("workspace_members").select("workspace_id").eq("user_id", user_id).execute()
-        member_ids = [m["workspace_id"] for m in memberships.data]
+        roles_map = {m["workspace_id"]: m["role"] for m in memberships.data}
+        ws_ids = list(roles_map.keys())
         
-        member_workspaces = []
-        if member_ids:
-            member_workspaces = supabase.table("workspaces").select("*").in_("id", member_ids).execute().data
-
-        # Combine and deduplicate
-        all_workspaces = {ws["id"]: ws for ws in owned.data + member_workspaces}
+        if not ws_ids:
+            return {"workspaces": []}
+            
+        # Step 2: Fetch workspace details
+        workspaces_res = supabase.table("workspaces").select("*").in_("id", ws_ids).execute()
         
-        # Add the share hash to each workspace
+        # Step 3: Fetch member counts for all these workspaces
+        all_memberships = supabase.table("workspace_members").select("workspace_id").in_("workspace_id", ws_ids).execute()
+        counts = {}
+        for m in all_memberships.data:
+            counts[m["workspace_id"]] = counts.get(m["workspace_id"], 0) + 1
+            
         results = []
-        for ws in all_workspaces.values():
+        for ws in workspaces_res.data:
             ws["share_link_hash"] = generate_share_hash(ws["id"])
+            ws["userRole"] = roles_map.get(ws["id"], "member")
+            ws["memberCount"] = counts.get(ws["id"], 1)
             results.append(ws)
             
         return {"workspaces": results}
@@ -51,15 +56,17 @@ async def list_workspaces(current_user: dict = Depends(get_current_user)):
         logger.error(f"Error listing workspaces: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/workspaces")
 async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(get_current_user)):
     """Create a new shared workspace (Mithra Blend)."""
     user_id = current_user["id"]
     try:
+        ws_id = str(uuid.uuid4())
         data = {
+            "id": ws_id,
             "name": req.name,
-            "owner_id": user_id
+            "owner_id": user_id,
+            "share_link_hash": generate_share_hash(ws_id),
         }
         res = supabase.table("workspaces").insert(data).select().execute()
         if not res.data:
@@ -67,7 +74,7 @@ async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(ge
             
         workspace = res.data[0]
         
-        # Auto-add the owner as a member with 'owner' role for easier querying later
+        # Auto-add the owner as a member with 'owner' role
         supabase.table("workspace_members").insert({
             "workspace_id": workspace["id"],
             "user_id": user_id,
@@ -75,19 +82,18 @@ async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(ge
         }).select().execute()
         
         workspace["share_link_hash"] = generate_share_hash(workspace["id"])
+        workspace["userRole"] = "owner"
         
         return {"workspace": workspace}
     except Exception as e:
         logger.error(f"Error creating workspace: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/workspaces/join")
 async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get_current_user)):
     """Join a workspace using a share hash."""
     user_id = current_user["id"]
     try:
-        # 1. Find the workspace ID that matches the hash
         # We have to fetch all workspaces to check the hash since it's computed on the fly
         all_wsResponse = supabase.table("workspaces").select("id").execute()
         
@@ -100,12 +106,12 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
         if not target_ws_id:
             raise HTTPException(status_code=404, detail="Invalid invite link")
 
-        # 2. Check if already a member
+        # Check if already a member
         existing = supabase.table("workspace_members").select("*").eq("workspace_id", target_ws_id).eq("user_id", user_id).execute()
         if existing.data:
             return {"success": True, "alreadyMember": True, "workspaceId": target_ws_id}
 
-        # 3. Join
+        # Join
         supabase.table("workspace_members").insert({
             "workspace_id": target_ws_id,
             "user_id": user_id,
@@ -119,23 +125,53 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
         logger.error(f"Error joining workspace: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/workspaces/{workspace_id}")
+async def delete_workspace(workspace_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a workspace (Owner only)."""
+    user_id = current_user["id"]
+    try:
+        ws_check = supabase.table("workspaces").select("owner_id").eq("id", workspace_id).execute()
+        if not ws_check.data or ws_check.data[0]["owner_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only the owner can delete this workspace.")
+            
+        supabase.table("workspaces").delete().eq("id", workspace_id).execute()
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting workspace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/workspaces/{workspace_id}/leave")
+async def leave_workspace(workspace_id: str, current_user: dict = Depends(get_current_user)):
+    """Leave a workspace (Member only)."""
+    user_id = current_user["id"]
+    try:
+        ws_check = supabase.table("workspaces").select("owner_id").eq("id", workspace_id).execute()
+        if ws_check.data and ws_check.data[0]["owner_id"] == user_id:
+            raise HTTPException(status_code=400, detail="Owner cannot leave the workspace. Delete it instead.")
+            
+        supabase.table("workspace_members").delete().eq("workspace_id", workspace_id).eq("user_id", user_id).execute()
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error leaving workspace: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/workspaces/{workspace_id}/members")
 async def get_workspace_members(workspace_id: str, current_user: dict = Depends(get_current_user)):
     """Get members of a workspace, including their profile details."""
     try:
-        # First verify the current user has access to this workspace
-        # (RLS should handle this, but it's good practice to double check)
+        # Note: If RLS is enabled on Supabase and python client uses anon key, 
+        # this query relies on RLS policies to restrict visibility. 
+        # Since we use service_role or anon with bypasses, we explicitly verify members here.
         memberships_raw = supabase.table("workspace_members").select("user_id, role").eq("workspace_id", workspace_id).execute()
         member_user_ids = [m["user_id"] for m in memberships_raw.data]
         
+        # Verify access
         if current_user["id"] not in member_user_ids:
-            # Check if they are the owner
-            ws_check = supabase.table("workspaces").select("owner_id").eq("id", workspace_id).execute()
-            if not ws_check.data or ws_check.data[0]["owner_id"] != current_user["id"]:
-                 raise HTTPException(status_code=403, detail="Access denied")
-            if current_user["id"] not in member_user_ids:
-                 member_user_ids.append(current_user["id"])
+             raise HTTPException(status_code=403, detail="Access denied")
 
         if not member_user_ids:
              return {"members": []}

@@ -634,6 +634,13 @@ export default function MithraTasks() {
     addToast({ title: 'Task scheduled', description: `"${task.title}" added to ${taskLists.find(l => l.id === task.listId)?.name || 'list'}.`, variant: 'success' });
   }, [addTask, taskLists, addToast]);
 
+  const handleUpdate = useCallback((updatedTask) => {
+    updateTask(updatedTask);
+    if (selectedTask?.id === updatedTask.id) {
+      setSelectedTask(updatedTask);
+    }
+  }, [updateTask, selectedTask]);
+
   const handleDelete = useCallback((id) => {
     notificationManager.hapticHeavy();
     setDeleteConfirm(id);

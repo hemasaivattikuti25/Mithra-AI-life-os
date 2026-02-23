@@ -1,20 +1,44 @@
 """
 Mithra OS — Backend Configuration
 Gracefully handles missing credentials so the server can start in demo mode.
+Gemini is lazy-loaded on first AI request to save memory on cold start.
 """
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Configuration ---
+logger = logging.getLogger("mithra.config")
+
+# ─── Configuration ───────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
-# --- Clients (lazy init — only created if credentials exist) ---
+
+def validate_config():
+    """Log a clear report of which env vars are present/missing. Never crashes."""
+    required = {
+        "SUPABASE_URL": SUPABASE_URL,
+        "SUPABASE_KEY": SUPABASE_KEY,
+        "SUPABASE_JWT_SECRET": SUPABASE_JWT_SECRET,
+        "GEMINI_API_KEY": GEMINI_API_KEY,
+    }
+    missing = [k for k, v in required.items() if not v or "your-" in v]
+    present = [k for k in required if k not in missing]
+
+    if present:
+        logger.info(f"✅ Config OK: {', '.join(present)}")
+    if missing:
+        logger.warning(f"⚠️  Missing env vars: {', '.join(missing)}")
+    return missing
+
+
+# ─── Supabase Client (eager — needed for health check) ───────────
 supabase = None
-model = None
 
 def _init_supabase():
     global supabase
@@ -22,32 +46,53 @@ def _init_supabase():
         try:
             from supabase import create_client
             supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-            print("✅ Supabase connected")
+            logger.info("✅ Supabase connected")
         except Exception as e:
-            print(f"⚠️  Supabase init failed: {e}")
+            logger.error(f"⚠️  Supabase init failed: {e}")
             supabase = None
     else:
-        print("⚠️  Warning: Supabase credentials missing. App starting in degraded state.")
+        logger.warning("⚠️  Supabase credentials missing — DB features disabled")
         supabase = None
 
-def _init_gemini():
-    global model
+_init_supabase()
+
+
+# ─── Gemini Model (LAZY — only loads on first AI request) ────────
+_model_instance = None
+_model_initialized = False
+
+def get_model():
+    """Returns the Gemini model, lazily initializing on first call.
+    Saves ~100MB RAM on cold start for Render free tier."""
+    global _model_instance, _model_initialized
+    if _model_initialized:
+        return _model_instance
+    _model_initialized = True
+
     if GEMINI_API_KEY and "your-" not in GEMINI_API_KEY:
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            print("✅ Gemini AI connected")
+            _model_instance = genai.GenerativeModel('gemini-1.5-flash')
+            logger.info("✅ Gemini AI connected (lazy init)")
         except Exception as e:
-            print(f"⚠️  Gemini init failed: {e}")
+            logger.error(f"⚠️  Gemini init failed: {e}")
+            _model_instance = None
     else:
-        print("⚠️  Warning: Gemini API key missing. AI features will be disabled.")
+        logger.warning("⚠️  Gemini API key missing — AI features disabled")
+        _model_instance = None
+    return _model_instance
+
+
+# Backward compat: `model` still importable but is None until get_model() called
+model = None
+
 
 def get_embedding(text: str):
     """Generates vector embedding for RAG memory using Gemini."""
     if not GEMINI_API_KEY or "your-" in GEMINI_API_KEY:
-        print("⚠️  Embedding skipped: No Gemini Key")
-        return [0.0] * 768  # dummy embedding to prevent crash, but search will fail
+        logger.debug("Embedding skipped: No Gemini Key")
+        return [0.0] * 768
     try:
         import google.generativeai as genai
         result = genai.embed_content(
@@ -58,9 +103,5 @@ def get_embedding(text: str):
         )
         return result['embedding']
     except Exception as e:
-        print(f"⚠️  Embedding failed: {e}")
+        logger.error(f"⚠️  Embedding failed: {e}")
         return [0.0] * 768
-
-# Initialize on import
-_init_supabase()
-_init_gemini()

@@ -8,6 +8,8 @@ import {
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -259,6 +261,7 @@ const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
    ═══════════════════════════════════════════════════════════════ */
 export default function MithraJournal() {
   const { theme } = useData();
+  const { user } = useAuth();
   const isLight = theme === 'light';
   const [entries, setEntries] = useState(() => {
     try {
@@ -273,19 +276,111 @@ export default function MithraJournal() {
   const [isEditorOpen, setEditorOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'high' | 'low'
+  const [activeFilter, setActiveFilter] = useState('all');
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Persist entries to localStorage
+  // ── Cloud Sync: Load from Supabase on mount, merge with localStorage ──
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase || !user?.id) return;
+
+    const fetchAndMerge = async () => {
+      try {
+        setIsSyncing(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data: cloudEntries, error } = await supabase
+          .from('journal_entries')
+          .select('id, content, mood, tags, date, created_at, updated_at')
+          .order('date', { ascending: false });
+
+        if (error) throw error;
+        if (!cloudEntries || cloudEntries.length === 0) return;
+
+        // Convert cloud entries to local format
+        const cloudFormatted = cloudEntries.map(e => ({
+          id: e.id,
+          title: (e.content || '').split('\n')[0]?.slice(0, 80) || 'Untitled',
+          body: e.content || '',
+          mood: e.mood ? e.mood * 2 : 5,  // DB is 1-5, local is 1-10
+          tags: (e.tags || []).map(t => t.startsWith('#') ? t : `#${t}`),
+          date: new Date(e.date),
+          color: (e.mood && e.mood >= 4) ? 'var(--accent-color)' : 'var(--text-primary)',
+          _cloudId: e.id,
+          _updatedAt: e.updated_at,
+        }));
+
+        setEntries(prev => {
+          // Merge: cloud wins on conflict (same ID), add unique local entries
+          const cloudIds = new Set(cloudFormatted.map(e => e.id));
+          const localOnly = prev.filter(e => !cloudIds.has(e.id) && !e._cloudId);
+          const merged = [...cloudFormatted, ...localOnly];
+          // Sort by date descending
+          merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+          return merged;
+        });
+      } catch (err) {
+        console.warn('[Journal] Cloud sync failed:', err);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    fetchAndMerge();
+  }, [user?.id]);
+
+  // ── Persist entries to localStorage (optimistic) ──
   useEffect(() => {
     try {
-      try {
-        localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(entries));
-      } catch (e) {
-        console.warn('Failed to save journal entries:', e.message);
-      }
-    } catch { }
+      localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(entries));
+    } catch (e) {
+      console.warn('Failed to save journal entries:', e.message);
+    }
   }, [entries]);
+
+  // ── Cloud save helper ──
+  const syncToCloud = async (entry, action = 'upsert') => {
+    if (!isSupabaseConfigured || !supabase || !user?.id) return;
+
+    try {
+      setIsSyncing(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      if (action === 'delete') {
+        await supabase.from('journal_entries').delete().eq('id', entry.id);
+      } else {
+        const dbEntry = {
+          id: entry.id?.toString().includes('-') ? entry.id : undefined,
+          user_id: user.id,
+          content: entry.title ? `${entry.title}\n\n${entry.body}` : entry.body,
+          mood: Math.max(1, Math.min(5, Math.round(entry.mood / 2))),  // local 1-10 → DB 1-5
+          tags: (entry.tags || []).map(t => t.replace('#', '')),
+          date: entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : entry.date,
+        };
+
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .upsert(dbEntry, { onConflict: 'id' })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+
+        // Update local entry with cloud ID if it was a new entry
+        if (data?.id && data.id !== entry.id) {
+          setEntries(prev => prev.map(e =>
+            e.id === entry.id ? { ...e, id: data.id, _cloudId: data.id } : e
+          ));
+        }
+      }
+    } catch (err) {
+      console.warn('[Journal] Cloud save failed, entry safe in localStorage:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const filteredEntries = entries.filter(e => {
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -304,6 +399,8 @@ export default function MithraJournal() {
       setEntries(prev => [entry, ...prev]);
     }
     setEditingEntry(null);
+    // Background cloud sync
+    syncToCloud(entry);
   };
 
   const handleEditEntry = (entry) => {
@@ -313,8 +410,11 @@ export default function MithraJournal() {
   };
 
   const handleDeleteEntry = (id) => {
+    const entry = entries.find(e => e.id === id);
     setEntries(prev => prev.filter(e => e.id !== id));
     if (selectedEntry?.id === id) setSelectedEntry(null);
+    // Background cloud delete
+    if (entry) syncToCloud(entry, 'delete');
   };
 
   // Stats
@@ -402,7 +502,14 @@ export default function MithraJournal() {
             <h1 className="text-3xl lg:text-4xl font-light tracking-tight flex items-center gap-3">
               <Book size={28} className="text-[var(--accent-color)]" /> Journal
             </h1>
-            <p style={{ color: 'var(--text-dim)' }} className="mt-1 text-sm opacity-40">Capture your mind. Track your soul.</p>
+            <p style={{ color: 'var(--text-dim)' }} className="mt-1 text-sm opacity-40 flex items-center gap-2">
+              Capture your mind. Track your soul.
+              {isSyncing && (
+                <span className="inline-flex items-center gap-1 text-[var(--accent-color)] opacity-60 text-xs">
+                  <span className="animate-pulse">●</span> syncing...
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {/* Filter Pills */}

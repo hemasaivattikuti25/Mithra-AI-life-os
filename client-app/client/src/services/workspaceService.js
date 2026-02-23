@@ -2,10 +2,10 @@ import { supabase } from './supabaseClient';
 
 /**
  * Workspace Service — Manages Mithra Blend workspaces
- * Refactored to hit the Python Backend API (Clean Architecture)
+ * Matches the FastAPI backend endpoints.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const getHeaders = async () => {
     if (!supabase) throw new Error('Supabase not configured. Cannot auth.');
@@ -37,11 +37,14 @@ export const workspaceService = {
 
     joinWorkspace: async (shareHashOrUrl, userId) => {
         try {
-            // Extract hash from either a full URL or bare hash
-            let shareHash = shareHashOrUrl;
-            if (shareHashOrUrl.includes('join=')) {
-                const match = shareHashOrUrl.match(/join=([a-zA-Z0-9]+)/);
-                shareHash = match ? match[1] : shareHashOrUrl;
+            // Smarter hash extraction
+            let shareHash = shareHashOrUrl.trim();
+            if (shareHash.includes('join=')) {
+                const match = shareHash.match(/join=([a-zA-Z0-9_-]+)/);
+                if (match) shareHash = match[1];
+            } else if (shareHash.includes('/')) {
+                // If they pasted a clean URL with hash at the end
+                shareHash = shareHash.split('/').pop().split('?')[0];
             }
 
             const headers = await getHeaders();
@@ -73,7 +76,8 @@ export const workspaceService = {
             return data.workspaces || [];
         } catch (err) {
             console.error('[Blend] Get workspaces error:', err);
-            return [];
+            // Throw so that the UI can catch it and show an error state instead of spinning forever
+            throw err;
         }
     },
 
@@ -83,12 +87,65 @@ export const workspaceService = {
             const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/members`, {
                 headers
             });
-            if (!res.ok) throw new Error(await res.text());
+
+            // Fallback: If API fails, try direct Supabase query
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
             const data = await res.json();
             return data.members || [];
         } catch (err) {
-            console.error('[Blend] Get members error:', err);
-            return [];
+            console.error('[Blend] Get members error - falling back to direct query:', err);
+
+            // Fallback if profiles join fails or backend errors out
+            try {
+                const { data } = await supabase
+                    .from('workspace_members')
+                    .select('user_id, role, joined_at')
+                    .eq('workspace_id', workspaceId);
+
+                if (!data) return [];
+
+                return data.map(m => ({
+                    userId: m.user_id,
+                    role: m.role,
+                    fullName: `User ${m.user_id.substring(0, 4)}`, // Fallback name
+                    avatarUrl: null
+                }));
+            } catch (fallbackErr) {
+                console.error('[Blend] Fallback also failed:', fallbackErr);
+                throw fallbackErr;
+            }
         }
     },
+
+    leaveWorkspace: async (workspaceId, userId) => {
+        try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/leave`, {
+                method: 'DELETE',
+                headers
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return await res.json();
+        } catch (err) {
+            console.error('[Blend] Leave workspace failed:', err);
+            throw err;
+        }
+    },
+
+    deleteWorkspace: async (workspaceId, userId) => {
+        try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}`, {
+                method: 'DELETE',
+                headers
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return await res.json();
+        } catch (err) {
+            console.error('[Blend] Delete workspace failed:', err);
+            throw err;
+        }
+    }
 };

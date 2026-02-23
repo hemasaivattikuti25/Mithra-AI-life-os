@@ -1,0 +1,41 @@
+# Mithra AI — Render Blueprint
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: mithra-api
+    runtime: python
+    region: oregon  # or your preferred region
+
+    # The server code lives in client-app/server/
+    rootDir: client-app/server
+
+    # Build: install Python dependencies
+    buildCommand: pip install -r requirements.txt
+
+    # Start: uvicorn with Render-optimized flags
+    # - 1 worker (free tier has 512MB RAM)
+    # - timeout-keep-alive 30 (Render kills idle connections)
+    # - $PORT is auto-set by Render
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 30
+
+    # Health check — lightweight /ping endpoint (no DB call)
+    healthCheckPath: /ping
+
+    # Free tier
+    plan: free
+
+    # Environment variables (set values in Render Dashboard)
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.11.0"

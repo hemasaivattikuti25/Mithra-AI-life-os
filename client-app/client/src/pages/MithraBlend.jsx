@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Link2, Plus, Copy, Check, Loader2, AlertCircle, LogIn } from 'lucide-react';
+import { Users, Link2, Plus, Copy, Check, Loader2, AlertCircle, LogIn, Trash2, LogOut, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
 import { BlendOverview } from '../components/BlendOverview';
@@ -33,18 +33,34 @@ export default function MithraBlend() {
     const load = useCallback(async () => {
         if (!user) return;
         setLoading(true);
+        setError('');
         try {
             const data = await workspaceService.getWorkspaces(user.id);
             setWorkspaces(data || []);
-            if (data?.length > 0 && !activeWorkspace) setActiveWorkspace(data[0]);
+            if (data && data.length > 0 && !activeWorkspace) {
+                setActiveWorkspace(data[0]);
+            }
         } catch (err) {
-            setError('Could not load workspaces.');
+            console.error(err);
+            setError(err.message || 'Could not load workspaces.');
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, activeWorkspace]);
 
     useEffect(() => { load(); }, [load]);
+
+    // Hard fallback timeout to prevent infinite spinners
+    useEffect(() => {
+        let timeout;
+        if (loading) {
+            timeout = setTimeout(() => {
+                setLoading(false);
+                setError('Connection timed out. Please check your network or try again.');
+            }, 12000);
+        }
+        return () => clearTimeout(timeout);
+    }, [loading]);
 
     const handleCreate = async () => {
         if (!newName.trim()) return;
@@ -63,22 +79,52 @@ export default function MithraBlend() {
         }
     };
 
-    const handleJoin = async () => {
-        if (!joinHash.trim()) return;
+    const handleJoin = async (hashToJoin = joinHash) => {
+        if (!hashToJoin || !hashToJoin.trim()) return;
         setJoining(true);
         setError('');
         try {
-            const result = await workspaceService.joinWorkspace(joinHash.trim(), user.id);
+            const result = await workspaceService.joinWorkspace(hashToJoin.trim(), user.id);
             if (result.alreadyMember) {
                 setError('You are already a member of this workspace!');
             }
             await load();
             setJoinHash('');
             setShowJoin(false);
+
+            // Clean up the URL hash if joining succeeded
+            if (window.location.hash.includes('join=')) {
+                window.history.replaceState(null, '', window.location.pathname + '#/blend');
+            }
         } catch (err) {
             setError(err.message || 'Invalid or already joined workspace.');
         } finally {
             setJoining(false);
+        }
+    };
+
+    const handleLeaveOrDelete = async (ws) => {
+        const isOwner = ws.userRole === 'owner';
+        const actionText = isOwner ? 'delete' : 'leave';
+
+        if (!window.confirm(`Are you sure you want to ${actionText} "${ws.name}"? ${isOwner ? 'This cannot be undone.' : ''}`)) {
+            return;
+        }
+
+        setError('');
+        setLoading(true);
+        try {
+            if (isOwner) {
+                await workspaceService.deleteWorkspace(ws.id, user.id);
+            } else {
+                await workspaceService.leaveWorkspace(ws.id, user.id);
+            }
+            setActiveWorkspace(null);
+            await load();
+        } catch (err) {
+            setError(err.message || `Failed to ${actionText} workspace.`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -96,7 +142,9 @@ export default function MithraBlend() {
         if (hash && user) {
             setJoinHash(hash);
             setShowJoin(true);
+            handleJoin(hash); // Trigger join automatically
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     return (
@@ -106,7 +154,7 @@ export default function MithraBlend() {
                 initial={{ opacity: 0, y: -16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: luxuryEase }}
-                className="flex items-center justify-between"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
                 <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[var(--accent-glow)]">
@@ -136,13 +184,19 @@ export default function MithraBlend() {
                 </div>
             </motion.div>
 
-            {/* Error */}
+            {/* Error & Retry */}
             <AnimatePresence>
                 {error && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="flex items-center gap-2 p-3 rounded-xl text-sm text-red-400 bg-red-500/10 border border-red-500/20"
+                        className="flex items-center justify-between p-3 rounded-xl text-sm text-red-400 bg-red-500/10 border border-red-500/20"
                     >
-                        <AlertCircle size={15} /> {error}
+                        <div className="flex items-center gap-2">
+                            <AlertCircle size={15} />
+                            <span>{error}</span>
+                        </div>
+                        <button onClick={load} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors text-xs font-semibold">
+                            <RefreshCcw size={12} /> Try Again
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -150,16 +204,17 @@ export default function MithraBlend() {
             {/* Create panel */}
             <AnimatePresence>
                 {showCreate && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                        <GlassCard className="border border-[var(--glass-border)]">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <GlassCard className="border border-[var(--glass-border)] mt-2">
                             <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Create a Blend Workspace</h3>
                             <div className="flex gap-3">
                                 <input
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                                    placeholder="Workspace name (e.g. 'Sai & Priya's Goals')"
+                                    placeholder="Workspace name (e.g. 'Study Group')"
                                     className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-color)]"
+                                    autoFocus
                                 />
                                 <button
                                     onClick={handleCreate}
@@ -178,8 +233,8 @@ export default function MithraBlend() {
             {/* Join panel */}
             <AnimatePresence>
                 {showJoin && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                        <GlassCard className="border border-[var(--glass-border)]">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <GlassCard className="border border-[var(--glass-border)] mt-2">
                             <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Join via Invite Link</h3>
                             <div className="flex gap-3">
                                 <input
@@ -188,9 +243,10 @@ export default function MithraBlend() {
                                     onKeyDown={e => e.key === 'Enter' && handleJoin()}
                                     placeholder="Paste invite code or link here"
                                     className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-color)]"
+                                    autoFocus
                                 />
                                 <button
-                                    onClick={handleJoin}
+                                    onClick={() => handleJoin(joinHash)}
                                     disabled={joining || !joinHash.trim()}
                                     className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-40 flex items-center gap-2"
                                     style={{ background: 'var(--accent-color)', color: 'white' }}
@@ -217,23 +273,23 @@ export default function MithraBlend() {
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-[var(--text-primary)]">No blends yet</h3>
-                        <p className="text-sm text-[var(--text-dim)] mt-1">Create a workspace or join a friend's via invite link.</p>
+                        <p className="text-sm text-[var(--text-dim)] mt-1 max-w-sm mx-auto">Create a workspace to sync your habits and goals with friends, or join one via invite link.</p>
                     </div>
                 </motion.div>
             ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4 mt-8">
                     {/* Workspace tabs */}
                     <div className="flex gap-2 flex-wrap">
                         {workspaces.map(ws => (
                             <button
                                 key={ws.id}
                                 onClick={() => setActiveWorkspace(ws)}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${activeWorkspace?.id === ws.id
+                                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${activeWorkspace?.id === ws.id
                                     ? 'bg-[var(--accent-glow)] border-[var(--accent-color)] text-[var(--accent-color)]'
                                     : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)]'
                                     }`}
                             >
-                                {ws.name}
+                                {ws.name} {ws.memberCount > 1 && <span className="opacity-60 ml-1">({ws.memberCount})</span>}
                             </button>
                         ))}
                     </div>
@@ -248,20 +304,35 @@ export default function MithraBlend() {
                             className="space-y-4"
                         >
                             <GlassCard className="border border-[var(--glass-border)]">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs text-[var(--text-dim)] uppercase tracking-widest mb-1">Invite Link</p>
-                                        <p className="text-sm text-[var(--text-primary)] font-mono truncate max-w-xs">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs text-[var(--text-dim)] uppercase tracking-widest mb-1 flex items-center gap-2">
+                                            <span>Invite Link</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${activeWorkspace.userRole === 'owner' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                {activeWorkspace.userRole}
+                                            </span>
+                                        </p>
+                                        <p className="text-sm text-[var(--text-primary)] font-mono truncate max-w-full">
                                             {`${window.location.origin}/#/blend?join=${activeWorkspace.share_link_hash}`}
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={() => copyLink(activeWorkspace)}
-                                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all bg-[var(--accent-glow)] text-[var(--accent-color)]"
-                                    >
-                                        {copiedId === activeWorkspace.id ? <Check size={14} /> : <Copy size={14} />}
-                                        {copiedId === activeWorkspace.id ? 'Copied!' : 'Copy'}
-                                    </button>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            onClick={() => copyLink(activeWorkspace)}
+                                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all bg-[var(--accent-glow)] text-[var(--accent-color)] border border-[var(--accent-color)]/20 hover:bg-[var(--accent-color)] hover:text-white"
+                                        >
+                                            {copiedId === activeWorkspace.id ? <Check size={14} /> : <Copy size={14} />}
+                                            {copiedId === activeWorkspace.id ? 'Copied' : 'Copy Link'}
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleLeaveOrDelete(activeWorkspace)}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${activeWorkspace.userRole === 'owner' ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-[var(--glass-bg)] text-[var(--text-dim)] border-[var(--glass-border)] hover:bg-white/10 hover:text-[var(--text-primary)]'}`}
+                                            title={activeWorkspace.userRole === 'owner' ? "Delete Workspace" : "Leave Workspace"}
+                                        >
+                                            {activeWorkspace.userRole === 'owner' ? <Trash2 size={14} /> : <LogOut size={14} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </GlassCard>
 

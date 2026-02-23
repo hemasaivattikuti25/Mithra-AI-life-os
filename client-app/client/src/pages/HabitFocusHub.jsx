@@ -1063,11 +1063,11 @@ export default function HabitFocusHub() {
                         <span className="text-xs text-[#F2EBE3]/25 ml-2">{s.time}m</span>
                       </div>
                       <span className="text-xs text-[#F2EBE3]/15 font-mono uppercase mr-2">{toRoman(i + 1)}</span>
-                      <button onClick={() => { setEditingSession(s); setShowSessionModal(true); }}
+                      <button onClick={(e) => { e.stopPropagation(); setEditingSession(s); setShowSessionModal(true); }}
                         className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-[#F2EBE3]/60 hover:bg-white/5 transition-all">
                         <Pencil size={13} />
                       </button>
-                      <button onClick={() => deleteCustomSession(s.id)}
+                      <button onClick={(e) => { e.stopPropagation(); deleteCustomSession(s.id); }}
                         className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-red-400 hover:bg-red-500/10 transition-all">
                         <Trash2 size={13} />
                       </button>

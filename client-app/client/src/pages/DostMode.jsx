@@ -7,6 +7,7 @@ import {
   X, FileSpreadsheet, Image as ImageIcon
 } from 'lucide-react';
 import { useData, getUserScopedKey } from '../context/DataContext';
+import { supabase } from '../services/supabaseClient';
 import { format, addDays, parse } from 'date-fns';
 import axios from 'axios';
 import clsx from 'clsx';
@@ -720,12 +721,33 @@ export default function DostMode() {
               break;
             }
             try {
+              // Build chat history from recent messages (Problem 5)
+              const recentMsgs = messages.slice(-20);
+              const history = recentMsgs
+                .filter(m => m.sender === 'user' || m.sender === 'ai')
+                .map(m => ({
+                  role: m.sender === 'user' ? 'user' : 'model',
+                  parts: [m.content || ''],
+                }));
+
+              // Get Supabase auth token
+              let authHeaders = {};
+              try {
+                if (supabase) {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (session?.access_token) {
+                    authHeaders = { Authorization: `Bearer ${session.access_token}` };
+                  }
+                }
+              } catch { /* offline — no token */ }
+
               const res = await axios.post(`${API_BASE}/api/chat`, {
                 message: userInput,
-                user_id: 'default',
-                current_tasks: tasks.map(t => ({ title: t.title, priority: t.priority, completed: t.completed, dueDate: t.dueDate })),
-                current_habits: habits.map(h => ({ title: h.title, streak: h.streak, todayDone: h.todayDone })),
-              }, { timeout: 30000 });
+                history: history.length > 0 ? history : [],
+              }, {
+                timeout: 30000,
+                headers: authHeaders,
+              });
               addAiMsg(res.data?.reply || "That's interesting! Tell me more.");
             } catch (error) {
               setApiError({ message: "Connection failed", input: userInput });

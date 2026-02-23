@@ -47,10 +47,8 @@ const mapHabitToDB = (h) => ({
   title: h.title,
   category: h.category || 'Personal',
   streak: h.streak || 0,
-  best_streak: h.bestStreak || 0,
-  consistency: h.consistency || [],
-  today_done: h.todayDone || false,
-  focus_duration: h.focusDuration || 25,
+  longest_streak: h.bestStreak || 0,
+  completed_dates: h.consistency || [],
   workspace_id: h.workspaceId || null,
 });
 
@@ -59,10 +57,10 @@ const mapHabitFromDB = (h) => ({
   title: h.title,
   category: h.category || 'Personal',
   streak: h.streak || 0,
-  bestStreak: h.best_streak || 0,
-  consistency: h.consistency || [],
-  todayDone: h.today_done || false,
-  focusDuration: h.focus_duration || 25,
+  bestStreak: h.longest_streak || 0,
+  consistency: h.completed_dates || [],
+  todayDone: false,  // Recalculated by validateHabitState on mount
+  focusDuration: 25,
   workspaceId: h.workspace_id || null,
 });
 

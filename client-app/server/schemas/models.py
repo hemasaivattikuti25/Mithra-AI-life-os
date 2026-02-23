@@ -18,8 +18,14 @@ class ConfirmResetRequest(BaseModel):
     token: str
     newPassword: str
 
+class ChatMessage(BaseModel):
+    """A single message in the conversation history (Gemini format)."""
+    role: str  # 'user' or 'model'
+    parts: List[str]
+
 class ChatRequest(BaseModel):
     message: str
+    history: List[ChatMessage] = []  # Previous conversation messages
 
 class ScheduleRequest(BaseModel):
     text: str

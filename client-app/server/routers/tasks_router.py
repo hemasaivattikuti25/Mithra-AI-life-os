@@ -6,7 +6,7 @@ import json
 
 from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate
 from core.security import get_current_user
-from core.config import supabase, model, get_embedding
+from core.config import supabase, get_model, get_embedding
 
 router = APIRouter()
 
@@ -14,6 +14,7 @@ router = APIRouter()
 @router.post("/parse-schedule")
 async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(get_current_user)):
     try:
+        model = get_model()
         if not model:
             raise HTTPException(status_code=503, detail="AI Service Unavailable")
 

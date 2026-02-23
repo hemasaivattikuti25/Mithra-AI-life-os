@@ -136,7 +136,7 @@ export default function LandingPage() {
             title: 'Unified Calendar',
             desc: 'Time-block your day. Syncs with Google Calendar. AI parses "Study 3pm for 2 hours" instantly.',
             icon: Calendar,
-            image: '/assets/calender.png',
+            image: '/assets/calendar.png',
             tags: ['Google Sync', 'AI Parsing', 'Time Blocks'],
             gradient: 'bg-gradient-to-br from-green-500/10 via-transparent to-transparent',
         },
@@ -144,7 +144,7 @@ export default function LandingPage() {
             title: 'Habit Tracking',
             desc: 'GitHub-style heatmaps, streaks, and focus timers. Build consistency that lasts a lifetime.',
             icon: Zap,
-            image: '/assets/habbits.png',
+            image: '/assets/habits.png',
             tags: ['Heatmap', 'Streaks', 'Focus Timer'],
             gradient: 'bg-gradient-to-br from-orange-500/10 via-transparent to-transparent',
         },
@@ -153,7 +153,7 @@ export default function LandingPage() {
             desc: 'Not just a chatbot. A companion that remembers your journal, tasks, and moods using RAG memory.',
             icon: Brain,
             colSpan: 'md:col-span-2',
-            image: '/assets/dosth(ai).png',
+            image: '/assets/dost-ai.png',
             tags: ['RAG Memory', 'Context Aware', 'Gemini 1.5', 'Stoic Advice'],
             gradient: 'bg-gradient-to-br from-purple-500/10 via-transparent to-transparent',
         },
@@ -161,7 +161,7 @@ export default function LandingPage() {
             title: 'Mood Journal',
             desc: 'Track your emotional patterns with mood scores, tags, and AI-powered sentiment analysis.',
             icon: BookOpen,
-            image: '/assets/journals.png',
+            image: '/assets/journal.png',
             tags: ['Mood Tracking', 'AI Sentiment'],
             gradient: 'bg-gradient-to-br from-pink-500/10 via-transparent to-transparent',
         },
@@ -169,7 +169,7 @@ export default function LandingPage() {
             title: 'Focus Sessions',
             desc: 'Pomodoro-style deep work timer with analytics. See how productive you actually are.',
             icon: Clock,
-            image: '/assets/focus_timer.png',
+            image: '/assets/focus.png',
             tags: ['Pomodoro', 'Analytics', 'Deep Work'],
             gradient: 'bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent',
         },
@@ -356,7 +356,7 @@ export default function LandingPage() {
                         >
                             <div className="absolute top-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
                             <img
-                                src="/assets/home_1.png"
+                                src="/assets/dashboard.png"
                                 alt="Mithra Dashboard"
                                 className="w-full h-auto opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                             />
@@ -602,7 +602,7 @@ export default function LandingPage() {
                         <a href="#/privacy" className="hover:text-white transition-colors">Privacy</a>
                         <a href="#/terms" className="hover:text-white transition-colors">Terms</a>
                         <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
-                        <a href="mailto:hemasaivattikuti25@gmail.com" className="hover:text-white transition-colors">Contact</a>
+                        <a href="mailto:sivasaiohm2005@gmail.com" className="hover:text-white transition-colors">Contact</a>
                     </div>
                 </div>
             </footer>
