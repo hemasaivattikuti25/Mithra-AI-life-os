@@ -236,6 +236,8 @@ CREATE TRIGGER on_auth_user_created
 
 -- 7. RAG SIMILARITY SEARCH FUNCTION
 -- Used by Dost AI to find relevant journal entries
+DROP FUNCTION IF EXISTS match_journal_entries;
+
 CREATE OR REPLACE FUNCTION match_journal_entries (
   query_embedding vector(768),
   match_threshold float,
