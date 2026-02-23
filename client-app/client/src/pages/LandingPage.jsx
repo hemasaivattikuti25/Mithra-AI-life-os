@@ -181,6 +181,14 @@ export default function LandingPage() {
             tags: ['Invite Links', 'Shared Goals', 'Habit Synergy', 'Social Accountability'],
             gradient: 'bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10',
         },
+        {
+            title: 'Native Mobile Experience',
+            desc: 'Download the compiled Android APK directly from GitHub Releases. Feel the tactile haptic feedback and proactive local notifications.',
+            icon: Target,
+            colSpan: 'md:col-span-3',
+            tags: ['Android APK', 'Haptics', 'Offline Notifications', 'Pull-to-Refresh'],
+            gradient: 'bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-transparent',
+        },
     ];
 
     return (
@@ -314,6 +322,14 @@ export default function LandingPage() {
                                 Start Using Mithra <ArrowRight className="w-4 h-4" />
                             </span>
                         </button>
+                        <a
+                            href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-8 py-4 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all font-medium text-base text-cyan-300 flex items-center gap-2 backdrop-blur-sm shadow-[0_0_20px_rgba(6,182,212,0.1)] hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]"
+                        >
+                            <Target className="w-5 h-5" /> Download Android APK
+                        </a>
                         <a
                             href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os"
                             target="_blank"

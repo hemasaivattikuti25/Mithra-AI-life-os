@@ -1,11 +1,11 @@
 {
-  "name": "Mithra AI",
+  "name": "Mithra Life OS",
   "short_name": "Mithra",
   "description": "Your AI-Powered Life Operating System — Tasks, Habits, Calendar, Journal & AI Assistant",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",
-  "theme_color": "#C2185B",
+  "theme_color": "#22d3ee",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
@@ -22,7 +22,11 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "lifestyle", "utilities"],
+  "categories": [
+    "productivity",
+    "lifestyle",
+    "utilities"
+  ],
   "screenshots": [],
   "prefer_related_applications": false
 }

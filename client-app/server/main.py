@@ -7,8 +7,8 @@ import logging
 from core.config import supabase, model
 from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router
-from routers import billing_router
 from routers import calendar_router
+from services.warmup import start_warmup_worker
 
 # Structured logging
 logging.basicConfig(
@@ -52,7 +52,6 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
-app.include_router(billing_router.router, prefix="/api/billing", tags=["Billing & Plans"])
 app.include_router(calendar_router.router, prefix="/api/calendar", tags=["Google Calendar"])
 
 # --- Health Check ---
@@ -74,4 +73,8 @@ if __name__ == "__main__":
     import uvicorn
     print("\n🚀 Starting Mithra Backend on http://localhost:8000")
     print("📖 API Docs: http://localhost:8000/docs\n")
+    
+    # Start the warmup worker
+    start_warmup_worker()
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)

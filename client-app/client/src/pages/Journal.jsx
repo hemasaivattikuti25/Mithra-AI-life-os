@@ -8,6 +8,7 @@ import {
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
+import EmptyState from '../components/EmptyState';
 
 /* ═══════════════════════════════════════════════════════════════
    MOOD EMOJI MAP
@@ -463,10 +464,14 @@ export default function MithraJournal() {
         </div>
 
         {filteredEntries.length === 0 && !searchQuery && (
-          <div className="text-center py-20">
-            <Feather size={48} style={{ color: 'var(--text-dim)' }} className="mx-auto mb-4 opacity-10" />
-            <p style={{ color: 'var(--text-dim)' }} className="text-sm opacity-20">No entries yet. Start writing.</p>
-          </div>
+          <EmptyState
+            icon={Feather}
+            title="A blank canvas awaits"
+            description="Your thoughts deserve a beautiful home. Capture your first memory today."
+            actionLabel="Write Entry"
+            onAction={() => setEditorOpen(true)}
+            className="!bg-transparent !border-none !shadow-none py-20"
+          />
         )}
       </div>
 

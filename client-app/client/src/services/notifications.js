@@ -1,122 +1,136 @@
-/**
- * Mithra Notification Service
- *
- * Handles:
- * - Service worker registration
- * - Push notification permission requests
- * - Local notification scheduling (task reminders, habit streaks)
- *
- * No external dependencies. Uses the native Notification API + Service Worker.
- */
-
-const SW_PATH = '/sw.js';
-
-let swRegistration = null;
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 /**
- * Register the service worker (call once at app startup)
+ * Mithra Notification & Haptics Engine
+ * 
+ * Handles local notifications that survive app kills on Mobile
+ * and provides tactile feedback for key interactions.
  */
-export async function registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) {
-        console.info('[Notifications] Service workers not supported.');
-        return null;
+
+class NotificationManager {
+    constructor() {
+        this.isNative = Capacitor.isNativePlatform();
     }
 
-    try {
-        swRegistration = await navigator.serviceWorker.register(SW_PATH);
-        console.info('[Notifications] Service worker registered.');
-        return swRegistration;
-    } catch (err) {
-        console.warn('[Notifications] SW registration failed:', err);
-        return null;
+    /**
+     * Request permissions for notifications.
+     * Should be called during onboarding or in settings.
+     */
+    async requestPermissions() {
+        if (this.isNative) {
+            const status = await LocalNotifications.requestPermissions();
+            return status.display === 'granted';
+        }
+
+        if ('Notification' in window) {
+            const status = await Notification.requestPermission();
+            return status === 'granted';
+        }
+        return false;
+    }
+
+    /**
+     * Trigger a physical haptic pulse (Mobile only)
+     */
+    async haptic(style = ImpactStyle.Medium) {
+        if (this.isNative) {
+            try {
+                await Haptics.impact({ style });
+            } catch (e) {
+                console.warn('Haptics not available');
+            }
+        }
+    }
+
+    async hapticLight() { await this.haptic(ImpactStyle.Light); }
+    async hapticMedium() { await this.haptic(ImpactStyle.Medium); }
+    async hapticHeavy() { await this.haptic(ImpactStyle.Heavy); }
+
+    /**
+     * Schedule a persistent task reminder
+     */
+    async scheduleTaskReminder(task, minutesBefore = 15) {
+        if (!task.dueDate) return;
+
+        const dueTime = new Date(task.dueDate).getTime();
+        const notifyAt = new Date(dueTime - minutesBefore * 60 * 1000);
+
+        if (notifyAt < new Date()) {
+            console.info('[Notifications] Reminder time is in the past, skipping.');
+            return;
+        }
+
+        if (this.isNative) {
+            await LocalNotifications.schedule({
+                notifications: [
+                    {
+                        id: task.id ? parseInt(task.id.toString().slice(-6)) : Math.floor(Math.random() * 1000000),
+                        title: '⏰ Task Reminder',
+                        body: `"${task.title}" is due in ${minutesBefore} minutes!`,
+                        schedule: { at: notifyAt },
+                        sound: 'beep.wav',
+                        extra: { url: '/tasks', id: task.id }
+                    }
+                ]
+            });
+        } else {
+            // Web fallback (volatile - only works if tab is open)
+            const delay = notifyAt.getTime() - Date.now();
+            setTimeout(() => {
+                new Notification('⏰ Task Reminder', {
+                    body: `"${task.title}" is due in ${minutesBefore} minutes!`,
+                });
+            }, delay);
+        }
+    }
+
+    /**
+     * Schedule a persistent habit reminder
+     */
+    async scheduleHabitReminder(habit) {
+        if (!habit.scheduleTime || !this.isNative) return;
+
+        // Parse HH:mm
+        const [hour, minute] = habit.scheduleTime.split(':').map(Number);
+
+        await LocalNotifications.schedule({
+            notifications: [
+                {
+                    id: habit.id ? parseInt(habit.id.toString().slice(-6)) : Math.floor(Math.random() * 1000000),
+                    title: '🔥 Habit Time',
+                    body: `It's time for: ${habit.title}. Keep your streak alive!`,
+                    schedule: {
+                        on: { hour, minute },
+                        repeats: true
+                    },
+                    extra: { url: '/habits', id: habit.id }
+                }
+            ]
+        });
+    }
+
+    async cancelAll() {
+        if (this.isNative) {
+            const pending = await LocalNotifications.getPending();
+            if (pending.notifications.length > 0) {
+                await LocalNotifications.cancel(pending);
+            }
+        }
     }
 }
 
-/**
- * Request notification permission
- * Returns: 'granted' | 'denied' | 'default'
- */
-export async function requestPermission() {
-    if (!('Notification' in window)) return 'denied';
-    if (Notification.permission === 'granted') return 'granted';
-    if (Notification.permission === 'denied') return 'denied';
+export const notificationManager = new NotificationManager();
 
-    return await Notification.requestPermission();
-}
-
-/**
- * Show a local push notification (fires immediately)
- */
-export function showNotification(title, options = {}) {
-    if (Notification.permission !== 'granted') return;
-
-    if (swRegistration) {
-        swRegistration.showNotification(title, {
-            icon: '/assets/logo.png',
-            badge: '/assets/logo.png',
-            vibrate: [100, 50, 100],
-            ...options,
-        });
-    } else {
-        // Fallback: use Notification API directly
-        new Notification(title, {
-            icon: '/assets/logo.png',
-            ...options,
+export const registerServiceWorker = () => {
+    if ('serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.error('ServiceWorker registration failed: ', err);
+            });
         });
     }
-}
+};
 
-/**
- * Schedule a task reminder notification
- * @param {Object} task - { title, dueDate }
- * @param {number} minutesBefore - minutes before due to notify (default: 15)
- */
-export function scheduleTaskReminder(task, minutesBefore = 15) {
-    if (!task?.dueDate || Notification.permission !== 'granted') return null;
-
-    const dueTime = new Date(task.dueDate).getTime();
-    const notifyAt = dueTime - minutesBefore * 60 * 1000;
-    const delay = notifyAt - Date.now();
-
-    if (delay <= 0) return null; // Already past
-
-    const timerId = setTimeout(() => {
-        showNotification('⏰ Task Reminder', {
-            body: `"${task.title}" is due in ${minutesBefore} minutes!`,
-            data: { url: '/#/tasks', type: 'task_reminder' },
-            tag: `task-${task.id || task.title}`,
-        });
-    }, delay);
-
-    return timerId;
-}
-
-/**
- * Send a habit streak notification
- * @param {Object} habit - { title, streak }
- */
-export function notifyHabitStreak(habit) {
-    if (Notification.permission !== 'granted') return;
-
-    const milestones = [3, 7, 14, 21, 30, 50, 100, 365];
-    if (!milestones.includes(habit.streak)) return; // Only notify on milestones
-
-    showNotification('🔥 Streak Milestone!', {
-        body: `"${habit.title}" — ${habit.streak} day streak! Keep it up!`,
-        data: { url: '/#/habits', type: 'habit_streak' },
-        tag: `streak-${habit.title}`,
-    });
-}
-
-/**
- * Send a daily summary notification (for the morning briefing)
- */
-export function notifyDailySummary(taskCount, habitCount) {
-    if (Notification.permission !== 'granted') return;
-
-    showNotification('☀️ Good Morning!', {
-        body: `You have ${taskCount} tasks and ${habitCount} habits today. Let's crush it!`,
-        data: { url: '/#/dashboard', type: 'daily_summary' },
-        tag: 'daily-summary',
-    });
-}
+export default notificationManager;

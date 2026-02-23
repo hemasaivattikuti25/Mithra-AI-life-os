@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { format, addDays, subDays, isSameDay, startOfDay, setHours, setMinutes } from 'date-fns';
-import { scheduleNotification, isNative, requestNotificationPermission as nativeRequestPermission } from '../native';
+import { notificationManager } from '../services/notifications';
 import { syncEngine } from '../services/syncEngine';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 import { listGoogleEvents } from '../services/googleCalendar';
@@ -24,6 +24,7 @@ const mapTaskToDB = (t) => ({
   due_date: t.dueDate ? new Date(t.dueDate).toISOString() : null,
   recurrence: t.recurrence || 'none',
   subtasks: t.subtasks || [],
+  workspace_id: t.workspaceId || null,
 });
 
 const mapTaskFromDB = (t) => ({
@@ -38,6 +39,7 @@ const mapTaskFromDB = (t) => ({
   dueDate: t.due_date ? new Date(t.due_date) : null,
   recurrence: t.recurrence || 'none',
   subtasks: t.subtasks || [],
+  workspaceId: t.workspace_id || null,
 });
 
 const mapHabitToDB = (h) => ({
@@ -49,6 +51,7 @@ const mapHabitToDB = (h) => ({
   consistency: h.consistency || [],
   today_done: h.todayDone || false,
   focus_duration: h.focusDuration || 25,
+  workspace_id: h.workspaceId || null,
 });
 
 const mapHabitFromDB = (h) => ({
@@ -60,6 +63,7 @@ const mapHabitFromDB = (h) => ({
   consistency: h.consistency || [],
   todayDone: h.today_done || false,
   focusDuration: h.focus_duration || 25,
+  workspaceId: h.workspace_id || null,
 });
 
 const DataContext = createContext(null);
@@ -497,22 +501,20 @@ export function DataProvider({ children }) {
         if (!session?.user?.id) return;
         const userId = session.user.id;
 
-        // Pull tasks
+        // Pull tasks — We pull all accessible tasks. RLS ensures we only see own + workspace tasks.
         const { data: cloudTasks } = await supabase
           .from('tasks')
-          .select('*')
-          .eq('user_id', userId);
+          .select('*');
 
         if (cloudTasks && cloudTasks.length > 0) {
           const mapped = cloudTasks.map(mapTaskFromDB);
           setTasks(mapped);
         }
 
-        // Pull habits
+        // Pull habits — We pull all accessible habits. RLS ensures we only see own + workspace habits.
         const { data: cloudHabits } = await supabase
           .from('habits')
-          .select('*')
-          .eq('user_id', userId);
+          .select('*');
 
         if (cloudHabits && cloudHabits.length > 0) {
           const mapped = cloudHabits.map(mapHabitFromDB);
@@ -573,127 +575,48 @@ export function DataProvider({ children }) {
   }, []);
 
   const requestNotificationPermission = useCallback(async () => {
-    return nativeRequestPermission();
+    return notificationManager.requestPermissions();
   }, []);
 
-  // Helper: fire an immediate notification via native bridge or web API
+  // Helper: fire an immediate notification or haptic pulse
   const fireNotification = useCallback(async (title, body, tag) => {
-    try {
-      if (isNative) {
-        await scheduleNotification({
-          id: Math.floor(Math.random() * 100000),
-          title,
-          body,
-          at: new Date(),
-        });
-      } else if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body, icon: '/favicon.ico', tag });
-      }
-    } catch (e) { console.warn('Notification error:', e); }
+    notificationManager.pulse(); // Haptic feedback on notification fire
+    // For immediate ones we still use the manager
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/favicon.ico', tag });
+    }
   }, []);
 
-  // Notification check interval — checks every 30s if any task is due within reminder window
-  // Also sends daily habit reminders, streak loss alerts, and overdue task alerts
+  // Sync persistent local notifications with current state
+  // This ensures that even if the app is closed, reminders fire.
   useEffect(() => {
-    if (!notificationSettings.enabled) return;
-    // Request permission on first enable (native or web)
-    nativeRequestPermission();
-    const checkNotifications = async () => {
-      // On web, check permission; on native, permission was already requested
-      if (!isNative && (!('Notification' in window) || Notification.permission !== 'granted')) return;
-      const now = new Date();
+    if (!notificationSettings.enabled) {
+      notificationManager.cancelAll();
+      return;
+    }
 
-      // Task reminder notifications
+    const syncReminders = async () => {
+      await notificationManager.cancelAll();
+
+      // Schedule Task Reminders
       if (notificationSettings.taskReminders) {
-        const reminderMs = (notificationSettings.taskReminderMinutes || notificationSettings.reminderMinutes) * 60 * 1000;
-        tasks.forEach(task => {
-          if (!task.dueDate || task.completed) return;
-          const dueTime = new Date(task.dueDate).getTime();
-          const diff = dueTime - now.getTime();
-          if (diff > 0 && diff <= reminderMs + 30000) {
-            const notifKey = `mithra-notif-${task.id}-${format(new Date(task.dueDate), 'yyyy-MM-dd-HH-mm')}`;
-            if (!sessionStorage.getItem(notifKey)) {
-              const mins = notificationSettings.taskReminderMinutes || notificationSettings.reminderMinutes;
-              const timeLabel = mins < 60 ? `${mins} min` : mins < 1440 ? `${Math.round(mins / 60)} hr` : '1 day';
-              fireNotification('Mithra — Task Reminder', `"${task.title}" is due in ${timeLabel}`, notifKey);
-              sessionStorage.setItem(notifKey, 'true');
-            }
+        tasks.forEach(t => {
+          if (!t.completed && t.dueDate) {
+            notificationManager.scheduleTaskReminder(t, notificationSettings.taskReminderMinutes || 15);
           }
         });
       }
 
-      // Overdue task notifications
-      if (notificationSettings.overdueTaskAlerts) {
-        tasks.forEach(task => {
-          if (!task.dueDate || task.completed) return;
-          const dueTime = new Date(task.dueDate).getTime();
-          const diff = dueTime - now.getTime();
-          if (diff < 0 && diff > -86400000) {
-            const overdueKey = `mithra-overdue-${task.id}-${format(now, 'yyyy-MM-dd')}`;
-            if (!sessionStorage.getItem(overdueKey)) {
-              fireNotification('Mithra — Overdue Task', `"${task.title}" is overdue! Time to get it done.`, overdueKey);
-              sessionStorage.setItem(overdueKey, 'true');
-            }
-          }
-        });
-      }
-
-      // Habit reminders — remind about incomplete habits in the evening (after 6pm)
+      // Schedule Habit Reminders
       if (notificationSettings.habitReminders) {
-        const hour = now.getHours();
-        if (hour >= 18 && hour < 22) {
-          const habitReminderKey = `mithra-habit-reminder-${format(now, 'yyyy-MM-dd')}`;
-          if (!sessionStorage.getItem(habitReminderKey)) {
-            const incompleteHabits = habits.filter(h => !h.todayDone);
-            if (incompleteHabits.length > 0) {
-              fireNotification('Mithra — Habit Reminder', `You have ${incompleteHabits.length} habit${incompleteHabits.length > 1 ? 's' : ''} left today: ${incompleteHabits.map(h => h.title).slice(0, 3).join(', ')}${incompleteHabits.length > 3 ? '...' : ''}`, habitReminderKey);
-              sessionStorage.setItem(habitReminderKey, 'true');
-            }
-          }
-        }
-      }
-
-      // Streak loss alerts — warn if a habit streak might be lost today
-      if (notificationSettings.streakLossAlerts) {
-        const hour = now.getHours();
-        if (hour >= 20 && hour < 23) {
-          const streakKey = `mithra-streak-alert-${format(now, 'yyyy-MM-dd')}`;
-          if (!sessionStorage.getItem(streakKey)) {
-            const atRisk = habits.filter(h => !h.todayDone && h.streak >= 3);
-            if (atRisk.length > 0) {
-              fireNotification('Mithra — Streak at Risk!', `Don't lose your streak! ${atRisk.map(h => `${h.title} (${h.streak} days)`).slice(0, 3).join(', ')}`, streakKey);
-              sessionStorage.setItem(streakKey, 'true');
-            }
-          }
-        }
-      }
-
-      // Calendar event reminders
-      if (notificationSettings.eventReminders) {
-        try {
-          const savedEvents = JSON.parse(localStorage.getItem(getUserScopedKey('calendar-events')) || '[]');
-          const eventReminderMs = (notificationSettings.eventReminderMinutes || 15) * 60 * 1000;
-          savedEvents.forEach(evt => {
-            if (!evt.start) return;
-            const startTime = new Date(evt.start).getTime();
-            const diff = startTime - now.getTime();
-            if (diff > 0 && diff <= eventReminderMs + 30000) {
-              const evtKey = `mithra-evt-notif-${evt.id}-${format(new Date(evt.start), 'yyyy-MM-dd-HH-mm')}`;
-              if (!sessionStorage.getItem(evtKey)) {
-                const mins = notificationSettings.eventReminderMinutes || 15;
-                const timeLabel = mins < 60 ? `${mins} min` : mins < 1440 ? `${Math.round(mins / 60)} hr` : '1 day';
-                fireNotification('Mithra — Event Starting Soon', `"${evt.title}" starts in ${timeLabel}${evt.location ? ` at ${evt.location}` : ''}`, evtKey);
-                sessionStorage.setItem(evtKey, 'true');
-              }
-            }
-          });
-        } catch (e) { console.warn('Event notification error:', e); }
+        habits.forEach(h => {
+          notificationManager.scheduleHabitReminder(h);
+        });
       }
     };
-    const interval = setInterval(checkNotifications, 30000);
-    checkNotifications();
-    return () => clearInterval(interval);
-  }, [notificationSettings, tasks, habits, fireNotification]);
+
+    syncReminders();
+  }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders]);
 
   /* ── Task CRUD (with cloud sync) ── */
   const addTask = useCallback((task) => {

@@ -8,6 +8,8 @@ import {
 import { format, isSameDay, eachDayOfInterval, startOfYear } from 'date-fns';
 import clsx from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
+import { notificationManager } from '../services/notifications';
+import EmptyState from '../components/EmptyState';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
@@ -96,17 +98,12 @@ const Heatmap = ({ habits, accentColor }) => {
   // Empty state — no habits at all
   if (!habits || habits.length === 0) {
     return (
-      <div className="glass-card glass-shine rounded-2xl p-5 lg:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity size={14} className="text-[var(--accent-color)]" />
-          <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-dim)]">Consistency Map</h3>
-        </div>
-        <div className="flex items-center justify-center py-12 rounded-xl">
-          <p className="text-sm text-center text-[var(--text-dim)] opacity-60">
-            Add your first habit to start tracking consistency!
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={Activity}
+        title="No activity recorded"
+        description="Your consistency map will appear once you track your first habit."
+        className="!bg-transparent !border-none !shadow-none py-12"
+      />
     );
   }
 
@@ -724,15 +721,18 @@ export default function HabitFocusHub() {
 
   const handlePlayPause = () => {
     if (!isActive) {
+      notificationManager.hapticMedium();
       setIsActive(true);
       setIsPaused(false);
     } else {
+      notificationManager.hapticLight();
       setIsPaused(!isPaused);
     }
   };
 
   // End = finishes current timer and counts elapsed time as a session
   const endSession = () => {
+    notificationManager.hapticHeavy();
     setIsActive(false);
     setIsPaused(false);
     let elapsed = 0;
@@ -895,7 +895,9 @@ export default function HabitFocusHub() {
               <div className="space-y-2.5">
                 <AnimatePresence mode="popLayout">
                   {sortedHabits.map((habit, i) => (
-                    <HabitCard key={habit.id} habit={habit} index={i} onToggle={toggleHabit} onDelete={deleteHabit}
+                    <HabitCard key={habit.id} habit={habit} index={i}
+                      onToggle={(id) => { notificationManager.hapticLight(); toggleHabit(id); }}
+                      onDelete={deleteHabit}
                       onEdit={(h) => { setEditingHabit(h); setShowModal(true); }} />
                   ))}
                 </AnimatePresence>

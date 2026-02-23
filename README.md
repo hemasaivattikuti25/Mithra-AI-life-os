@@ -1,209 +1,129 @@
 <div align="center">
 
-<img src="./docs/assets/logo.png" width="80" height="80" />
+<img src="./docs/assets/logo.png" width="100" height="100" />
 
 # Mithra Life OS
+**The Precision-Engineered Personal Operating System**
 
-**The AI-Powered Personal Operating System**
+A full-stack, AI-integrated workspace for high achievers — synchronizing your Tasks, Habits, Calendar, and Journals with a long-term memory companion.
 
-Tasks · Habits · Calendar · Journal · Focus · Dost AI · Blend
+---
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mithra-life-os.vercel.app)
+[![Android APK](https://img.shields.io/badge/Download_APK-v3.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases)
 [![Stars](https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fab005)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers)
 [![License](https://img.shields.io/github/license/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=228be6)](LICENSE)
-[![Issues](https://img.shields.io/github/issues/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=fa5252)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/issues)
 
 </div>
 
 ---
 
-> **Most productivity apps make you manage the app.** Mithra manages your life.
+## 💎 The Vision
+**Mithra Life OS** is not another productivity app. It's a foundational layer for your life. Most apps force you to adapt to their workflow; Mithra adapts to yours by unifying your digital memory into a single, beautiful, and intelligent interface.
 
-Mithra is a **full-stack, AI-powered Life Operating System** that unifies tasks, habits, calendar, journal, focus timer, and a real-memory AI companion into one beautiful, offline-first workspace. Built solo, from scratch, with clean architecture.
-
-<div align="center">
-<img src="./docs/assets/dashboard.png" width="90%" />
-</div>
-
----
-
-## ✨ Features
-
-### Core Modules
-
-| Module | Highlights |
-|:---|:---|
-| 🤖 **Dost AI** | Stoic AI companion powered by **Gemini 1.5 + RAG vector memory** from your journal. Remembers everything. |
-| ✅ **Smart Tasks** | Subtasks, priorities, recurring schedules, Kanban views, CSV/Excel import |
-| 🔥 **Habit Tracking** | GitHub-style 365-day heatmap, streak milestones, category grouping |
-| 📅 **Calendar** | Google Calendar sync, day/week/month views, AI natural language parsing |
-| 📓 **Mood Journal** | Mood scores, tags, AI sentiment analysis, weekly trend charts |
-| ⏱️ **Focus Timer** | Pomodoro timer + stopwatch, session history, deep work analytics |
-| 👫 **Mithra Blend** | Shared workspaces — invite friends, track goals together, social accountability |
-| 🌐 **Offline-First** | Custom sync engine — works without internet, syncs on reconnect |
-
-### Production-Grade Architecture
-
-| Feature | Details |
-|:---|:---|
-| 🛡️ **Error Boundary** | Global crash handler with graceful fallback UI |
-| 💀 **Loading Skeletons** | Page-specific shimmer placeholders (Dashboard, Tasks, Habits, Journal) |
-| 🎯 **Onboarding Tour** | 5-step guided tooltip walkthrough for first-time users |
-| 📊 **Analytics Ready** | PostHog-compatible event tracking (zero-dependency stub) |
-| ⚡ **Rate Limiting** | Backend middleware: 20/min AI, 10/min auth, 60/min default |
-| 📈 **Usage Tracking** | Per-user AI call counts + token tracking (paywall-ready) |
-| 🔒 **Row Level Security** | All Supabase tables locked down with RLS policies |
+### 🌟 Why Mithra?
+- **Unified Identity**: Stop context-switching between 7 different apps.
+- **Deep Memory**: Dost AI remembers your journals and moods to provide personalized context.
+- **Seamless Synergy**: Use "Mithra Blend" to collaborate on goals with partners and friends.
+- **Privacy First**: Fully hardened Row Level Security (RLS) and custom data encryption.
 
 ---
 
-## 📸 Screenshots
+## 🛠️ The Architecture
 
-<div align="center">
-
-| Dashboard | Tasks | Habits |
-|:---:|:---:|:---:|
-| <img src="./docs/assets/dashboard.png" width="280" /> | <img src="./docs/assets/tasks.png" width="280" /> | <img src="./docs/assets/habits.png" width="280" /> |
-
-| Dost AI | Calendar | Journal |
-|:---:|:---:|:---:|
-| <img src="./docs/assets/dost-ai.png" width="280" /> | <img src="./docs/assets/calendar.png" width="280" /> | <img src="./docs/assets/journal.png" width="280" /> |
-
-| Focus Timer | Settings & Themes | Analytics |
-|:---:|:---:|:---:|
-| <img src="./docs/assets/focus.png" width="280" /> | <img src="./docs/assets/themes.png" width="280" /> | <img src="./docs/assets/analytics.png" width="280" /> |
-
-</div>
+| Layer | Technology | Secret Sauce |
+| :--- | :--- | :--- |
+| **Frontend** | React 18 + Vite | Vanilla CSS, Framer Motion, Luxe Physics |
+| **Backend** | FastAPI (Python) | Clean Architecture, Structured Logging, Rate Limiting |
+| **Database** | Supabase (Postgres) | pgvector, Custom RLS Guards, Real-time Synergy |
+| **AI Engine** | Gemini 1.5 Flash | RAG (Vector Search) + Long-term context memory |
+| **Mobile** | Capacitor | Native bridge for Android/iOS builds |
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Core Systems
 
-```
-Frontend     React 18 · Vite · Vanilla CSS · Framer Motion · Capacitor
-Backend      FastAPI · Python · bcrypt · JWT Auth · Rate Limiter
-Database     Supabase (PostgreSQL + pgvector) · Row Level Security
-AI           Gemini 1.5 Flash · RAG (vector embeddings + semantic search)
-Deploy       Vercel (frontend) · Railway/Render (backend)
-```
+### 🤖 Dost AI — Your Stoic Companion
+Powered by **Gemini 1.5 + RAG**, Dost doesn't just chat. It retrieves context from your journals and tasks to offer guidance that matters. It understands your emotional trajectory over time.
+
+### ✅ Smart Tasks & Lists
+High-performance task management with subtasks, recurring schedules, and priority logic. Supports Kanban and standard list views for maximum flexibility.
+
+### 🔥 Habits & Heatmaps
+Visualize your growth with GitHub-style 365-day heatmaps. Track streaks, reach milestones, and categorize habits into life dimensions.
+
+### 👫 Mithra Blend
+Productivity is better together. Create shared workspaces, invite friends via secure links, and track streaks as a team. Accountability built-in.
+
+### 📅 Unified Calendar
+Full Google Calendar synchronization. AI natural language parsing allows you to "Schedule meeting tomorrow at 3pm for 1 hour" instantly.
+
+### 🌍 Native Mobile Dominance
+Mithra is optimized for mobile. Download the compiled Android APK directly from GitHub Releases. Experience tactile haptic feedback, offline persistent notifications, and native-grade Pull-to-Refresh gestures.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start (Developer Setup)
 
-### Prerequisites
+### 1. Zero-Config Database
+Run [Supabase_Production_Final.sql](file:///client-app/Supabase_Production_Final.sql) in your Supabase SQL Editor. It sets up all tables, RLS policies, and RAG functions in one go.
 
-- **Node.js** v18+
-- **Python** 3.10+
-- [Supabase](https://supabase.com) account (free tier works)
-- [Gemini API key](https://ai.google.dev) (free)
-
-### 1. Clone & Setup
-
-```bash
-git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
-cd Mithra-AI-life-os
-```
-
-### 2. Frontend
-
-```bash
-cd client-app/client
-npm install
-cp .env.example .env.local   # Add your Supabase URL + anon key
-npm run dev                    # → http://localhost:5173
-```
-
-### 3. Backend (for AI features)
-
+### 2. Backend Setup
 ```bash
 cd client-app/server
 pip install -r requirements.txt
-cp .env.example .env           # Add GEMINI_API_KEY, SUPABASE_URL, JWT_SECRET
-uvicorn main:app --reload      # → http://localhost:8000
+cp .env.example .env # Add GEMINI_API_KEY & SUPABASE_URL
+uvicorn main:app --reload
 ```
 
-### 4. Database
-
-Run `client-app/Supabase_Master.sql` in your **Supabase SQL Editor** — it creates all tables, RLS policies, and helper functions in one idempotent script.
-
----
-
-## 📁 Project Structure
-
-```
-Mithra-AI-life-os/
-├── client-app/
-│   ├── client/                   # React frontend
-│   │   ├── src/
-│   │   │   ├── components/       # ErrorBoundary, Layout, Skeletons, Tour
-│   │   │   ├── context/          # Auth + Data contexts
-│   │   │   ├── pages/            # Dashboard, Tasks, Habits, Calendar, etc.
-│   │   │   ├── services/         # Supabase, workspace, analytics
-│   │   │   └── native/           # Capacitor bridge
-│   │   └── public/               # Assets, OG image, manifest
-│   ├── server/                   # FastAPI backend
-│   │   ├── core/                 # Config, rate limiter
-│   │   ├── routers/              # Auth, chat, tasks endpoints
-│   │   ├── schemas/              # Pydantic models
-│   │   └── services/             # Business logic
-│   └── Supabase_Master.sql       # Complete DB schema (single file)
-├── docs/assets/                  # Screenshots & branding
-└── README.md
+### 3. Frontend Setup
+```bash
+cd client-app/client
+npm install
+npm run dev
 ```
 
----
-
-## 🔒 Security
-
-- Passwords hashed with **bcrypt** (passlib)
-- Stateless **JWT authentication** (30-day tokens)
-- **Row Level Security** on every Supabase table
-- **Rate limiting** on AI and auth endpoints
-- **CORS** locked to production domains
-- No secrets in source code
+### 4. Build Android APK
+You can generate your own Android APK via Capacitor automatically:
+```bash
+cd client-app/client
+npm run build:apk
+```
+This drops a ready-to-use APK in a `releases/` directory at the project root.
 
 ---
 
-## 🌐 Live Demo
-
-> 👉 **[https://mithra-life-os.vercel.app](https://mithra-life-os.vercel.app)**
->
-> Sign up with email or Google OAuth. Free forever.
-
----
-
-## 📱 Android App
-
-[![Download APK](https://img.shields.io/badge/Download_APK-v1.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/releases/latest)
-
----
-
-## 👤 About the Creator
+## 📸 Premium Interface
 
 <div align="center">
 
-<img src="./docs/assets/hemasai.jpeg" width="120" height="120" style="border-radius: 50%;" />
+| **Dashboard** | **Tasks** | **Habits** |
+|:---:|:---:|:---:|
+| <img src="./docs/assets/dashboard.png" width="280"/> | <img src="./docs/assets/tasks.png" width="280"/> | <img src="./docs/assets/habits.png" width="280"/> |
 
-### Hemasai Vattikuti
-
-**Engineering Student · Full Stack Developer · AI Researcher**
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemsaivattikuti)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
-[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:hemasaivattikuti25@gmail.com)
+| **Dost AI** | **Calendar** | **Journal** |
+|:---:|:---:|:---:|
+| <img src="./docs/assets/habbits.png" width="280"/> | <img src="./docs/assets/calendar.png" width="280"/> | <img src="./docs/assets/journal.png" width="280"/> |
 
 </div>
 
 ---
 
-## ⭐ Support
+## 👤 The Builder
 
-If Mithra helped you, give it a star!
+<div align="center">
 
-[![Star](https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=social)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os)
+**Hemasai Vattikuti**
+*Full Stack Developer | AI Researcher | Engineering Student*
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemsaivattikuti)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:hemasaivattikuti25@gmail.com)
+
+</div>
 
 ---
 
 <div align="center">
-  Built with ❤️ by <b>Hemasai Vattikuti</b> &nbsp;·&nbsp; MIT License
+Built with passion for high performance. MIT License. © 2026.
 </div>

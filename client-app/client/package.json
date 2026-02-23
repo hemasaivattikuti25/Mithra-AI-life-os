@@ -15,7 +15,8 @@
     "android:live": "npx cap run android --livereload --external",
     "android:release": "bash build-release.sh",
     "android:bundle": "vite build && npx cap sync android && cd android && ./gradlew bundleRelease",
-    "android:apk": "vite build && npx cap sync android && cd android && ./gradlew assembleRelease"
+    "android:apk": "vite build && npx cap sync android && cd android && ./gradlew assembleRelease",
+    "build:apk": "bash build-github-apk.sh"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",

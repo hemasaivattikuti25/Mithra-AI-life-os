@@ -1,43 +1,56 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Inbox } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
+import clsx from 'clsx';
 
-/**
- * Reusable empty state component for lists.
- * Usage: <EmptyState icon={ListTodo} title="No tasks yet" action={{ label: 'Add Task', onClick: fn }} />
- */
-export default function EmptyState({
-  icon: Icon = Inbox,
-  title = 'Nothing here yet',
-  description = '',
-  action = null,  // { label: string, onClick: fn }
-}) {
+const EmptyState = ({
+  icon: Icon = Sparkles,
+  title = "Start your journey",
+  description = "There is nothing here yet. Take the first step towards a more organized life.",
+  actionLabel,
+  onAction,
+  className = ""
+}) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col items-center justify-center py-16 px-6 text-center"
-    >
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-        style={{ background: 'rgba(var(--color-visor, 194 24 91), 0.06)', border: '1px solid rgba(var(--color-visor, 194 24 91), 0.1)' }}
-      >
-        <Icon size={28} className="text-accent-visor opacity-50" />
-      </div>
-      <h3 className="text-[var(--text-primary)] text-base font-semibold mb-1 opacity-70">{title}</h3>
-      {description && (
-        <p className="text-[var(--text-dim)] text-sm max-w-xs leading-relaxed opacity-40">{description}</p>
+      className={clsx(
+        "flex flex-col items-center justify-center py-12 px-6 text-center rounded-3xl",
+        "glass-card glass-shine",
+        className
       )}
-      {action && (
-        <button
-          onClick={action.onClick}
-          className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-          style={{ background: 'var(--accent-color)', color: 'white' }}
+    >
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--accent-glow)] mb-6">
+        <Icon className="w-8 h-8 text-[var(--accent-color)]" />
+      </div>
+
+      <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 tracking-tight">
+        {title}
+      </h3>
+
+      <p className="text-[var(--text-dim)] text-sm max-w-sm mb-8 leading-relaxed opacity-60">
+        {description}
+      </p>
+
+      {actionLabel && (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onAction}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: 'var(--accent-color)',
+            color: 'var(--selection-text)',
+            boxShadow: '0 8px 24px var(--accent-glow)'
+          }}
         >
-          {action.label}
-        </button>
+          {actionLabel}
+          <ArrowRight size={16} />
+        </motion.button>
       )}
     </motion.div>
   );
-}
+};
+
+export default EmptyState;

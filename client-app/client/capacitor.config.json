@@ -1,10 +1,12 @@
 {
-  "appId": "com.hemasai.mithra",
-  "appName": "Mithra",
+  "appId": "com.mithra.lifeos",
+  "appName": "Mithra Life OS",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
-    "allowNavigation": ["*"]
+    "allowNavigation": [
+      "*"
+    ]
   },
   "plugins": {
     "SplashScreen": {

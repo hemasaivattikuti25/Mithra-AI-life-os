@@ -10,8 +10,11 @@ import { format, isToday, isTomorrow, isPast, startOfDay, addDays, subDays } fro
 import clsx from 'clsx';
 import { useData } from '../context/DataContext';
 import { useToast } from '../components/Toast';
+import { notificationManager } from '../services/notifications';
+import PullToRefresh from '../components/PullToRefresh';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ClockPicker from '../components/ClockPicker';
+import EmptyState from '../components/EmptyState';
 
 /* ═══════════════════════════════════════════════════════════════
    PRIORITY CONFIG
@@ -618,24 +621,28 @@ export default function MithraTasks() {
   const sortedCompleted = sortTasks(completedTasks);
 
   const handleToggle = useCallback((id) => {
+    notificationManager.hapticLight();
     toggleTask(id);
     if (selectedTask?.id === id) {
       setSelectedTask(prev => prev ? { ...prev, completed: !prev.completed } : null);
     }
   }, [toggleTask, selectedTask]);
 
-  const handleAdd = (taskData) => {
-    addTask(taskData);
-  };
-
-  const handleUpdate = useCallback((updated) => {
-    updateTask(updated);
-    setSelectedTask(updated);
-  }, [updateTask]);
+  const handleAdd = useCallback((task) => {
+    notificationManager.hapticMedium();
+    addTask(task);
+    addToast({ title: 'Task scheduled', description: `"${task.title}" added to ${taskLists.find(l => l.id === task.listId)?.name || 'list'}.`, variant: 'success' });
+  }, [addTask, taskLists, addToast]);
 
   const handleDelete = useCallback((id) => {
+    notificationManager.hapticHeavy();
     setDeleteConfirm(id);
   }, []);
+
+  const handleRefresh = async () => {
+    console.log('[Mithra] Tasks refresh');
+    return new Promise(resolve => setTimeout(resolve, 1000));
+  };
 
   const confirmDelete = useCallback(() => {
     if (deleteConfirm) {
@@ -670,332 +677,339 @@ export default function MithraTasks() {
   }, [tasks]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy"
-    >
-      {/* ── MAIN TASK LIST ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header with filter chips */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
-            <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[var(--text-primary)] flex-shrink-0">Tasks</h2>
-            {/* Filter chips */}
-            <div className="flex gap-1.5 ml-2 sm:ml-4">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy"
+      >
+        {/* ── MAIN TASK LIST ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header with filter chips */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
+              <h2 className="text-lg sm:text-xl font-medium tracking-tight text-[var(--text-primary)] flex-shrink-0">Tasks</h2>
+              {/* Filter chips */}
+              <div className="flex gap-1.5 ml-2 sm:ml-4">
+                <button
+                  onClick={() => { setActiveFilter('all'); setSelectedTask(null); }}
+                  className={clsx(
+                    'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
+                    activeFilter === 'all'
+                      ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)] text-[var(--accent-color)]'
+                      : 'border-[var(--glass-border)] text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)]'
+                  )}
+                >
+                  All
+                </button>
+                {taskLists.map(list => {
+                  const count = tasks.filter(t => t.listId === list.id && !t.completed).length;
+                  return (
+                    <button
+                      key={list.id}
+                      onClick={() => { setActiveFilter(list.id); setSelectedTask(null); }}
+                      className={clsx(
+                        'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 whitespace-nowrap',
+                        activeFilter === list.id
+                          ? 'bg-[var(--glass-bg-hover)] text-[var(--text-primary)] font-semibold'
+                          : 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-60 hover:opacity-100'
+                      )}
+                      style={activeFilter === list.id ? { borderColor: `color-mix(in srgb, ${list.color}, transparent 50%)` } : {}}
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: list.color }} />
+                      {list.name}
+                      {count > 0 && <span className="text-[10px] opacity-60">{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => { setActiveFilter('all'); setSelectedTask(null); }}
+                onClick={() => setShowAnalytics(p => !p)}
                 className={clsx(
-                  'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap',
-                  activeFilter === 'all'
-                    ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)] text-[var(--accent-color)]'
-                    : 'border-[var(--glass-border)] text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)]'
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] border transition-all uppercase tracking-wider font-medium',
+                  showAnalytics
+                    ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)]'
+                    : 'border-[var(--accent-color)]/15 bg-[var(--accent-glow)] hover:bg-[var(--accent-glow)] hover:border-[var(--accent-color)]/25'
                 )}
               >
-                All
+                <BarChart3 size={13} />
+                Analytics
               </button>
-              {taskLists.map(list => {
-                const count = tasks.filter(t => t.listId === list.id && !t.completed).length;
-                return (
-                  <button
-                    key={list.id}
-                    onClick={() => { setActiveFilter(list.id); setSelectedTask(null); }}
-                    className={clsx(
-                      'px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 whitespace-nowrap',
-                      activeFilter === list.id
-                        ? 'bg-[var(--glass-bg-hover)] text-[var(--text-primary)] font-semibold'
-                        : 'border-[var(--glass-border)] text-[var(--text-dim)] opacity-60 hover:opacity-100'
-                    )}
-                    style={activeFilter === list.id ? { borderColor: `color-mix(in srgb, ${list.color}, transparent 50%)` } : {}}
-                  >
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: list.color }} />
-                    {list.name}
-                    {count > 0 && <span className="text-[10px] opacity-60">{count}</span>}
-                  </button>
-                );
-              })}
+              <button
+                onClick={() => setSortBy(s => s === 'date' ? 'priority' : s === 'priority' ? 'name' : 'date')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-[var(--text-dim)] opacity-40 hover:opacity-100 hover:bg-[var(--glass-bg-hover)] border border-[var(--glass-border)] transition-colors uppercase tracking-wider font-medium"
+              >
+                <SortAsc size={13} />
+                {sortBy}
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAnalytics(p => !p)}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] border transition-all uppercase tracking-wider font-medium',
-                showAnalytics
-                  ? 'border-[var(--accent-color)]/30 bg-[var(--accent-glow)]'
-                  : 'border-[var(--accent-color)]/15 bg-[var(--accent-glow)] hover:bg-[var(--accent-glow)] hover:border-[var(--accent-color)]/25'
-              )}
-            >
-              <BarChart3 size={13} />
-              Analytics
-            </button>
-            <button
-              onClick={() => setSortBy(s => s === 'date' ? 'priority' : s === 'priority' ? 'name' : 'date')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-[var(--text-dim)] opacity-40 hover:opacity-100 hover:bg-[var(--glass-bg-hover)] border border-[var(--glass-border)] transition-colors uppercase tracking-wider font-medium"
-            >
-              <SortAsc size={13} />
-              {sortBy}
+
+          {/* Add Task Button — opens rich modal */}
+          <div className="px-5 py-3 flex-shrink-0 flex items-center gap-3">
+            <button onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-glow)] border border-[var(--accent-color)]/25 text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/40 transition-all">
+              <Plus size={16} /> New Task
             </button>
           </div>
-        </div>
 
-        {/* Add Task Button — opens rich modal */}
-        <div className="px-5 py-3 flex-shrink-0 flex items-center gap-3">
-          <button onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-glow)] border border-[var(--accent-color)]/25 text-[var(--accent-color)] text-sm font-medium hover:bg-[var(--accent-color)]/10 hover:border-[var(--accent-color)]/40 transition-all">
-            <Plus size={16} /> New Task
-          </button>
-        </div>
-
-        {/* ── ANALYTICS PANEL ── */}
-        <AnimatePresence>
-          {showAnalytics && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden"
-            >
-              <div className="p-5 space-y-4">
-                {/* Completion Rate + Quick Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl p-3 border border-[var(--glass-border)] cursor-default" style={{ background: 'var(--glass-bg)' }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <TrendingUp size={12} className="text-accent-visor" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Completion</span>
-                    </div>
-                    <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.completionRate}%</span>
-                    <span className="text-[10px] ml-1.5" style={{ color: 'var(--text-dim)' }}>{analytics.completedCount}/{analytics.totalTasks}</span>
-                  </div>
-                  <div onClick={() => setAnalyticsFilter(f => f === 'overdue' ? null : 'overdue')}
-                    className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'overdue' ? 'ring-1 ring-red-400/50' : '')}
-                    style={{ background: analytics.overdue > 0 ? 'rgba(239,68,68,0.06)' : 'var(--glass-bg)', borderColor: analyticsFilter === 'overdue' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Clock size={12} className={analytics.overdue > 0 ? 'text-red-400' : 'text-accent-visor'} />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Overdue</span>
-                    </div>
-                    <span className={clsx('text-xl font-bold', analytics.overdue > 0 ? 'text-red-400' : '')} style={analytics.overdue === 0 ? { color: 'var(--text-primary)' } : {}}>{analytics.overdue}</span>
-                  </div>
-                  <div onClick={() => setAnalyticsFilter(f => f === 'high' ? null : 'high')}
-                    className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'high' ? 'ring-1 ring-red-400/50' : '')}
-                    style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'high' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Flag size={12} className="text-red-400" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>High</span>
-                    </div>
-                    <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.highP}</span>
-                  </div>
-                  <div onClick={() => setAnalyticsFilter(f => f === 'pending' ? null : 'pending')}
-                    className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'pending' ? 'ring-1 ring-accent-visor/50' : '')}
-                    style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'pending' ? 'var(--accent-color)' : 'var(--glass-border)' }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Zap size={12} className="text-accent-visor" />
-                      <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Pending</span>
-                    </div>
-                    <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.totalTasks - analytics.completedCount}</span>
-                  </div>
-                </div>
-
-                {/* Weekly Bar Chart + Priority Breakdown side-by-side */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Weekly Trend */}
-                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <BarChart3 size={12} className="text-accent-visor" />
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>This Week</span>
-                    </div>
-                    <div className="flex items-end gap-1 justify-between h-14">
-                      {analytics.weeklyTrend.map((d, i) => {
-                        const maxVal = Math.max(...analytics.weeklyTrend.map(x => x.value), 1);
-                        return (
-                          <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${Math.max((d.value / maxVal) * 100, 6)}%` }}
-                              transition={{ delay: 0.1 + i * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                              className="w-full max-w-[10px] rounded-t-sm"
-                              style={{ background: 'var(--accent-color)', opacity: d.value > 0 ? 1 : 0.15, minHeight: 2 }}
-                            />
-                            <span className="text-[8px]" style={{ color: isLight ? 'rgba(26,26,26,0.3)' : 'rgba(242,235,227,0.3)' }}>{d.label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="text-[10px] text-right mt-2" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>
-                      {analytics.weeklyTrend.reduce((s, d) => s + d.value, 0)} completed
-                    </div>
-                  </div>
-
-                  {/* Priority Breakdown */}
-                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <Target size={12} className="text-accent-visor" />
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Priority Breakdown</span>
-                    </div>
-                    <div className="space-y-2">
-                      {[
-                        { label: 'High', count: analytics.highP, color: '#ef4444', total: analytics.totalTasks },
-                        { label: 'Medium', count: analytics.medP, color: '#f59e0b', total: analytics.totalTasks },
-                        { label: 'Low', count: analytics.lowP, color: '#22c55e', total: analytics.totalTasks },
-                      ].map(item => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                          <span className="text-[11px] flex-1" style={{ color: isLight ? 'rgba(26,26,26,0.5)' : 'rgba(242,235,227,0.5)' }}>{item.label}</span>
-                          <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{item.count}</span>
-                          <div className="w-16 h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
-                              transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                              className="h-full rounded-full"
-                              style={{ background: item.color, minWidth: item.count > 0 ? 3 : 0 }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {analytics.overdue > 0 && (
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
-                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" />
-                        <span className="text-[11px] flex-1 text-red-400">Overdue</span>
-                        <span className="text-xs font-bold text-red-400">{analytics.overdue}</span>
+          {/* ── ANALYTICS PANEL ── */}
+          <AnimatePresence>
+            {showAnalytics && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="p-5 space-y-4">
+                  {/* Completion Rate + Quick Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-xl p-3 border border-[var(--glass-border)] cursor-default" style={{ background: 'var(--glass-bg)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <TrendingUp size={12} className="text-accent-visor" />
+                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Completion</span>
                       </div>
-                    )}
+                      <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.completionRate}%</span>
+                      <span className="text-[10px] ml-1.5" style={{ color: 'var(--text-dim)' }}>{analytics.completedCount}/{analytics.totalTasks}</span>
+                    </div>
+                    <div onClick={() => setAnalyticsFilter(f => f === 'overdue' ? null : 'overdue')}
+                      className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'overdue' ? 'ring-1 ring-red-400/50' : '')}
+                      style={{ background: analytics.overdue > 0 ? 'rgba(239,68,68,0.06)' : 'var(--glass-bg)', borderColor: analyticsFilter === 'overdue' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Clock size={12} className={analytics.overdue > 0 ? 'text-red-400' : 'text-accent-visor'} />
+                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Overdue</span>
+                      </div>
+                      <span className={clsx('text-xl font-bold', analytics.overdue > 0 ? 'text-red-400' : '')} style={analytics.overdue === 0 ? { color: 'var(--text-primary)' } : {}}>{analytics.overdue}</span>
+                    </div>
+                    <div onClick={() => setAnalyticsFilter(f => f === 'high' ? null : 'high')}
+                      className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'high' ? 'ring-1 ring-red-400/50' : '')}
+                      style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'high' ? 'rgba(239,68,68,0.3)' : 'var(--glass-border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Flag size={12} className="text-red-400" />
+                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>High</span>
+                      </div>
+                      <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.highP}</span>
+                    </div>
+                    <div onClick={() => setAnalyticsFilter(f => f === 'pending' ? null : 'pending')}
+                      className={clsx('rounded-xl p-3 border cursor-pointer transition-all hover:scale-[1.02]', analyticsFilter === 'pending' ? 'ring-1 ring-accent-visor/50' : '')}
+                      style={{ background: 'var(--glass-bg)', borderColor: analyticsFilter === 'pending' ? 'var(--accent-color)' : 'var(--glass-border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Zap size={12} className="text-accent-visor" />
+                        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--text-dim)' }}>Pending</span>
+                      </div>
+                      <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{analytics.totalTasks - analytics.completedCount}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Category completion bars */}
-                {Object.keys(analytics.categories).length > 0 && (
-                  <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
-                    <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>By Category</span>
-                    <div className="space-y-2 mt-3">
-                      {Object.entries(analytics.categories).map(([cat, data]) => {
-                        const pct = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
-                        const catObj = TASK_CATEGORIES.find(c => c.id === cat);
-                        const catName = catObj?.name || cat;
-                        const catColor = catObj?.color || '#C2185B';
-                        return (
-                          <div key={cat}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px]" style={{ color: catColor }}>{catName}</span>
-                              <span className="text-[10px]" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>{data.done}/{data.total} ({pct}%)</span>
+                  {/* Weekly Bar Chart + Priority Breakdown side-by-side */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Weekly Trend */}
+                    <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <BarChart3 size={12} className="text-accent-visor" />
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>This Week</span>
+                      </div>
+                      <div className="flex items-end gap-1 justify-between h-14">
+                        {analytics.weeklyTrend.map((d, i) => {
+                          const maxVal = Math.max(...analytics.weeklyTrend.map(x => x.value), 1);
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                              <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${Math.max((d.value / maxVal) * 100, 6)}%` }}
+                                transition={{ delay: 0.1 + i * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                className="w-full max-w-[10px] rounded-t-sm"
+                                style={{ background: 'var(--accent-color)', opacity: d.value > 0 ? 1 : 0.15, minHeight: 2 }}
+                              />
+                              <span className="text-[8px]" style={{ color: isLight ? 'rgba(26,26,26,0.3)' : 'rgba(242,235,227,0.3)' }}>{d.label}</span>
                             </div>
-                            <div className="w-full h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
+                          );
+                        })}
+                      </div>
+                      <div className="text-[10px] text-right mt-2" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>
+                        {analytics.weeklyTrend.reduce((s, d) => s + d.value, 0)} completed
+                      </div>
+                    </div>
+
+                    {/* Priority Breakdown */}
+                    <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Target size={12} className="text-accent-visor" />
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Priority Breakdown</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: 'High', count: analytics.highP, color: '#ef4444', total: analytics.totalTasks },
+                          { label: 'Medium', count: analytics.medP, color: '#f59e0b', total: analytics.totalTasks },
+                          { label: 'Low', count: analytics.lowP, color: '#22c55e', total: analytics.totalTasks },
+                        ].map(item => (
+                          <div key={item.label} className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                            <span className="text-[11px] flex-1" style={{ color: isLight ? 'rgba(26,26,26,0.5)' : 'rgba(242,235,227,0.5)' }}>{item.label}</span>
+                            <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{item.count}</span>
+                            <div className="w-16 h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
                               <motion.div
                                 initial={{ width: 0 }}
-                                animate={{ width: `${pct}%` }}
-                                transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                animate={{ width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
+                                transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                                 className="h-full rounded-full"
-                                style={{ background: catColor, minWidth: data.done > 0 ? 3 : 0 }}
+                                style={{ background: item.color, minWidth: item.count > 0 ? 3 : 0 }}
                               />
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                      {analytics.overdue > 0 && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" />
+                          <span className="text-[11px] flex-1 text-red-400">Overdue</span>
+                          <span className="text-xs font-bold text-red-400">{analytics.overdue}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Category completion bars */}
+                  {Object.keys(analytics.categories).length > 0 && (
+                    <div className="rounded-xl p-4 border border-white/[0.06]" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>By Category</span>
+                      <div className="space-y-2 mt-3">
+                        {Object.entries(analytics.categories).map(([cat, data]) => {
+                          const pct = data.total > 0 ? Math.round((data.done / data.total) * 100) : 0;
+                          const catObj = TASK_CATEGORIES.find(c => c.id === cat);
+                          const catName = catObj?.name || cat;
+                          const catColor = catObj?.color || '#C2185B';
+                          return (
+                            <div key={cat}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[11px]" style={{ color: catColor }}>{catName}</span>
+                                <span className="text-[10px]" style={{ color: isLight ? 'rgba(26,26,26,0.35)' : 'rgba(242,235,227,0.35)' }}>{data.done}/{data.total} ({pct}%)</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)' }}>
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                  className="h-full rounded-full"
+                                  style={{ background: catColor, minWidth: data.done > 0 ? 3 : 0 }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Active Filter Banner */}
+          {analyticsFilter && (
+            <div className="flex items-center justify-between px-5 py-2 border-b" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)', background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                Showing: <span className="text-accent-visor capitalize">{analyticsFilter}</span> ({filteredTasks.length} tasks)
+              </span>
+              <button onClick={() => setAnalyticsFilter(null)} className="text-xs text-accent-visor hover:underline">Clear filter</button>
+            </div>
+          )}
+
+          {/* Task List */}
+          <div className="flex-1 overflow-y-auto">
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-1">
+                {sortedActive.length > 0 ? (
+                  sortedActive.map(task => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggle}
+                      onStar={starTask}
+                      onSelect={setSelectedTask}
+                      onDelete={handleDelete}
+                      isSelected={selectedTask?.id === task.id}
+                    />
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={ListTodo}
+                    title="Your list is clear"
+                    description="You've conquered everything for today. Ready to take on something new?"
+                    actionLabel="Add a Task"
+                    onAction={() => setShowAddModal(true)}
+                    className="!bg-transparent !border-none !shadow-none py-20"
+                  />
                 )}
               </div>
-            </motion.div>
+            </AnimatePresence>
+
+            {/* Completed Section */}
+            {sortedCompleted.length > 0 && (
+              <div className="border-t border-[#F2EBE3]/5">
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="flex items-center gap-2 px-5 py-3 text-[13px] text-white/30 hover:text-white/50 transition-colors w-full"
+                >
+                  <motion.div animate={{ rotate: showCompleted ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronRight size={16} />
+                  </motion.div>
+                  Completed ({sortedCompleted.length})
+                </button>
+                <AnimatePresence>
+                  {showCompleted && sortedCompleted.map(task => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggle}
+                      onStar={starTask}
+                      onSelect={setSelectedTask}
+                      onDelete={handleDelete}
+                      isSelected={selectedTask?.id === task.id}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── RIGHT: DETAIL PANEL ── */}
+        <AnimatePresence>
+          {selectedTask && (
+            <TaskDetailPanel
+              key={selectedTask.id}
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
           )}
         </AnimatePresence>
 
-        {/* Active Filter Banner */}
-        {analyticsFilter && (
-          <div className="flex items-center justify-between px-5 py-2 border-b" style={{ borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(242,235,227,0.06)', background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' }}>
-            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-              Showing: <span className="text-accent-visor capitalize">{analyticsFilter}</span> ({filteredTasks.length} tasks)
-            </span>
-            <button onClick={() => setAnalyticsFilter(null)} className="text-xs text-accent-visor hover:underline">Clear filter</button>
-          </div>
-        )}
+        {/* ── DELETE CONFIRMATION DIALOG ── */}
+        <ConfirmDialog
+          open={!!deleteConfirm}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          title="Remove This Task?"
+          message={`"${tasks.find(t => t.id === deleteConfirm)?.title || 'this task'}" will be permanently removed. Don't worry — you can undo this right after.`}
+          confirmLabel="Yes, Remove It"
+          cancelLabel="No, Keep It"
+          variant="danger"
+        />
 
-        {/* Task List */}
-        <div className="flex-1 overflow-y-auto">
-          <AnimatePresence mode="popLayout">
-            {sortedActive.map(task => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onToggle={handleToggle}
-                onStar={starTask}
-                onSelect={setSelectedTask}
-                onDelete={handleDelete}
-                isSelected={selectedTask?.id === task.id}
-              />
-            ))}
-          </AnimatePresence>
-
-          {sortedActive.length === 0 && (
-            <div className="text-center py-20">
-              <ListTodo size={40} className="text-white/[0.06] mx-auto mb-4" />
-              <p className="text-white/25 text-sm font-medium">No tasks yet</p>
-              <p className="text-white/15 text-xs mt-1">Add one above to get started</p>
-            </div>
+        {/* ── ADD TASK MODAL ── */}
+        <AnimatePresence>
+          {showAddModal && (
+            <AddTaskModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAdd} taskLists={taskLists} initialCategory={activeFilter} />
           )}
-
-          {/* Completed Section */}
-          {sortedCompleted.length > 0 && (
-            <div className="border-t border-[#F2EBE3]/5">
-              <button
-                onClick={() => setShowCompleted(!showCompleted)}
-                className="flex items-center gap-2 px-5 py-3 text-[13px] text-white/30 hover:text-white/50 transition-colors w-full"
-              >
-                <motion.div animate={{ rotate: showCompleted ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                  <ChevronRight size={16} />
-                </motion.div>
-                Completed ({sortedCompleted.length})
-              </button>
-              <AnimatePresence>
-                {showCompleted && sortedCompleted.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={handleToggle}
-                    onStar={starTask}
-                    onSelect={setSelectedTask}
-                    onDelete={handleDelete}
-                    isSelected={selectedTask?.id === task.id}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── RIGHT: DETAIL PANEL ── */}
-      <AnimatePresence>
-        {selectedTask && (
-          <TaskDetailPanel
-            key={selectedTask.id}
-            task={selectedTask}
-            onClose={() => setSelectedTask(null)}
-            onUpdate={handleUpdate}
-            onDelete={handleDelete}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ── DELETE CONFIRMATION DIALOG ── */}
-      <ConfirmDialog
-        open={!!deleteConfirm}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        title="Remove This Task?"
-        message={`"${tasks.find(t => t.id === deleteConfirm)?.title || 'this task'}" will be permanently removed. Don't worry — you can undo this right after.`}
-        confirmLabel="Yes, Remove It"
-        cancelLabel="No, Keep It"
-        variant="danger"
-      />
-
-      {/* ── ADD TASK MODAL ── */}
-      <AnimatePresence>
-        {showAddModal && (
-          <AddTaskModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAdd} taskLists={taskLists} initialCategory={activeFilter} />
-        )}
-      </AnimatePresence>
-    </motion.div>
+        </AnimatePresence>
+      </motion.div>
+    </PullToRefresh>
   );
 }

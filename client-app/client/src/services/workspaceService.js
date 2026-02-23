@@ -6,11 +6,16 @@ import { supabase } from './supabaseClient';
  */
 
 // Timeout wrapper — prevents Supabase queries from hanging forever
-const withTimeout = (promise, ms = 8000) =>
+// Increased to 12s for production to handle slow DB cold starts
+const withTimeout = (promise, ms = 12000) =>
     Promise.race([
         promise,
         new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), ms)
+            setTimeout(() => {
+                const err = new Error('The request timed out. This often happens on first load while the database wakes up (Cold Start). Please try refreshing in 10 seconds.');
+                err.isTimeout = true;
+                reject(err);
+            }, ms)
         ),
     ]);
 

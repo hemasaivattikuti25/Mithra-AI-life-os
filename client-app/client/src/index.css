@@ -429,6 +429,15 @@ body.keyboard-open .md\:hidden:last-child {
   .h-screen {
     height: 100dvh;
   }
+
+  /* Tighter typography on mobile */
+  h1 { @apply text-2xl !leading-tight; }
+  h2 { @apply text-xl !leading-tight; }
+  p { @apply text-sm !leading-relaxed opacity-90; }
+  
+  .glass-card {
+    @apply p-4 !rounded-2xl;
+  }
 }
 
 /* Scrollbar styling for Android WebView */

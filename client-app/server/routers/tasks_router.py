@@ -39,11 +39,17 @@ async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(
 
 # ─── TASK CRUD ───
 @router.get("/tasks")
-async def list_tasks(current_user: dict = Depends(get_current_user)):
-    """List authenticated user's tasks."""
-    user_id = current_user["id"]
+async def list_tasks(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """List authenticated user's tasks (including shared workspace tasks)."""
     try:
-        response = supabase.table("tasks").select("*").eq("user_id", user_id).execute()
+        query = supabase.table("tasks").select("*")
+        
+        # If workspace_id provided, filter by it. 
+        # Otherwise, RLS will return (own tasks + all shared tasks).
+        if workspace_id:
+            query = query.eq("workspace_id", workspace_id)
+        
+        response = query.execute()
         
         tasks = []
         for t in response.data:
@@ -58,7 +64,8 @@ async def list_tasks(current_user: dict = Depends(get_current_user)):
                 "starred": t.get("starred", False),
                 "dueDate": t.get("due_date"),
                 "recurrence": t.get("recurrence", "none"),
-                "subtasks": t.get("subtasks", [])
+                "subtasks": t.get("subtasks", []),
+                "workspaceId": t.get("workspace_id")
             })
         return {"tasks": tasks}
     except Exception as e:
@@ -82,7 +89,8 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
             "starred": task.starred,
             "due_date": task.dueDate,
             "recurrence": task.recurrence,
-            "subtasks": task.subtasks
+            "subtasks": task.subtasks,
+            "workspace_id": task.workspaceId
         }
         supabase.table("tasks").insert(db_task).execute()
         return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
@@ -104,12 +112,14 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
             "starred": task.starred,
             "due_date": task.dueDate,
             "recurrence": task.recurrence,
-            "subtasks": task.subtasks
+            "subtasks": task.subtasks,
+            "workspace_id": task.workspaceId
         }
-        response = supabase.table("tasks").update(db_task).eq("id", task_id).eq("user_id", user_id).execute()
+        # Note: We filter by id. RLS ensures the user has permission to update.
+        response = supabase.table("tasks").update(db_task).eq("id", task_id).execute()
         
         if not response.data:
-            raise HTTPException(status_code=404, detail="Task not found or owned by another user")
+            raise HTTPException(status_code=404, detail="Task not found or access denied")
             
         return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
     except Exception as e:
@@ -117,13 +127,12 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
 
 @router.delete("/tasks/{task_id}")
 async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a task."""
-    user_id = current_user["id"]
-    
+    """Delete a task (if owned or permitted by workspace)."""
     try:
-        response = supabase.table("tasks").delete().eq("id", task_id).eq("user_id", user_id).execute()
+        # RLS handles the permission check
+        response = supabase.table("tasks").delete().eq("id", task_id).execute()
         if not response.data:
-            raise HTTPException(status_code=404, detail="Task not found")
+            raise HTTPException(status_code=404, detail="Task not found or access denied")
         return {"deleted": task_id}
     except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -160,11 +169,15 @@ async def update_notifications(settings: NotificationSettings, current_user: dic
 
 # ─── JOURNAL ───
 @router.get("/journal")
-async def list_journal(current_user: dict = Depends(get_current_user)):
-    """Get journal entries."""
-    user_id = current_user["id"]
+async def list_journal(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Get journal entries (including workspace shared journals)."""
     try:
-        response = supabase.table("journal_entries").select("id, user_id, content, mood, tags, date, created_at").eq("user_id", user_id).order("date", desc=True).execute()
+        query = supabase.table("journal_entries").select("id, user_id, content, mood, tags, date, workspace_id, created_at")
+        
+        if workspace_id:
+            query = query.eq("workspace_id", workspace_id)
+            
+        response = query.order("date", desc=True).execute()
         
         entries = []
         for e in response.data:
@@ -175,6 +188,7 @@ async def list_journal(current_user: dict = Depends(get_current_user)):
                 "mood": e["mood"],
                 "tags": e["tags"],
                 "date": e["date"],
+                "workspaceId": e.get("workspace_id"),
                 "createdAt": e["created_at"]
             })
         return {"entries": entries}
@@ -197,7 +211,8 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
             "mood": entry.mood,
             "tags": entry.tags,
             "date": entry.date or date.today().isoformat(),
-            "embedding": embedding
+            "embedding": embedding,
+            "workspace_id": entry.workspaceId
         }
         supabase.table("journal_entries").insert(db_entry).execute()
         
@@ -208,6 +223,7 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
             "mood": entry.mood,
             "tags": entry.tags,
             "date": entry.date or date.today().isoformat(),
+            "workspaceId": entry.workspaceId,
             "createdAt": datetime.now().isoformat()
         }
         return {"entry": return_entry}

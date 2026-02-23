@@ -34,6 +34,7 @@ class TaskCreate(BaseModel):
     dueDate: Optional[str] = None
     recurrence: str = "none"
     subtasks: List[str] = []
+    workspaceId: Optional[str] = None
 
 class NotificationSettings(BaseModel):
     enabled: bool
@@ -44,3 +45,4 @@ class JournalCreate(BaseModel):
     mood: Optional[int] = None
     tags: List[str] = []
     date: Optional[str] = None
+    workspaceId: Optional[str] = None
