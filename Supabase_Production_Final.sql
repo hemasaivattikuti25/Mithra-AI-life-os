@@ -22,12 +22,26 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Workspaces (Mithra Blend)
+-- Safe migration for existing tables that might have used 'created_by' instead of 'owner_id'
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='workspaces' AND column_name='created_by') THEN
+        ALTER TABLE public.workspaces RENAME COLUMN created_by TO owner_id;
+    END IF;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
 CREATE TABLE IF NOT EXISTS public.workspaces (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     name TEXT NOT NULL,
     owner_id UUID REFERENCES public.profiles(id) NOT NULL,
+    share_link_hash TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
+
+-- Ensure share_link_hash exists just in case
+DO $$ BEGIN
+    ALTER TABLE public.workspaces ADD COLUMN share_link_hash TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 
 -- Workspace Members
