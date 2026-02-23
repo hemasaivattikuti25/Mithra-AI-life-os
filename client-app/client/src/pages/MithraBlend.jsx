@@ -42,7 +42,7 @@ export default function MithraBlend() {
             }
         } catch (err) {
             console.error(err);
-            setError(err.message || 'Could not load workspaces.');
+            setError(err.message || 'Unknown error. Check console for details.');
         } finally {
             setLoading(false);
         }
@@ -56,8 +56,8 @@ export default function MithraBlend() {
         if (loading) {
             timeout = setTimeout(() => {
                 setLoading(false);
-                setError('Connection timed out. Please check your network or try again.');
-            }, 12000);
+                setError('Timed out. Open browser console (F12) and tell me the error shown there.');
+            }, 10000);
         }
         return () => clearTimeout(timeout);
     }, [loading]);
@@ -73,7 +73,8 @@ export default function MithraBlend() {
             setNewName('');
             setShowCreate(false);
         } catch (err) {
-            setError(err.message);
+            console.error(err);
+            setError(err.message || 'Unknown error. Check console for details.');
         } finally {
             setCreating(false);
         }
@@ -97,7 +98,8 @@ export default function MithraBlend() {
                 window.history.replaceState(null, '', window.location.pathname + '#/blend');
             }
         } catch (err) {
-            setError(err.message || 'Invalid or already joined workspace.');
+            console.error(err);
+            setError(err.message || 'Invalid or already joined workspace. Check console for details.');
         } finally {
             setJoining(false);
         }
@@ -122,7 +124,8 @@ export default function MithraBlend() {
             setActiveWorkspace(null);
             await load();
         } catch (err) {
-            setError(err.message || `Failed to ${actionText} workspace.`);
+            console.error(err);
+            setError(err.message || `Failed to ${actionText} workspace. Check console for details.`);
         } finally {
             setLoading(false);
         }

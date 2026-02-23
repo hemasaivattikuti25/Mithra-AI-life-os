@@ -2,149 +2,203 @@ import { supabase } from './supabaseClient';
 
 /**
  * Workspace Service — Manages Mithra Blend workspaces
- * Matches the FastAPI backend endpoints.
+ * Connecting directly to Supabase to bypass FastAPI routing issues 
+ * and expose real RLS errors.
  */
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-
-const getHeaders = async () => {
-    if (!supabase) throw new Error('Supabase not configured. Cannot auth.');
-    const { data } = await supabase.auth.getSession();
-    if (!data?.session) throw new Error('No active session.');
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${data.session.access_token}`
-    };
-};
 
 export const workspaceService = {
     createWorkspace: async (name, userId) => {
         try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ name })
-            });
-            if (!res.ok) throw new Error(await res.text());
-            const data = await res.json();
-            return data.workspace;
+            // 1. Generate hash
+            const shareHash = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+
+            // 2. Insert Workspace
+            const { data: ws, error: wsErr } = await supabase
+                .from('workspaces')
+                .insert({ name, owner_id: userId, share_link_hash: shareHash })
+                .select()
+                .single();
+
+            if (wsErr) {
+                console.error('[Blend] Supabase insert workspace error:', wsErr);
+                throw new Error(`Create workspace failed: ${wsErr.message} (Code: ${wsErr.code})`);
+            }
+
+            // 3. Insert Owner Member
+            const { error: memErr } = await supabase
+                .from('workspace_members')
+                .insert({ workspace_id: ws.id, user_id: userId, role: 'owner' });
+
+            if (memErr) {
+                console.error('[Blend] Supabase insert member error:', memErr);
+                throw new Error(`Add owner member failed: ${memErr.message} (Code: ${memErr.code})`);
+            }
+
+            return ws;
         } catch (err) {
-            console.error('[Blend] Create workspace failed:', err);
-            throw new Error(err.message || 'Failed to create workspace');
+            console.error('[Blend] createWorkspace FATAL:', err);
+            // Propagate exact message up to the UI
+            throw err;
         }
     },
 
     joinWorkspace: async (shareHashOrUrl, userId) => {
         try {
-            // Smarter hash extraction
             let shareHash = shareHashOrUrl.trim();
             if (shareHash.includes('join=')) {
                 const match = shareHash.match(/join=([a-zA-Z0-9_-]+)/);
                 if (match) shareHash = match[1];
             } else if (shareHash.includes('/')) {
-                // If they pasted a clean URL with hash at the end
                 shareHash = shareHash.split('/').pop().split('?')[0];
             }
 
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces/join`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ hash: shareHash })
-            });
+            // 1. Find the workspace
+            const { data: ws, error: findErr } = await supabase
+                .from('workspaces')
+                .select('id')
+                .eq('share_link_hash', shareHash)
+                .single();
 
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(errText || 'Invalid or expired invite link');
+            if (findErr) {
+                console.error('[Blend] Find workspace by hash error:', findErr);
+                throw new Error(`Join failed (Find WS): ${findErr.message} (Code: ${findErr.code})`);
             }
-            return await res.json();
+
+            if (!ws) throw new Error('Invalid or expired invite link (Workspace not found)');
+
+            // 2. Check existing membership
+            const { data: existing, error: checkErr } = await supabase
+                .from('workspace_members')
+                .select('workspace_id')
+                .eq('workspace_id', ws.id)
+                .eq('user_id', userId)
+                .single();
+
+            if (checkErr && checkErr.code !== 'PGRST116') {
+                console.error('[Blend] Check existing member error:', checkErr);
+                throw new Error(`Join failed (Check Member): ${checkErr.message} (Code: ${checkErr.code})`);
+            }
+
+            if (existing) {
+                return { success: true, alreadyMember: true, workspaceId: ws.id };
+            }
+
+            // 3. Insert membership
+            const { error: joinErr } = await supabase
+                .from('workspace_members')
+                .insert({ workspace_id: ws.id, user_id: userId, role: 'member' });
+
+            if (joinErr) {
+                console.error('[Blend] Insert new member error:', joinErr);
+                throw new Error(`Join failed (Insert Member): ${joinErr.message} (Code: ${joinErr.code})`);
+            }
+
+            return { success: true, workspaceId: ws.id };
         } catch (err) {
-            console.error('[Blend] Join failed:', err);
+            console.error('[Blend] joinWorkspace FATAL:', err);
             throw err;
         }
     },
 
     getWorkspaces: async (userId) => {
         try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces`, {
-                headers
-            });
-            if (!res.ok) throw new Error(await res.text());
-            const data = await res.json();
-            return data.workspaces || [];
+            // Query 1: Get memberships
+            const { data: memberships, error: err1 } = await supabase
+                .from('workspace_members')
+                .select('workspace_id, role')
+                .eq('user_id', userId);
+
+            if (err1) {
+                console.error('[Blend] Get memberships error:', err1);
+                throw new Error(`Members query failed: ${err1.message} (Code: ${err1.code})`);
+            }
+
+            if (!memberships || memberships.length === 0) return [];
+
+            const workspaceIds = memberships.map(m => m.workspace_id);
+
+            // Query 2: Get workspace details
+            const { data: workspaces, error: err2 } = await supabase
+                .from('workspaces')
+                .select('id, name, share_link_hash, owner_id, created_at')
+                .in('id', workspaceIds);
+
+            if (err2) {
+                console.error('[Blend] Get workspaces error:', err2);
+                throw new Error(`Workspaces query failed: ${err2.message} (Code: ${err2.code})`);
+            }
+
+            // Merge data
+            return (workspaces || []).map(ws => ({
+                ...ws,
+                userRole: memberships.find(m => m.workspace_id === ws.id)?.role || 'member'
+            }));
         } catch (err) {
-            console.error('[Blend] Get workspaces error:', err);
-            // Throw so that the UI can catch it and show an error state instead of spinning forever
+            console.error('[Blend] getWorkspaces FATAL:', err);
             throw err;
         }
     },
 
     getMembers: async (workspaceId) => {
         try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/members`, {
-                headers
-            });
+            const { data, error } = await supabase
+                .from('workspace_members')
+                .select('user_id, role, joined_at')
+                .eq('workspace_id', workspaceId);
 
-            // Fallback: If API fails, try direct Supabase query
-            if (!res.ok) {
-                throw new Error(await res.text());
+            if (error) {
+                console.error('[Blend] getMembers query error:', error);
+                throw new Error(`Get members failed: ${error.message} (Code: ${error.code})`);
             }
-            const data = await res.json();
-            return data.members || [];
+
+            if (!data) return [];
+
+            return data.map(m => ({
+                userId: m.user_id,
+                role: m.role,
+                fullName: `User ${m.user_id.substring(0, 4)}`, // Fallback
+                avatarUrl: null
+            }));
         } catch (err) {
-            console.error('[Blend] Get members error - falling back to direct query:', err);
-
-            // Fallback if profiles join fails or backend errors out
-            try {
-                const { data } = await supabase
-                    .from('workspace_members')
-                    .select('user_id, role, joined_at')
-                    .eq('workspace_id', workspaceId);
-
-                if (!data) return [];
-
-                return data.map(m => ({
-                    userId: m.user_id,
-                    role: m.role,
-                    fullName: `User ${m.user_id.substring(0, 4)}`, // Fallback name
-                    avatarUrl: null
-                }));
-            } catch (fallbackErr) {
-                console.error('[Blend] Fallback also failed:', fallbackErr);
-                throw fallbackErr;
-            }
+            console.error('[Blend] getMembers FATAL:', err);
+            throw err;
         }
     },
 
     leaveWorkspace: async (workspaceId, userId) => {
         try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/leave`, {
-                method: 'DELETE',
-                headers
-            });
-            if (!res.ok) throw new Error(await res.text());
-            return await res.json();
+            const { error } = await supabase
+                .from('workspace_members')
+                .delete()
+                .eq('workspace_id', workspaceId)
+                .eq('user_id', userId);
+
+            if (error) {
+                console.error('[Blend] leaveWorkspace error:', error);
+                throw new Error(`Leave workspace failed: ${error.message} (Code: ${error.code})`);
+            }
+            return { success: true };
         } catch (err) {
-            console.error('[Blend] Leave workspace failed:', err);
+            console.error('[Blend] leaveWorkspace FATAL:', err);
             throw err;
         }
     },
 
     deleteWorkspace: async (workspaceId, userId) => {
         try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}`, {
-                method: 'DELETE',
-                headers
-            });
-            if (!res.ok) throw new Error(await res.text());
-            return await res.json();
+            const { error } = await supabase
+                .from('workspaces')
+                .delete()
+                .eq('id', workspaceId)
+                .eq('owner_id', userId);
+
+            if (error) {
+                console.error('[Blend] deleteWorkspace error:', error);
+                throw new Error(`Delete workspace failed: ${error.message} (Code: ${error.code})`);
+            }
+            return { success: true };
         } catch (err) {
-            console.error('[Blend] Delete workspace failed:', err);
+            console.error('[Blend] deleteWorkspace FATAL:', err);
             throw err;
         }
     }
