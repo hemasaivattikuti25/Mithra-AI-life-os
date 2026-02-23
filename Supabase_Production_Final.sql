@@ -1,8 +1,8 @@
 -- ==============================================================================
--- MITHRA LIFE OS: PRODUCTION DATABASE SCHEMA
+-- MITHRA LIFE OS: PRODUCTION DATABASE SCHEMA & MIGRATION SCRIPT
 -- This file contains the complete SQL setup for Supabase, including all tables,
 -- Row Level Security (RLS) policies, Realtime configuration, and pgvector.
--- SAFE TO RUN MULTIPLE TIMES ("IF NOT EXISTS" implementations applied)
+-- FULLY IDEMPOTENT: Safe to run on empty databases OR existing production databases.
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "vector"; -- Used for RAG Journal Memory
 
 -- Profiles
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID REFERENCES auth.users(id) PRIMARY KEY,
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     email TEXT,
     display_name TEXT,
     avatar_url TEXT,
@@ -22,27 +22,27 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Workspaces (Mithra Blend)
--- Safe migration for existing tables that might have used 'created_by' instead of 'owner_id'
+CREATE TABLE IF NOT EXISTS public.workspaces (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name TEXT NOT NULL,
+    owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    share_link_hash TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
+);
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+
+-- Safe migration for existing workspaces table (if it used 'created_by')
 DO $$ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='workspaces' AND column_name='created_by') THEN
         ALTER TABLE public.workspaces RENAME COLUMN created_by TO owner_id;
     END IF;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
-CREATE TABLE IF NOT EXISTS public.workspaces (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name TEXT NOT NULL,
-    owner_id UUID REFERENCES public.profiles(id) NOT NULL,
-    share_link_hash TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
-);
-
 -- Ensure share_link_hash exists just in case
 DO $$ BEGIN
     ALTER TABLE public.workspaces ADD COLUMN share_link_hash TEXT;
 EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
-ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 
 -- Workspace Members
 CREATE TABLE IF NOT EXISTS public.workspace_members (
@@ -57,7 +57,7 @@ ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 -- Tasks
 CREATE TABLE IF NOT EXISTS public.tasks (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
     priority TEXT DEFAULT 'med',
     list_id TEXT DEFAULT 'default',
@@ -74,7 +74,7 @@ ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 -- Habits
 CREATE TABLE IF NOT EXISTS public.habits (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
     category TEXT DEFAULT 'default',
     streak INTEGER DEFAULT 0,
@@ -90,7 +90,7 @@ ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 -- Journal Entries (with pgvector for Dost AI RAG Memory)
 CREATE TABLE IF NOT EXISTS public.journal_entries (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     content TEXT NOT NULL,
     mood INTEGER CHECK (mood >= 1 AND mood <= 5),
     tags TEXT[] DEFAULT '{}',
@@ -104,7 +104,7 @@ ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 -- Focus Sessions (Timer Analytics)
 CREATE TABLE IF NOT EXISTS public.focus_sessions (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     duration_minutes INTEGER NOT NULL,
     task_id UUID REFERENCES public.tasks(id) ON DELETE SET NULL,
     workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
@@ -113,7 +113,30 @@ CREATE TABLE IF NOT EXISTS public.focus_sessions (
 ALTER TABLE public.focus_sessions ENABLE ROW LEVEL SECURITY;
 
 
--- 3. ROW LEVEL SECURITY (RLS) POLICIES
+-- 3. MIGRATION FOR MISSING COLUMNS IN EXISTING TABLES
+-- If you created tables long ago, they might be missing the new "workspace_id" columns. 
+-- This safely adds the missing columns without breaking any existing data.
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE public.tasks ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_column THEN NULL; END;
+
+    BEGIN
+        ALTER TABLE public.habits ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_column THEN NULL; END;
+
+    BEGIN
+        ALTER TABLE public.journal_entries ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_column THEN NULL; END;
+
+    BEGIN
+        ALTER TABLE public.focus_sessions ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
+
+
+-- 4. ROW LEVEL SECURITY (RLS) POLICIES
 -- Dropping existing policies to allow re-running without duplication errors
 
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
@@ -133,7 +156,7 @@ DROP POLICY IF EXISTS "Habits access" ON public.habits;
 DROP POLICY IF EXISTS "Journal access" ON public.journal_entries;
 DROP POLICY IF EXISTS "Focus sessions access" ON public.focus_sessions;
 
--- Recreating the policies
+-- Recreating the policies safely
 
 -- Profiles: Users can read and update their own profile
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -185,34 +208,15 @@ CREATE POLICY "Focus sessions access" ON public.focus_sessions FOR ALL USING (
     (workspace_id IS NOT NULL AND auth.uid() IN (SELECT owner_id FROM public.workspaces WHERE id = focus_sessions.workspace_id))
 );
 
--- 4. REALTIME CONFIGURATION
+-- 5. REALTIME CONFIGURATION
 -- This block safely adds tables to realtime publication without crashing if already added
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.workspaces;
-EXCEPTION WHEN duplicate_object THEN NULL; END;
-$$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
-EXCEPTION WHEN duplicate_object THEN NULL; END;
-$$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
-EXCEPTION WHEN duplicate_object THEN NULL; END;
-$$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
-EXCEPTION WHEN duplicate_object THEN NULL; END;
-$$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.workspaces; EXCEPTION WHEN duplicate_object THEN NULL; END; $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members; EXCEPTION WHEN duplicate_object THEN NULL; END; $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks; EXCEPTION WHEN duplicate_object THEN NULL; END; $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.habits; EXCEPTION WHEN duplicate_object THEN NULL; END; $$;
 
 
--- 5. TRIGGERS
+-- 6. TRIGGERS
 -- Automatically create a profile when a new auth user signs up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
@@ -230,7 +234,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 
--- 6. RAG SIMILARITY SEARCH FUNCTION
+-- 7. RAG SIMILARITY SEARCH FUNCTION
 -- Used by Dost AI to find relevant journal entries
 CREATE OR REPLACE FUNCTION match_journal_entries (
   query_embedding vector(768),
