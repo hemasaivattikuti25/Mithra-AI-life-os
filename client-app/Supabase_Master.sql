@@ -268,7 +268,72 @@ CREATE POLICY "Delete workspace member" ON public.workspace_members
 
 
 -- ============================================================
--- 9. USAGE TRACKING (for rate limits & future paywall)
+-- 9. PLANS & SUBSCRIPTIONS (Multi-tier SaaS)
+-- ============================================================
+
+-- Plan definitions: single source of truth for limits
+CREATE TABLE IF NOT EXISTS public.plans (
+  id text PRIMARY KEY,             -- 'free', 'pro', 'team', 'enterprise'
+  display_name text NOT NULL,
+  daily_ai_limit integer,          -- NULL = unlimited
+  monthly_ai_limit integer,        -- NULL = unlimited
+  max_workspaces integer DEFAULT 1,
+  max_members_per_workspace integer DEFAULT 5,
+  price_monthly integer DEFAULT 0, -- cents
+  price_yearly integer DEFAULT 0,  -- cents
+  features jsonb DEFAULT '{}',     -- extensible feature flags
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Seed default plans (idempotent)
+INSERT INTO public.plans (id, display_name, daily_ai_limit, monthly_ai_limit, max_workspaces, max_members_per_workspace, price_monthly, price_yearly, features)
+VALUES
+  ('free',       'Free',       20,   500,   1,  5,     0,      0,     '{"rag_memory": true, "export": false}'),
+  ('pro',        'Pro',        NULL, NULL,  5,  20,    999,    9990,  '{"rag_memory": true, "export": true, "priority_support": true}'),
+  ('team',       'Team',       NULL, NULL,  20, 50,    2999,   29990, '{"rag_memory": true, "export": true, "priority_support": true, "admin_dashboard": true}'),
+  ('enterprise', 'Enterprise', NULL, NULL,  -1, -1,    0,      0,     '{"rag_memory": true, "export": true, "priority_support": true, "admin_dashboard": true, "sso": true}')
+ON CONFLICT (id) DO UPDATE SET
+  display_name = EXCLUDED.display_name,
+  daily_ai_limit = EXCLUDED.daily_ai_limit,
+  monthly_ai_limit = EXCLUDED.monthly_ai_limit,
+  max_workspaces = EXCLUDED.max_workspaces,
+  price_monthly = EXCLUDED.price_monthly,
+  price_yearly = EXCLUDED.price_yearly,
+  features = EXCLUDED.features;
+
+-- No RLS on plans — public read-only
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Plans are public" ON public.plans;
+CREATE POLICY "Plans are public" ON public.plans FOR SELECT USING (true);
+
+
+-- Subscriptions: Stripe-ready state machine
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  plan_id text REFERENCES public.plans(id) DEFAULT 'free',
+  status text CHECK (status IN ('active', 'trialing', 'past_due', 'canceled', 'expired')) DEFAULT 'active',
+  stripe_customer_id text,
+  stripe_subscription_id text UNIQUE,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,           -- scheduled cancellation
+  grace_period_end timestamptz,    -- access continues until this date after cancellation
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(user_id)                  -- one active subscription per user
+);
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own subscription" ON public.subscriptions;
+CREATE POLICY "Users manage own subscription" ON public.subscriptions
+  USING (auth.uid() = user_id);
+
+
+-- ============================================================
+-- 10. USAGE TRACKING (Atomic, race-condition-proof)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.usage_tracking (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -283,11 +348,113 @@ CREATE TABLE IF NOT EXISTS public.usage_tracking (
 ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can manage own usage" ON public.usage_tracking;
-CREATE POLICY "Users can manage own usage"
-  ON public.usage_tracking
+CREATE POLICY "Users can manage own usage" ON public.usage_tracking
   USING (auth.uid() = user_id);
 
--- Helper: increment AI usage for today (call from backend after each AI request)
+-- Atomic: increment usage AND check limit in one call (prevents race conditions)
+CREATE OR REPLACE FUNCTION public.increment_and_check_ai_usage(
+  p_user_id uuid,
+  p_tokens integer DEFAULT 0
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_plan_id text;
+  v_daily_limit integer;
+  v_current_calls integer;
+  v_allowed boolean;
+  v_grace timestamptz;
+  v_sub_status text;
+BEGIN
+  -- 1. Get user's active plan (from subscription, fallback to profile.plan, fallback to 'free')
+  SELECT
+    COALESCE(s.plan_id, p.plan, 'free'),
+    s.status,
+    s.grace_period_end
+  INTO v_plan_id, v_sub_status, v_grace
+  FROM public.profiles p
+  LEFT JOIN public.subscriptions s ON s.user_id = p.id
+  WHERE p.id = p_user_id;
+
+  -- Handle expired/canceled subscriptions with grace period
+  IF v_sub_status IN ('canceled', 'expired') AND v_grace IS NOT NULL AND v_grace > NOW() THEN
+    -- Still in grace period, keep plan
+    NULL;
+  ELSIF v_sub_status IN ('canceled', 'expired') THEN
+    v_plan_id := 'free';
+  END IF;
+
+  -- 2. Get plan limits
+  SELECT daily_ai_limit INTO v_daily_limit
+  FROM public.plans WHERE id = v_plan_id;
+
+  -- 3. Atomic upsert with row lock
+  INSERT INTO public.usage_tracking (user_id, date, ai_calls, tokens_used, updated_at)
+  VALUES (p_user_id, CURRENT_DATE, 1, p_tokens, NOW())
+  ON CONFLICT (user_id, date)
+  DO UPDATE SET
+    ai_calls = usage_tracking.ai_calls + 1,
+    tokens_used = usage_tracking.tokens_used + p_tokens,
+    updated_at = NOW()
+  RETURNING ai_calls INTO v_current_calls;
+
+  -- 4. Check limit (NULL = unlimited)
+  v_allowed := (v_daily_limit IS NULL) OR (v_current_calls <= v_daily_limit);
+
+  -- If not allowed, rollback the increment
+  IF NOT v_allowed THEN
+    UPDATE public.usage_tracking
+    SET ai_calls = ai_calls - 1,
+        tokens_used = tokens_used - p_tokens,
+        updated_at = NOW()
+    WHERE user_id = p_user_id AND date = CURRENT_DATE;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'allowed', v_allowed,
+    'current', CASE WHEN v_allowed THEN v_current_calls ELSE v_current_calls - 1 END,
+    'limit', v_daily_limit,
+    'plan', v_plan_id
+  );
+END;
+$$;
+
+-- Convenience: get user's plan + limits (for frontend display)
+CREATE OR REPLACE FUNCTION public.get_user_plan_limits(p_user_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  SELECT jsonb_build_object(
+    'plan_id', COALESCE(s.plan_id, p.plan, 'free'),
+    'status', COALESCE(s.status, 'active'),
+    'daily_ai_limit', pl.daily_ai_limit,
+    'monthly_ai_limit', pl.monthly_ai_limit,
+    'max_workspaces', pl.max_workspaces,
+    'features', pl.features,
+    'current_period_end', s.current_period_end,
+    'today_ai_calls', COALESCE(u.ai_calls, 0),
+    'today_tokens', COALESCE(u.tokens_used, 0)
+  ) INTO v_result
+  FROM public.profiles p
+  LEFT JOIN public.subscriptions s ON s.user_id = p.id
+  LEFT JOIN public.plans pl ON pl.id = COALESCE(s.plan_id, p.plan, 'free')
+  LEFT JOIN public.usage_tracking u ON u.user_id = p.id AND u.date = CURRENT_DATE
+  WHERE p.id = p_user_id;
+
+  RETURN COALESCE(v_result, '{"plan_id":"free","status":"active","daily_ai_limit":20}'::jsonb);
+END;
+$$;
+
+-- Keep legacy function for backwards compat
 CREATE OR REPLACE FUNCTION public.increment_ai_usage(
   p_user_id uuid,
   p_tokens integer DEFAULT 0
@@ -308,41 +475,31 @@ BEGIN
 END;
 $$;
 
--- Helper: check if user is within daily limit (for paywall)
-CREATE OR REPLACE FUNCTION public.check_daily_limit(
-  p_user_id uuid,
-  p_max_calls integer DEFAULT 20
-)
-RETURNS boolean
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  current_calls integer;
-  user_plan text;
-BEGIN
-  -- Pro users have unlimited access
-  SELECT COALESCE(plan, 'free') INTO user_plan
-  FROM public.profiles WHERE id = p_user_id;
 
-  IF user_plan = 'pro' THEN
-    RETURN true;
-  END IF;
+-- ============================================================
+-- 11. PUSH SUBSCRIPTIONS (Multi-device web push)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  endpoint text NOT NULL,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  user_agent text,
+  created_at timestamptz DEFAULT now(),
+  last_used_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, endpoint)       -- one subscription per endpoint per user
+);
 
-  -- Free users: check daily limit
-  SELECT COALESCE(ai_calls, 0) INTO current_calls
-  FROM public.usage_tracking
-  WHERE user_id = p_user_id AND date = CURRENT_DATE;
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
-  RETURN COALESCE(current_calls, 0) < p_max_calls;
-END;
-$$;
+DROP POLICY IF EXISTS "Users manage own push subs" ON public.push_subscriptions;
+CREATE POLICY "Users manage own push subs" ON public.push_subscriptions
+  USING (auth.uid() = user_id);
 
 
 -- ============================================================
--- 10. GRANT PERMISSIONS
+-- 12. GRANT PERMISSIONS
 -- ============================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
@@ -351,5 +508,5 @@ GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role
 
 -- ============================================================
 -- Done! Your Mithra Life OS database is fully set up.
+-- Run this script in Supabase SQL Editor — it is idempotent.
 -- ============================================================
-

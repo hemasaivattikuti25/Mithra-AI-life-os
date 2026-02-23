@@ -8,3 +8,4 @@ PyJWT
 python-multipart
 chromadb
 pydantic
+stripe

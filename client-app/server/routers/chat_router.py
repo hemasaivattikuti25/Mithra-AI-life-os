@@ -1,88 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException
 from schemas.models import ChatRequest
 from core.security import get_current_user
+from core.plan_gate import require_ai_access
 from core.config import model, supabase, get_embedding
 import json
 
 router = APIRouter()
 
-# Free tier: 20 AI messages per day
-FREE_TIER_DAILY_LIMIT = 20
-
-
-def _check_usage_limit(user_id: str) -> dict:
-    """Check if user is within their daily AI usage limit.
-    Returns { 'allowed': bool, 'current': int, 'limit': int|None, 'plan': str }
-    """
-    if not supabase:
-        return {"allowed": True, "current": 0, "limit": None, "plan": "free"}
-
-    try:
-        # Get user plan
-        profile = supabase.table("profiles").select("plan").eq("id", user_id).single().execute()
-        plan = (profile.data or {}).get("plan", "free")
-
-        if plan == "pro":
-            return {"allowed": True, "current": 0, "limit": None, "plan": "pro"}
-
-        # Check daily usage for free users
-        usage = supabase.table("usage_tracking") \
-            .select("ai_calls") \
-            .eq("user_id", user_id) \
-            .eq("date", "today()") \
-            .maybe_single() \
-            .execute()
-
-        current = (usage.data or {}).get("ai_calls", 0) if usage.data else 0
-        return {
-            "allowed": current < FREE_TIER_DAILY_LIMIT,
-            "current": current,
-            "limit": FREE_TIER_DAILY_LIMIT,
-            "plan": "free",
-        }
-    except Exception as e:
-        print(f"[Usage] Check failed: {e}")
-        return {"allowed": True, "current": 0, "limit": FREE_TIER_DAILY_LIMIT, "plan": "free"}
-
-
-def _track_usage(user_id: str):
-    """Increment AI usage counter for today."""
-    if not supabase:
-        return
-    try:
-        supabase.rpc("increment_ai_usage", {"p_user_id": user_id, "p_tokens": 0}).execute()
-    except Exception as e:
-        print(f"[Usage] Tracking failed: {e}")
-
 
 @router.post("")
-async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_current_user)):
-    """AI chat with Dost — stoic companion with memory. Gated by usage limits."""
+async def chat_with_dost(
+    request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+    usage: dict = Depends(require_ai_access),  # Atomic check + increment
+):
+    """AI chat with Dost — stoic companion with memory. Gated by plan limits."""
     try:
         user_msg = request.message
         user_id = current_user["id"]
-
-        # --- Usage gate ---
-        usage = _check_usage_limit(user_id)
-        if not usage["allowed"]:
-            return {
-                "reply": (
-                    f"You've reached your daily limit of **{usage['limit']} AI messages** on the Free plan. "
-                    f"Upgrade to **Pro** for unlimited access, or come back tomorrow! 🚀"
-                ),
-                "action": None,
-                "memory_used": False,
-                "usage": usage,
-            }
 
         if not model:
             return {
                 "reply": f"I hear you, {current_user['fullName']}. But I need my Gemini keys to speak fully.",
                 "action": None,
                 "memory_used": False,
-                "demo_mode": False,
+                "usage": usage,
             }
 
+        # --- RAG Memory Retrieval ---
         memory_context = ""
         try:
             msg_embedding = get_embedding(user_msg)
@@ -139,20 +84,12 @@ async def chat_with_dost(request: ChatRequest, current_user: dict = Depends(get_
                 action_data = json.loads(json_str.strip())
             except Exception:
                 print(f"Failed to parse JSON action from: {parts[1]}")
-                pass
-
-        # --- Track usage after successful response ---
-        _track_usage(user_id)
 
         return {
             "reply": text_response,
             "action": action_data,
             "memory_used": bool(memory_context),
-            "usage": {
-                "current": usage["current"] + 1,
-                "limit": usage["limit"],
-                "plan": usage["plan"],
-            },
+            "usage": usage,
         }
 
     except Exception as e:
