@@ -12,6 +12,7 @@ import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
+import { registerServiceWorker } from './services/notifications';
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -181,8 +182,8 @@ function AppRoutes() {
 }
 
 function App() {
-  // Initialize analytics on app mount (no-op if key not set)
-  useEffect(() => { initAnalytics(); }, []);
+  // Initialize analytics + service worker on app mount
+  useEffect(() => { initAnalytics(); registerServiceWorker(); }, []);
 
   return (
     <ErrorBoundary>

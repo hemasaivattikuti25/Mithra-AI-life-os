@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name text DEFAULT '',
   email text,
   avatar_url text,
+  plan text CHECK (plan IN ('free', 'pro')) DEFAULT 'free',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -310,7 +311,7 @@ $$;
 -- Helper: check if user is within daily limit (for paywall)
 CREATE OR REPLACE FUNCTION public.check_daily_limit(
   p_user_id uuid,
-  p_max_calls integer DEFAULT 50
+  p_max_calls integer DEFAULT 20
 )
 RETURNS boolean
 LANGUAGE plpgsql
@@ -320,7 +321,17 @@ SET search_path = public
 AS $$
 DECLARE
   current_calls integer;
+  user_plan text;
 BEGIN
+  -- Pro users have unlimited access
+  SELECT COALESCE(plan, 'free') INTO user_plan
+  FROM public.profiles WHERE id = p_user_id;
+
+  IF user_plan = 'pro' THEN
+    RETURN true;
+  END IF;
+
+  -- Free users: check daily limit
   SELECT COALESCE(ai_calls, 0) INTO current_calls
   FROM public.usage_tracking
   WHERE user_id = p_user_id AND date = CURRENT_DATE;
