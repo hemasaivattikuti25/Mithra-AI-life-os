@@ -108,7 +108,7 @@ export function AuthProvider({ children }) {
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();
 
             setProfile(prev => ({
               ...prev,
@@ -178,7 +178,7 @@ export function AuthProvider({ children }) {
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();
 
             if (profileData) {
               setProfile(prev => ({
