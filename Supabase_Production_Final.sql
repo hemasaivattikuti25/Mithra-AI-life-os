@@ -2,6 +2,7 @@
 -- MITHRA LIFE OS: PRODUCTION DATABASE SCHEMA
 -- This file contains the complete SQL setup for Supabase, including all tables,
 -- Row Level Security (RLS) policies, Realtime configuration, and pgvector.
+-- SAFE TO RUN MULTIPLE TIMES ("IF NOT EXISTS" implementations applied)
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -11,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS "vector"; -- Used for RAG Journal Memory
 -- 2. TABLES
 
 -- Profiles
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users(id) PRIMARY KEY,
     email TEXT,
     display_name TEXT,
@@ -21,7 +22,7 @@ CREATE TABLE public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Workspaces (Mithra Blend)
-CREATE TABLE public.workspaces (
+CREATE TABLE IF NOT EXISTS public.workspaces (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     name TEXT NOT NULL,
     owner_id UUID REFERENCES public.profiles(id) NOT NULL,
@@ -30,7 +31,7 @@ CREATE TABLE public.workspaces (
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 
 -- Workspace Members
-CREATE TABLE public.workspace_members (
+CREATE TABLE IF NOT EXISTS public.workspace_members (
     workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     role TEXT DEFAULT 'member', -- 'owner' or 'member'
@@ -40,7 +41,7 @@ CREATE TABLE public.workspace_members (
 ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 
 -- Tasks
-CREATE TABLE public.tasks (
+CREATE TABLE IF NOT EXISTS public.tasks (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) NOT NULL,
     title TEXT NOT NULL,
@@ -57,7 +58,7 @@ CREATE TABLE public.tasks (
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 -- Habits
-CREATE TABLE public.habits (
+CREATE TABLE IF NOT EXISTS public.habits (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) NOT NULL,
     title TEXT NOT NULL,
@@ -73,7 +74,7 @@ CREATE TABLE public.habits (
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 
 -- Journal Entries (with pgvector for Dost AI RAG Memory)
-CREATE TABLE public.journal_entries (
+CREATE TABLE IF NOT EXISTS public.journal_entries (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) NOT NULL,
     content TEXT NOT NULL,
@@ -87,7 +88,7 @@ CREATE TABLE public.journal_entries (
 ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 
 -- Focus Sessions (Timer Analytics)
-CREATE TABLE public.focus_sessions (
+CREATE TABLE IF NOT EXISTS public.focus_sessions (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) NOT NULL,
     duration_minutes INTEGER NOT NULL,
@@ -99,6 +100,26 @@ ALTER TABLE public.focus_sessions ENABLE ROW LEVEL SECURITY;
 
 
 -- 3. ROW LEVEL SECURITY (RLS) POLICIES
+-- Dropping existing policies to allow re-running without duplication errors
+
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+
+DROP POLICY IF EXISTS "View accessible workspaces" ON public.workspaces;
+DROP POLICY IF EXISTS "Create workspaces" ON public.workspaces;
+DROP POLICY IF EXISTS "Update own workspaces" ON public.workspaces;
+DROP POLICY IF EXISTS "Delete own workspaces" ON public.workspaces;
+
+DROP POLICY IF EXISTS "View workspace members" ON public.workspace_members;
+DROP POLICY IF EXISTS "Insert workspace members" ON public.workspace_members;
+DROP POLICY IF EXISTS "Delete workspace members" ON public.workspace_members;
+
+DROP POLICY IF EXISTS "Tasks access" ON public.tasks;
+DROP POLICY IF EXISTS "Habits access" ON public.habits;
+DROP POLICY IF EXISTS "Journal access" ON public.journal_entries;
+DROP POLICY IF EXISTS "Focus sessions access" ON public.focus_sessions;
+
+-- Recreating the policies
 
 -- Profiles: Users can read and update their own profile
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -151,11 +172,31 @@ CREATE POLICY "Focus sessions access" ON public.focus_sessions FOR ALL USING (
 );
 
 -- 4. REALTIME CONFIGURATION
--- Enable Realtime for collaborative tables
-ALTER PUBLICATION supabase_realtime ADD TABLE public.workspaces;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
+-- This block safely adds tables to realtime publication without crashing if already added
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.workspaces;
+EXCEPTION WHEN duplicate_object THEN NULL; END;
+$$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
+EXCEPTION WHEN duplicate_object THEN NULL; END;
+$$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
+EXCEPTION WHEN duplicate_object THEN NULL; END;
+$$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
+EXCEPTION WHEN duplicate_object THEN NULL; END;
+$$;
+
 
 -- 5. TRIGGERS
 -- Automatically create a profile when a new auth user signs up
@@ -168,9 +209,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Safely drop and recreate the trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
 
 -- 6. RAG SIMILARITY SEARCH FUNCTION
 -- Used by Dost AI to find relevant journal entries
