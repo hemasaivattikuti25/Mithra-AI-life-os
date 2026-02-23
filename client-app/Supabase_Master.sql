@@ -146,16 +146,27 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   due_date date,
   recurrence text DEFAULT 'none',
   subtasks jsonb DEFAULT '[]',
-  workspace_id uuid,  -- Added for Mithra Blend support
+  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_tasks_workspace ON public.tasks(workspace_id) WHERE workspace_id IS NOT NULL;
+
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
+-- Personal tasks: only the owner can see them
 DROP POLICY IF EXISTS "Users can manage own tasks" ON public.tasks;
 CREATE POLICY "Users can manage own tasks"
   ON public.tasks
-  USING (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR (
+      workspace_id IS NOT NULL
+      AND workspace_id IN (
+        SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()
+      )
+    )
+  );
 
 
 -- ============================================================
@@ -170,16 +181,27 @@ CREATE TABLE IF NOT EXISTS public.habits (
   streak integer DEFAULT 0,
   best_streak integer DEFAULT 0,
   consistency jsonb DEFAULT '[]',
-  workspace_id uuid,  -- Added for Mithra Blend support
+  workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_habits_workspace ON public.habits(workspace_id) WHERE workspace_id IS NOT NULL;
+
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 
+-- Own habits OR workspace shared habits
 DROP POLICY IF EXISTS "Users can manage own habits" ON public.habits;
 CREATE POLICY "Users can manage own habits"
   ON public.habits
-  USING (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR (
+      workspace_id IS NOT NULL
+      AND workspace_id IN (
+        SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()
+      )
+    )
+  );
 
 
 -- ============================================================
@@ -265,6 +287,28 @@ CREATE POLICY "Insert workspace member" ON public.workspace_members
 DROP POLICY IF EXISTS "Delete workspace member" ON public.workspace_members;
 CREATE POLICY "Delete workspace member" ON public.workspace_members
   FOR DELETE USING (user_id = auth.uid());
+
+
+-- ============================================================
+-- 8b. GOOGLE CALENDAR TOKENS (secure OAuth storage)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.google_calendar_tokens (
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  token_type text DEFAULT 'Bearer',
+  expires_at timestamptz NOT NULL,
+  scope text,
+  calendar_id text DEFAULT 'primary',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.google_calendar_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own calendar tokens" ON public.google_calendar_tokens;
+CREATE POLICY "Users manage own calendar tokens" ON public.google_calendar_tokens
+  USING (auth.uid() = user_id);
 
 
 -- ============================================================

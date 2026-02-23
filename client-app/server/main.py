@@ -2,11 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import os
+import logging
 
 from core.config import supabase, model
 from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router
 from routers import billing_router
+from routers import calendar_router
+
+# Structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 app = FastAPI(
     title="Mithra API",
@@ -44,6 +53,7 @@ app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
 app.include_router(billing_router.router, prefix="/api/billing", tags=["Billing & Plans"])
+app.include_router(calendar_router.router, prefix="/api/calendar", tags=["Google Calendar"])
 
 # --- Health Check ---
 @app.get("/")
