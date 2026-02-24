@@ -1,260 +1,467 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Link2, Plus, Copy, Check, Loader2, AlertCircle, LogIn, Trash2, LogOut, RefreshCcw } from 'lucide-react';
+import {
+    Users, Link2, Plus, Copy, Check, AlertCircle, LogIn, X,
+    Hash, Trash2, LogOut, RefreshCcw, Loader2, Eye, EyeOff,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
 import { BlendOverview } from '../components/BlendOverview';
+import { supabase } from '../services/supabaseClient';
 
-const luxuryEase = [0.22, 1, 0.36, 1];
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
 
 const GlassCard = ({ children, className = '' }) => (
     <div
-        className={`rounded-2xl p-6 ${className}`}
-        style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}
+        className={`rounded-2xl p-4 sm:p-6 ${className}`}
+        style={{
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid var(--glass-border)',
+        }}
     >
         {children}
     </div>
 );
 
+const SkeletonPulse = ({ className = '' }) => (
+    <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'var(--glass-border)' }} />
+);
+
+const SkeletonLoader = () => (
+    <div className="space-y-4 mt-6">
+        {[1, 2, 3].map(i => (
+            <GlassCard key={i}>
+                <div className="flex items-center gap-4">
+                    <SkeletonPulse className="w-10 h-10 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-2">
+                        <SkeletonPulse className="h-4 w-3/4" />
+                        <SkeletonPulse className="h-3 w-1/2" />
+                    </div>
+                </div>
+            </GlassCard>
+        ))}
+    </div>
+);
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+
 export default function MithraBlend() {
     const { user } = useAuth();
+
+    // Data state
     const [workspaces, setWorkspaces] = useState([]);
-    const [activeWorkspace, setActiveWorkspace] = useState(null);
+    const [activeWsId, setActiveWsId] = useState(null);
+    const [members, setMembers] = useState([]);
+    const [workspaceHabits, setWorkspaceHabits] = useState([]);
+    const [workspaceTasks, setWorkspaceTasks] = useState([]);
+
+    // UI state
     const [loading, setLoading] = useState(true);
-    const [creating, setCreating] = useState(false);
-    const [joining, setJoining] = useState(false);
-    const [newName, setNewName] = useState('');
-    const [joinHash, setJoinHash] = useState('');
-    const [copiedId, setCopiedId] = useState(null);
     const [error, setError] = useState('');
+    const [info, setInfo] = useState('');
     const [showCreate, setShowCreate] = useState(false);
     const [showJoin, setShowJoin] = useState(false);
+    const [innerTab, setInnerTab] = useState('overview');
+
+    // Create form
+    const [newName, setNewName] = useState('');
+    const [creating, setCreating] = useState(false);
+    const [createdWs, setCreatedWs] = useState(null);
+
+    // Join form
+    const [joinInput, setJoinInput] = useState('');
+    const [joining, setJoining] = useState(false);
+
+    // Auto-join
+    const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
+    const [autoJoining, setAutoJoining] = useState(false);
+
+    // Management
+    const [showCode, setShowCode] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleteInput, setDeleteInput] = useState('');
+
+    // Inline add forms
+    const [addingHabit, setAddingHabit] = useState(false);
+    const [newHabitTitle, setNewHabitTitle] = useState('');
+    const [addingTask, setAddingTask] = useState(false);
+    const [newTaskTitle, setNewTaskTitle] = useState('');
+
+    const activeWorkspace = workspaces.find(w => w.id === activeWsId) || null;
+
+    // ── Load workspaces ──────────────────────────────────────────
 
     const load = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         setError('');
         try {
-            const data = await workspaceService.getWorkspaces(user.id);
-            setWorkspaces(data || []);
-            if (data && data.length > 0 && !activeWorkspace) {
-                setActiveWorkspace(data[0]);
-            }
+            const ws = await workspaceService.getWorkspaces(user.id);
+            setWorkspaces(ws);
+            if (ws.length > 0 && !activeWsId) setActiveWsId(ws[0].id);
         } catch (err) {
-            console.error(err);
-            setError(err.message || 'Unknown error. Check console for details.');
+            setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [user, activeWorkspace]);
+    }, [user, activeWsId]);
 
     useEffect(() => { load(); }, [load]);
 
-    // Hard fallback timeout to prevent infinite spinners
+    // ── Load workspace details when active workspace changes ─────
+
     useEffect(() => {
-        let timeout;
-        if (loading) {
-            timeout = setTimeout(() => {
-                setLoading(false);
-                setError('Timed out. Open browser console (F12) and tell me the error shown there.');
-            }, 10000);
-        }
-        return () => clearTimeout(timeout);
+        if (!activeWsId || !user) return;
+        let cancelled = false;
+
+        const loadDetails = async () => {
+            try {
+                const [m, h, t] = await Promise.all([
+                    workspaceService.getMembers(activeWsId),
+                    workspaceService.getWorkspaceHabits(activeWsId),
+                    workspaceService.getWorkspaceTasks(activeWsId),
+                ]);
+                if (!cancelled) {
+                    setMembers(m);
+                    setWorkspaceHabits(h);
+                    setWorkspaceTasks(t);
+                }
+            } catch (err) {
+                if (!cancelled) console.error('[Blend] Load details error:', err);
+            }
+        };
+        loadDetails();
+        return () => { cancelled = true; };
+    }, [activeWsId, user]);
+
+    // ── URL auto-join ────────────────────────────────────────────
+
+    useEffect(() => {
+        if (!user || autoJoinAttempted) return;
+        const hashParts = window.location.hash.split('?');
+        const params = new URLSearchParams(hashParts[1] || '');
+        const hash = params.get('join');
+        if (!hash) return;
+
+        setAutoJoinAttempted(true);
+        setAutoJoining(true);
+        workspaceService.joinByCode(hash, user.id)
+            .then(result => {
+                if (result.alreadyMember) setInfo('You are already in this workspace.');
+                else setInfo(`Joined "${result.workspace.name}" successfully!`);
+                load();
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setAutoJoining(false));
+    }, [user, autoJoinAttempted, load]);
+
+    // ── 15-second timeout ────────────────────────────────────────
+
+    useEffect(() => {
+        if (!loading) return;
+        const t = setTimeout(() => {
+            setLoading(false);
+            setError('Connection timed out. Tap "Retry" to try again.');
+        }, 15000);
+        return () => clearTimeout(t);
     }, [loading]);
 
+    // ── Handlers ─────────────────────────────────────────────────
+
     const handleCreate = async () => {
-        if (!newName.trim()) return;
+        if (!newName.trim() || creating) return;
         setCreating(true);
         setError('');
         try {
-            const ws = await workspaceService.createWorkspace(newName.trim(), user.id);
-            setWorkspaces(prev => [...prev, ws]);
-            setActiveWorkspace(ws);
+            const ws = await workspaceService.createWorkspace(newName, user.id);
+            setCreatedWs(ws);
             setNewName('');
-            setShowCreate(false);
+            await load();
+            setActiveWsId(ws.id);
         } catch (err) {
-            console.error(err);
-            setError(err.message || 'Unknown error. Check console for details.');
+            setError(err.message);
         } finally {
             setCreating(false);
         }
     };
 
-    const handleJoin = async (hashToJoin = joinHash) => {
-        if (!hashToJoin || !hashToJoin.trim()) return;
+    const handleJoin = async () => {
+        if (!joinInput.trim() || joining) return;
         setJoining(true);
         setError('');
         try {
-            const result = await workspaceService.joinWorkspace(hashToJoin.trim(), user.id);
+            const result = await workspaceService.joinByCode(joinInput, user.id);
             if (result.alreadyMember) {
-                setError('You are already a member of this workspace!');
+                setInfo('You are already in this workspace.');
+            } else {
+                setInfo(`Joined "${result.workspace.name}" successfully!`);
             }
-            await load();
-            setJoinHash('');
+            setJoinInput('');
             setShowJoin(false);
-
-            // Clean up the URL hash if joining succeeded
-            if (window.location.hash.includes('join=')) {
-                window.history.replaceState(null, '', window.location.pathname + '#/blend');
-            }
+            await load();
+            setActiveWsId(result.workspace.id);
         } catch (err) {
-            console.error(err);
-            setError(err.message || 'Invalid or already joined workspace. Check console for details.');
+            setError(err.message);
         } finally {
             setJoining(false);
         }
     };
 
-    const handleLeaveOrDelete = async (ws) => {
-        const isOwner = ws.userRole === 'owner';
-        const actionText = isOwner ? 'delete' : 'leave';
-
-        if (!window.confirm(`Are you sure you want to ${actionText} "${ws.name}"? ${isOwner ? 'This cannot be undone.' : ''}`)) {
-            return;
-        }
-
-        setError('');
-        setLoading(true);
+    const handleLeave = async () => {
+        if (!activeWorkspace) return;
         try {
-            if (isOwner) {
-                await workspaceService.deleteWorkspace(ws.id, user.id);
-            } else {
-                await workspaceService.leaveWorkspace(ws.id, user.id);
-            }
-            setActiveWorkspace(null);
+            await workspaceService.leaveWorkspace(activeWorkspace.id, user.id);
+            setActiveWsId(null);
+            setConfirmDelete(false);
             await load();
         } catch (err) {
-            console.error(err);
-            setError(err.message || `Failed to ${actionText} workspace. Check console for details.`);
-        } finally {
-            setLoading(false);
+            setError(err.message);
         }
     };
 
-    const copyLink = (ws) => {
+    const handleDelete = async () => {
+        if (!activeWorkspace || deleteInput !== activeWorkspace.name) return;
+        try {
+            await workspaceService.deleteWorkspace(activeWorkspace.id, user.id);
+            setActiveWsId(null);
+            setConfirmDelete(false);
+            setDeleteInput('');
+            await load();
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const copyInviteLink = (ws) => {
         const link = `${window.location.origin}/#/blend?join=${ws.share_link_hash}`;
-        navigator.clipboard.writeText(link);
-        setCopiedId(ws.id);
-        setTimeout(() => setCopiedId(null), 2000);
+        navigator.clipboard.writeText(link).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
     };
 
-    // Auto-join via URL hash
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
-        const hash = params.get('join');
-        if (hash && user) {
-            setJoinHash(hash);
-            setShowJoin(true);
-            handleJoin(hash); // Trigger join automatically
+    const handleAddHabit = async () => {
+        if (!newHabitTitle.trim() || !activeWorkspace) return;
+        try {
+            await supabase.from('habits').insert({
+                title: newHabitTitle.trim(),
+                workspace_id: activeWorkspace.id,
+                user_id: user.id,
+                streak: 0,
+                consistency: [],
+            });
+            setNewHabitTitle('');
+            setAddingHabit(false);
+            const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
+            setWorkspaceHabits(h);
+        } catch (err) {
+            setError(err.message);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    };
+
+    const handleAddTask = async () => {
+        if (!newTaskTitle.trim() || !activeWorkspace) return;
+        try {
+            await supabase.from('tasks').insert({
+                title: newTaskTitle.trim(),
+                workspace_id: activeWorkspace.id,
+                user_id: user.id,
+                completed: false,
+                priority: 'medium',
+            });
+            setNewTaskTitle('');
+            setAddingTask(false);
+            const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
+            setWorkspaceTasks(t);
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const toggleHabitDone = async (habit) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const consistency = Array.isArray(habit.consistency) ? habit.consistency : [];
+        const alreadyDone = consistency.includes(todayStr);
+        const updated = alreadyDone
+            ? consistency.filter(d => d !== todayStr)
+            : [...consistency, todayStr];
+        await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
+        const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
+        setWorkspaceHabits(h);
+    };
+
+    const completeTask = async (taskId) => {
+        await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
+        const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
+        setWorkspaceTasks(t);
+    };
+
+    // Helper: get member name by user_id
+    const getMemberName = (userId) => {
+        const m = members.find(m => m.userId === userId);
+        return m?.fullName || 'Unknown';
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    //  RENDER
+    // ═══════════════════════════════════════════════════════════════
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl mx-auto pb-24 md:pb-8">
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: luxuryEase }}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
+        <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto min-h-screen">
+
+            {/* ── HEADER ── */}
+            <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[var(--accent-glow)]">
-                        <Users className="w-5 h-5 text-[var(--accent-color)]" />
+                    <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center"
+                        style={{ background: 'var(--accent-glow)' }}
+                    >
+                        <Users size={20} style={{ color: 'var(--accent-color)' }} />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Mithra Blend</h1>
-                        <p className="text-xs text-[var(--text-dim)]">Shared workspaces for habits & goals</p>
+                        <h1 className="text-xl font-bold text-[var(--text-primary)]">Mithra Blend</h1>
+                        <p className="text-xs text-[var(--text-dim)] opacity-60">Shared workspaces for habits & goals</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setShowJoin(v => !v); setShowCreate(false); setError(''); }}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors bg-[var(--glass-bg)] border border-[var(--glass-border)]"
+                    <button
+                        onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setCreatedWs(null); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors"
+                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
                     >
-                        <LogIn size={15} /> Join
-                    </motion.button>
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setShowCreate(v => !v); setShowJoin(false); setError(''); }}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                        <LogIn size={14} /> Join
+                    </button>
+                    <button
+                        onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setCreatedWs(null); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white transition-opacity hover:opacity-90"
                         style={{ background: 'var(--accent-color)' }}
                     >
-                        <Plus size={15} /> New Blend
-                    </motion.button>
+                        <Plus size={14} /> New Blend
+                    </button>
                 </div>
-            </motion.div>
+            </div>
 
-            {/* Error & Retry */}
+            {/* ── AUTO-JOIN BANNER ── */}
+            <AnimatePresence>
+                {autoJoining && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm"
+                        style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)' }}>
+                        <Loader2 size={16} className="animate-spin" /> Joining workspace...
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── ERROR BANNER ── */}
             <AnimatePresence>
                 {error && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="flex items-center justify-between p-3 rounded-xl text-sm text-red-400 bg-red-500/10 border border-red-500/20"
-                    >
-                        <div className="flex items-center gap-2">
-                            <AlertCircle size={15} />
-                            <span>{error}</span>
-                        </div>
-                        <button onClick={load} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors text-xs font-semibold">
-                            <RefreshCcw size={12} /> Try Again
-                        </button>
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm"
+                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                        <AlertCircle size={16} className="shrink-0" />
+                        <span className="flex-1">{error}</span>
+                        <button onClick={() => setError('')}><X size={14} /></button>
+                        {error.includes('timed out') && (
+                            <button onClick={load} className="ml-2 flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg"
+                                style={{ background: 'rgba(239,68,68,0.15)' }}>
+                                <RefreshCcw size={12} /> Retry
+                            </button>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Create panel */}
+            {/* ── INFO BANNER ── */}
+            <AnimatePresence>
+                {info && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm"
+                        style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#86efac' }}>
+                        <Check size={16} className="shrink-0" />
+                        <span className="flex-1">{info}</span>
+                        <button onClick={() => setInfo('')}><X size={14} /></button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── CREATE PANEL ── */}
             <AnimatePresence>
                 {showCreate && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                        <GlassCard className="border border-[var(--glass-border)] mt-2">
-                            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Create a Blend Workspace</h3>
-                            <div className="flex gap-3">
-                                <input
-                                    value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                                    placeholder="Workspace name (e.g. 'Study Group')"
-                                    className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-color)]"
-                                    autoFocus
-                                />
-                                <button
-                                    onClick={handleCreate}
-                                    disabled={creating || !newName.trim()}
-                                    className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-40 flex items-center gap-2"
-                                    style={{ background: 'var(--accent-color)', color: 'white' }}
-                                >
-                                    {creating ? <Loader2 size={14} className="animate-spin" /> : 'Create'}
-                                </button>
-                            </div>
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        className="mb-4 overflow-hidden">
+                        <GlassCard>
+                            {!createdWs ? (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">Create a new Blend</h3>
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={newName}
+                                            onChange={e => setNewName(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                                            placeholder="Workspace name (e.g. Study Group)"
+                                            className="flex-1 px-3 py-2 rounded-xl text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-dim)]/40 outline-none"
+                                            style={{ border: '1px solid var(--glass-border)' }}
+                                        />
+                                        <button onClick={handleCreate} disabled={creating || !newName.trim()}
+                                            className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
+                                            style={{ background: 'var(--accent-color)' }}>
+                                            {creating ? <Loader2 size={16} className="animate-spin" /> : 'Create'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center space-y-4 py-2">
+                                    <p className="text-xs text-[var(--text-dim)] uppercase tracking-widest">Your Blend Code</p>
+                                    <div className="inline-block px-6 py-3 rounded-xl text-2xl font-mono font-bold tracking-[0.3em]"
+                                        style={{ color: 'var(--accent-color)', border: '2px solid var(--accent-color)', background: 'var(--accent-glow)' }}>
+                                        {createdWs.join_code}
+                                    </div>
+                                    <p className="text-xs text-[var(--text-dim)]">Share this code with friends so they can join</p>
+                                    <div className="flex gap-2 justify-center">
+                                        <button onClick={() => copyInviteLink(createdWs)}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
+                                            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--text-dim)' }}>
+                                            {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied!' : 'Copy invite link'}
+                                        </button>
+                                        <button onClick={() => { setShowCreate(false); setCreatedWs(null); }}
+                                            className="px-3 py-2 rounded-xl text-xs font-medium text-white"
+                                            style={{ background: 'var(--accent-color)' }}>
+                                            Done
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </GlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Join panel */}
+            {/* ── JOIN PANEL ── */}
             <AnimatePresence>
                 {showJoin && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                        <GlassCard className="border border-[var(--glass-border)] mt-2">
-                            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Join via Invite Link</h3>
-                            <div className="flex gap-3">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        className="mb-4 overflow-hidden">
+                        <GlassCard>
+                            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Join a Blend</h3>
+                            <div className="flex gap-2">
                                 <input
-                                    value={joinHash}
-                                    onChange={e => setJoinHash(e.target.value)}
+                                    value={joinInput}
+                                    onChange={e => setJoinInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleJoin()}
-                                    placeholder="Paste invite code or link here"
-                                    className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-color)]"
-                                    autoFocus
+                                    placeholder="Type code (MX7K29) or paste invite link"
+                                    className="flex-1 px-3 py-2 rounded-xl text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-dim)]/40 outline-none"
+                                    style={{ border: '1px solid var(--glass-border)' }}
                                 />
-                                <button
-                                    onClick={() => handleJoin(joinHash)}
-                                    disabled={joining || !joinHash.trim()}
-                                    className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-40 flex items-center gap-2"
-                                    style={{ background: 'var(--accent-color)', color: 'white' }}
-                                >
-                                    {joining ? <Loader2 size={14} className="animate-spin" /> : 'Join'}
+                                <button onClick={handleJoin} disabled={joining || !joinInput.trim()}
+                                    className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
+                                    style={{ background: 'var(--accent-color)' }}>
+                                    {joining ? <Loader2 size={16} className="animate-spin" /> : 'Join'}
                                 </button>
                             </div>
                         </GlassCard>
@@ -262,88 +469,250 @@ export default function MithraBlend() {
                 )}
             </AnimatePresence>
 
-            {/* Workspace list */}
-            {loading ? (
-                <div className="flex justify-center py-16">
-                    <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-color)]" />
-                </div>
-            ) : workspaces.length === 0 ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-20 text-center gap-4"
-                >
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-[var(--accent-glow)]">
-                        <Users className="w-9 h-9 text-[var(--accent-color)] opacity-60" />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold text-[var(--text-primary)]">No blends yet</h3>
-                        <p className="text-sm text-[var(--text-dim)] mt-1 max-w-sm mx-auto">Create a workspace to sync your habits and goals with friends, or join one via invite link.</p>
-                    </div>
-                </motion.div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4 mt-8">
-                    {/* Workspace tabs */}
-                    <div className="flex gap-2 flex-wrap">
+            {/* ── LOADING SKELETON ── */}
+            {loading && <SkeletonLoader />}
+
+            {/* ── EMPTY STATE ── */}
+            {!loading && workspaces.length === 0 && !error && (
+                <GlassCard className="text-center py-12 mt-4">
+                    <Users size={48} className="mx-auto mb-4" style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No blends yet</h3>
+                    <p className="text-sm text-[var(--text-dim)] opacity-60">
+                        Create a workspace or join a friend using their invite code
+                    </p>
+                </GlassCard>
+            )}
+
+            {/* ── WORKSPACE TABS ── */}
+            {!loading && workspaces.length > 0 && (
+                <>
+                    <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
                         {workspaces.map(ws => (
                             <button
                                 key={ws.id}
-                                onClick={() => setActiveWorkspace(ws)}
-                                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${activeWorkspace?.id === ws.id
-                                    ? 'bg-[var(--accent-glow)] border-[var(--accent-color)] text-[var(--accent-color)]'
-                                    : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)]'
+                                onClick={() => { setActiveWsId(ws.id); setInnerTab('overview'); }}
+                                className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${ws.id === activeWsId ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
                                     }`}
+                                style={{
+                                    background: ws.id === activeWsId ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                                    border: `1px solid ${ws.id === activeWsId ? 'var(--accent-color)' : 'var(--glass-border)'}`,
+                                }}
                             >
-                                {ws.name} {ws.memberCount > 1 && <span className="opacity-60 ml-1">({ws.memberCount})</span>}
+                                <span>{ws.name}</span>
+                                <span className="text-[10px] opacity-50">{members.length}m</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${ws.userRole === 'owner' ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
+                                    }`} style={{ background: ws.userRole === 'owner' ? 'var(--accent-glow)' : 'var(--glass-bg)' }}>
+                                    {ws.userRole}
+                                </span>
                             </button>
                         ))}
                     </div>
 
-                    {/* Active workspace details */}
+                    {/* ── ACTIVE WORKSPACE ── */}
                     {activeWorkspace && (
-                        <motion.div
-                            key={activeWorkspace.id}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, ease: luxuryEase }}
-                            className="space-y-4"
-                        >
-                            <GlassCard className="border border-[var(--glass-border)]">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-[var(--text-dim)] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                            <span>Invite Link</span>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${activeWorkspace.userRole === 'owner' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                                {activeWorkspace.userRole}
-                                            </span>
-                                        </p>
-                                        <p className="text-sm text-[var(--text-primary)] font-mono truncate max-w-full">
-                                            {`${window.location.origin}/#/blend?join=${activeWorkspace.share_link_hash}`}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <button
-                                            onClick={() => copyLink(activeWorkspace)}
-                                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all bg-[var(--accent-glow)] text-[var(--accent-color)] border border-[var(--accent-color)]/20 hover:bg-[var(--accent-color)] hover:text-white"
-                                        >
-                                            {copiedId === activeWorkspace.id ? <Check size={14} /> : <Copy size={14} />}
-                                            {copiedId === activeWorkspace.id ? 'Copied' : 'Copy Link'}
-                                        </button>
+                        <div>
+                            {/* Inner tabs */}
+                            <div className="flex gap-1 mb-4 p-1 rounded-xl" style={{ background: 'var(--glass-bg)' }}>
+                                {['overview', 'habits', 'tasks'].map(tab => (
+                                    <button key={tab} onClick={() => setInnerTab(tab)}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all capitalize ${innerTab === tab ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
+                                            }`}
+                                        style={{ background: innerTab === tab ? 'var(--accent-glow)' : 'transparent' }}>
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
 
-                                        <button
-                                            onClick={() => handleLeaveOrDelete(activeWorkspace)}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${activeWorkspace.userRole === 'owner' ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-[var(--glass-bg)] text-[var(--text-dim)] border-[var(--glass-border)] hover:bg-white/10 hover:text-[var(--text-primary)]'}`}
-                                            title={activeWorkspace.userRole === 'owner' ? "Delete Workspace" : "Leave Workspace"}
-                                        >
-                                            {activeWorkspace.userRole === 'owner' ? <Trash2 size={14} /> : <LogOut size={14} />}
+                            {/* ── OVERVIEW TAB ── */}
+                            {innerTab === 'overview' && (
+                                <BlendOverview
+                                    workspaceId={activeWorkspace.id}
+                                    members={members}
+                                    habits={workspaceHabits}
+                                />
+                            )}
+
+                            {/* ── HABITS TAB ── */}
+                            {innerTab === 'habits' && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                                            Shared Habits ({workspaceHabits.length})
+                                        </h3>
+                                        <button onClick={() => setAddingHabit(!addingHabit)}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                            style={{ background: 'var(--accent-color)' }}>
+                                            <Plus size={12} /> Add Habit
                                         </button>
                                     </div>
+
+                                    <AnimatePresence>
+                                        {addingHabit && (
+                                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                                                <div className="flex gap-2 mb-3">
+                                                    <input value={newHabitTitle} onChange={e => setNewHabitTitle(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && handleAddHabit()}
+                                                        placeholder="Habit title..." autoFocus
+                                                        className="flex-1 px-3 py-2 rounded-lg text-sm bg-transparent text-[var(--text-primary)] outline-none"
+                                                        style={{ border: '1px solid var(--glass-border)' }} />
+                                                    <button onClick={handleAddHabit} className="px-3 py-2 rounded-lg text-xs font-medium text-white"
+                                                        style={{ background: 'var(--accent-color)' }}>Add</button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {workspaceHabits.length === 0 ? (
+                                        <GlassCard className="text-center py-8">
+                                            <p className="text-sm text-[var(--text-dim)] opacity-60">No shared habits yet. Add one!</p>
+                                        </GlassCard>
+                                    ) : (
+                                        workspaceHabits.map(h => {
+                                            const todayStr = new Date().toISOString().split('T')[0];
+                                            const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
+                                            return (
+                                                <GlassCard key={h.id} className="flex items-center gap-3">
+                                                    <button onClick={() => toggleHabitDone(h)}
+                                                        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+                                                        style={{
+                                                            background: done ? 'var(--accent-color)' : 'transparent',
+                                                            border: `2px solid ${done ? 'var(--accent-color)' : 'var(--glass-border)'}`,
+                                                        }}>
+                                                        {done && <Check size={12} className="text-white" />}
+                                                    </button>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium ${done ? 'line-through opacity-40' : ''}`}
+                                                            style={{ color: 'var(--text-primary)' }}>{h.title}</p>
+                                                        <p className="text-[10px] text-[var(--text-dim)] opacity-50">
+                                                            by {getMemberName(h.user_id)} · 🔥 {h.streak || 0}
+                                                        </p>
+                                                    </div>
+                                                    <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                                                </GlassCard>
+                                            );
+                                        })
+                                    )}
                                 </div>
-                            </GlassCard>
+                            )}
 
-                            {/* Habit synergy overview */}
-                            <BlendOverview workspaceId={activeWorkspace.id} />
-                        </motion.div>
+                            {/* ── TASKS TAB ── */}
+                            {innerTab === 'tasks' && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                                            Shared Tasks ({workspaceTasks.length})
+                                        </h3>
+                                        <button onClick={() => setAddingTask(!addingTask)}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                            style={{ background: 'var(--accent-color)' }}>
+                                            <Plus size={12} /> Add Task
+                                        </button>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {addingTask && (
+                                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                                                <div className="flex gap-2 mb-3">
+                                                    <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && handleAddTask()}
+                                                        placeholder="Task title..." autoFocus
+                                                        className="flex-1 px-3 py-2 rounded-lg text-sm bg-transparent text-[var(--text-primary)] outline-none"
+                                                        style={{ border: '1px solid var(--glass-border)' }} />
+                                                    <button onClick={handleAddTask} className="px-3 py-2 rounded-lg text-xs font-medium text-white"
+                                                        style={{ background: 'var(--accent-color)' }}>Add</button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {workspaceTasks.length === 0 ? (
+                                        <GlassCard className="text-center py-8">
+                                            <p className="text-sm text-[var(--text-dim)] opacity-60">No shared tasks yet. Add one!</p>
+                                        </GlassCard>
+                                    ) : (
+                                        workspaceTasks.map(t => (
+                                            <GlassCard key={t.id} className="flex items-center gap-3">
+                                                <button onClick={() => completeTask(t.id)}
+                                                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+                                                    style={{ border: '2px solid var(--glass-border)' }}>
+                                                </button>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-[var(--text-primary)]">{t.title}</p>
+                                                    <p className="text-[10px] text-[var(--text-dim)] opacity-50">
+                                                        by {getMemberName(t.user_id)} · {t.priority || 'medium'}
+                                                    </p>
+                                                </div>
+                                                <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                                            </GlassCard>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── WORKSPACE MANAGEMENT ── */}
+                            <GlassCard className="mt-6 space-y-3">
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={() => copyInviteLink(activeWorkspace)}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-[var(--text-dim)]"
+                                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                                        {copied ? <Check size={12} /> : <Copy size={12} />}
+                                        {copied ? 'Copied!' : 'Copy Invite Link'}
+                                    </button>
+                                    <button onClick={() => setShowCode(!showCode)}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-[var(--text-dim)]"
+                                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                                        {showCode ? <EyeOff size={12} /> : <Eye size={12} />}
+                                        {showCode ? 'Hide Code' : 'Show Code'}
+                                    </button>
+                                </div>
+
+                                <AnimatePresence>
+                                    {showCode && (
+                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                            className="text-center py-2">
+                                            <span className="text-xl font-mono font-bold tracking-[0.3em]"
+                                                style={{ color: 'var(--accent-color)' }}>
+                                                {activeWorkspace.join_code}
+                                            </span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <div className="h-px" style={{ background: 'var(--glass-border)' }} />
+
+                                {activeWorkspace.userRole === 'member' ? (
+                                    <button onClick={handleLeave}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                                        <LogOut size={12} /> Leave Workspace
+                                    </button>
+                                ) : (
+                                    <>
+                                        {!confirmDelete ? (
+                                            <button onClick={() => setConfirmDelete(true)}
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                                                <Trash2 size={12} /> Delete Workspace
+                                            </button>
+                                        ) : (
+                                            <div className="space-y-2 p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                                <p className="text-xs text-red-300">Type <strong>{activeWorkspace.name}</strong> to confirm deletion:</p>
+                                                <div className="flex gap-2">
+                                                    <input value={deleteInput} onChange={e => setDeleteInput(e.target.value)}
+                                                        className="flex-1 px-2 py-1.5 rounded-lg text-xs bg-transparent text-[var(--text-primary)] outline-none"
+                                                        style={{ border: '1px solid rgba(239,68,68,0.3)' }} />
+                                                    <button onClick={handleDelete} disabled={deleteInput !== activeWorkspace.name}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-30"
+                                                        style={{ background: '#ef4444' }}>Delete</button>
+                                                    <button onClick={() => { setConfirmDelete(false); setDeleteInput(''); }}
+                                                        className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-dim)]">Cancel</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </GlassCard>
+                        </div>
                     )}
-                </div>
+                </>
             )}
         </div>
     );

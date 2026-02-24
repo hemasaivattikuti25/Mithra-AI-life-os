@@ -164,7 +164,7 @@ export const authService = {
   /** Reset password (sends email) */
   async resetPassword(email) {
     if (!supabase) return null;
-    const siteUrl = 'https://mithra-life-os.vercel.app';
+    const siteUrl = window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/#/reset-password`,
     });

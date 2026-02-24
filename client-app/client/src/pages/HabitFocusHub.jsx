@@ -3,13 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, CheckCircle2, Circle, Play, Pause, RotateCcw, Plus, X,
   Activity, Clock, Zap, Target, Dumbbell, BookOpen, Code, Brain,
-  Heart, Trash2, TrendingUp, Pencil, Timer
+  Heart, Trash2, TrendingUp, Pencil, Timer, Users, Check
 } from 'lucide-react';
 import { format, isSameDay, eachDayOfInterval, startOfYear } from 'date-fns';
 import clsx from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { notificationManager } from '../services/notifications';
 import EmptyState from '../components/EmptyState';
+import { useAuth } from '../context/AuthContext';
+import { workspaceService } from '../services/workspaceService';
+import { supabase } from '../services/supabaseClient';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
@@ -636,9 +639,38 @@ const CircularTimer = ({ progress, timeStr, label, isActive, color = 'var(--acce
 export default function HabitFocusHub() {
   const { habits, addHabit, updateHabit, deleteHabit, toggleHabit, theme, accentColor, lastMilestone } = useData();
   const isLight = theme === 'light';
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('tracker');
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
+
+  // ── Blend workspace habits ──
+  const [blendWorkspace, setBlendWorkspace] = useState(null);
+  const [blendHabits, setBlendHabits] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    workspaceService.getWorkspaces(user.id)
+      .then(ws => { if (ws.length > 0) setBlendWorkspace(ws[0]); })
+      .catch(() => { });
+  }, [user]);
+
+  useEffect(() => {
+    if (!blendWorkspace) return;
+    workspaceService.getWorkspaceHabits(blendWorkspace.id)
+      .then(setBlendHabits)
+      .catch(() => { });
+  }, [blendWorkspace]);
+
+  const toggleBlendHabit = async (habit) => {
+    if (!supabase) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const consistency = Array.isArray(habit.consistency) ? habit.consistency : [];
+    const alreadyDone = consistency.includes(todayStr);
+    const updated = alreadyDone ? consistency.filter(d => d !== todayStr) : [...consistency, todayStr];
+    await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
+    setBlendHabits(prev => prev.map(h => h.id === habit.id ? { ...h, consistency: updated } : h));
+  };
 
   // Focus state
   const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -903,6 +935,47 @@ export default function HabitFocusHub() {
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* ── BLEND WORKSPACE HABITS ── */}
+            {blendWorkspace && blendHabits.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center gap-2 mb-4 px-1">
+                  <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
+                  <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--accent-color)' }}>
+                    <Users size={12} /> Blend: {blendWorkspace.name}
+                  </div>
+                  <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
+                </div>
+                <div className="space-y-2.5">
+                  {blendHabits.map(h => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
+                    return (
+                      <div key={h.id}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                        <button onClick={() => toggleBlendHabit(h)}
+                          className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center transition-colors"
+                          style={{
+                            background: done ? 'var(--accent-color)' : 'transparent',
+                            border: `2px solid ${done ? 'var(--accent-color)' : 'var(--glass-border)'}`,
+                          }}>
+                          {done && <Check size={12} className="text-white" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${done ? 'line-through opacity-40' : ''}`}
+                            style={{ color: 'var(--text-primary)' }}>{h.title}</p>
+                          <p className="text-[10px] text-[var(--text-dim)] opacity-50">
+                            🔥 {h.streak || 0}
+                          </p>
+                        </div>
+                        <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 

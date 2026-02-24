@@ -1,253 +1,201 @@
-import React, { useEffect, useState } from 'react';
-import { Flame, Users, CheckCircle2, Activity } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { workspaceService } from '../services/workspaceService';
-import { supabase } from '../services/supabaseClient';
+import React from 'react';
+import { Users, Copy, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export const BlendOverview = ({ workspaceId }) => {
-    const [members, setMembers] = useState([]);
-    const [sharedHabits, setSharedHabits] = useState([]);
-    const [loading, setLoading] = useState(true);
+/* ═══════════════════════════════════════════════════════════════
+   BLEND OVERVIEW — Shows member cards, synergy bar, habit list
+   Props: workspaceId, members[], habits[]
+   ═══════════════════════════════════════════════════════════════ */
 
-    useEffect(() => {
-        if (!workspaceId) { setLoading(false); return; }
+export function BlendOverview({ workspaceId, members = [], habits = [] }) {
+    const todayStr = new Date().toISOString().split('T')[0];
 
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // Fetch members
-                const memberData = await workspaceService.getMembers(workspaceId);
-                setMembers(memberData || []);
+    // Calculate stats per member
+    const memberStats = members.map(m => {
+        const memberHabits = habits.filter(h => h.user_id === m.userId);
+        const completedToday = memberHabits.filter(h =>
+            Array.isArray(h.consistency) && h.consistency.includes(todayStr)
+        ).length;
+        const total = memberHabits.length;
+        const pct = total > 0 ? Math.round((completedToday / total) * 100) : 0;
+        const maxStreak = memberHabits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
+        return { ...m, completedToday, total, pct, maxStreak };
+    });
 
-                // Fetch real habits shared in this workspace
-                const { data: habitsData, error } = await supabase
-                    .from('habits')
-                    .select('id, title, streak, longest_streak, completed_dates, user_id, category')
-                    .eq('workspace_id', workspaceId);
-
-                if (error) {
-                    console.error('[BlendOverview] Supabase query failed:', error);
-                } else {
-                    setSharedHabits(habitsData || []);
-                }
-
-            } catch (err) {
-                console.error('[BlendOverview] Failed to fetch data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-
-        // Listen for realtime habit changes in this workspace
-        const channel = supabase.channel(`ws_habits_${workspaceId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `workspace_id=eq.${workspaceId}` }, () => {
-                fetchData(); // Refetch heavily relies on local cache visually, this is safer 
-            }).subscribe();
-
-        return () => supabase.removeChannel(channel);
-    }, [workspaceId]);
-
-    // Loading skeleton
-    if (loading) return (
-        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--glass-bg)' }}>
-            <div className="h-5 w-40 rounded-lg animate-pulse" style={{ background: 'var(--glass-border)' }} />
-            <div className="flex justify-between px-8">
-                <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 h-16 rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
-                    <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--glass-border)' }} />
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 h-16 rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
-                    <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--glass-border)' }} />
-                </div>
-            </div>
-            <div className="h-2.5 w-full rounded-full animate-pulse" style={{ background: 'var(--glass-border)' }} />
-        </div>
-    );
-
-    if (!members || members.length < 2) {
+    // ── Less than 2 members → waiting state ──
+    if (members.length < 2) {
         return (
-            <div className="rounded-2xl p-6 text-center border border-dashed border-[var(--glass-border)]" style={{ background: 'var(--glass-bg)' }}>
-                <Users className="w-8 h-8 mx-auto mb-3 text-[var(--accent-color)] opacity-50" />
-                <h2 className="text-base font-bold text-[var(--text-primary)] mb-1">Waiting for your Blend partner</h2>
-                <p className="text-[var(--text-dim)] text-xs mb-3">
-                    {members?.length === 1
-                        ? "Share the invite link above — once they join, you'll see your habit synergy here!"
-                        : "Invite a friend to blend your habits!"}
+            <div className="rounded-2xl p-8 text-center"
+                style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
+                <Users size={40} className="mx-auto mb-4" style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">
+                    Waiting for your Blend partner
+                </h3>
+                <p className="text-sm text-[var(--text-dim)] opacity-60 mb-4">
+                    Once they join with your code, you'll both see habit synergy here
                 </p>
+                {members.length === 1 && (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs"
+                        style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)' }}>
+                        <Users size={12} /> 1 member (you)
+                    </div>
+                )}
             </div>
         );
     }
 
-    // Helper to get today's YYYY-MM-DD
-    const todayStr = (() => {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    })();
-
-    // Helper: calculate user metrics
-    const getUserMetrics = (userId) => {
-        const userHabits = sharedHabits.filter(h => h.user_id === userId);
-        const total = userHabits.length;
-
-        let completedTodayCount = 0;
-        let highestStreak = 0;
-
-        userHabits.forEach(h => {
-            if (h.streak > highestStreak) highestStreak = h.streak;
-            const dates = Array.isArray(h.completed_dates) ? h.completed_dates : [];
-            if (dates.includes(todayStr)) {
-                completedTodayCount++;
-            }
-        });
-
-        const pct = total === 0 ? 0 : Math.round((completedTodayCount / total) * 100);
-        return { total, completedTodayCount, pct, highestStreak };
-    };
-
-    const a = members[0];
-    const b = members[1];
-
-    const statsA = getUserMetrics(a.userId);
-    const statsB = getUserMetrics(b.userId);
-
-    // Calculate Synergy Logic
-    // If both have 0 habits, show a nice 50/50 empty state
-    // If one has habits and the other 0, offset it
-    const totalCompletionRaw = statsA.pct + statsB.pct;
-    const aWidth = totalCompletionRaw === 0 ? 50 : (statsA.pct / totalCompletionRaw) * 100;
-    const bWidth = totalCompletionRaw === 0 ? 50 : (statsB.pct / totalCompletionRaw) * 100;
+    // Get first 2 members for side-by-side display
+    const [memberA, memberB] = memberStats.slice(0, 2);
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="rounded-2xl p-6 border border-[var(--glass-border)]"
-            style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}
-        >
-            <h2 className="text-lg font-bold mb-6 text-[var(--accent-color)] flex items-center justify-between">
-                <span>Habit Blend Synergy</span>
-                {sharedHabits.length > 0 && (
-                    <span className="text-xs font-medium px-2 py-1 rounded bg-white/5 text-[var(--text-dim)] border border-[var(--glass-border)]">
-                        {sharedHabits.length} Shared Tasks
-                    </span>
-                )}
-            </h2>
+        <div className="space-y-4">
 
-            {/* Avatars & Streaks */}
-            <div className="flex justify-between items-center gap-4 px-2 sm:px-4 w-full">
-                {[
-                    { m: a, s: statsA },
-                    { m: b, s: statsB }
-                ].map(({ m, s }) => (
-                    <div key={m.userId} className="flex flex-col items-center flex-1">
-                        {m.avatarUrl ? (
-                            <img src={m.avatarUrl} alt={m.fullName} className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-[var(--glass-border)]" />
-                        ) : (
-                            <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold border-2 border-[var(--glass-border)] bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg">
-                                {m.fullName.substring(0, 2).toUpperCase()}
-                            </div>
-                        )}
-                        <span className="mt-3 text-sm font-medium text-[var(--text-primary)] truncate max-w-[120px] text-center">{m.fullName.split(' ')[0]}</span>
-
-                        {/* Real dynamic streak/completion */}
-                        <div className="flex items-center gap-2 mt-1">
-                            {s.total > 0 ? (
-                                <>
-                                    <div className="flex items-center gap-1 text-orange-400" title="Highest Workspace Streak">
-                                        <Flame size={14} className={s.highestStreak > 2 ? "fill-orange-500" : ""} />
-                                        <span className="font-bold text-xs">{s.highestStreak}</span>
-                                    </div>
-                                    <span className="text-[10px] text-[var(--text-dim)] hidden sm:inline">&bull;</span>
-                                    <div className="flex items-center gap-1 text-green-400" title="Today's Completion">
-                                        <CheckCircle2 size={13} />
-                                        <span className="font-bold text-xs">{s.completedTodayCount}/{s.total}</span>
-                                    </div>
-                                </>
-                            ) : (
-                                <span className="text-[10px] font-medium text-[var(--text-dim)] uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded-sm">
-                                    No Habits
-                                </span>
-                            )}
+            {/* ── MEMBER CARDS ── */}
+            <div className="grid grid-cols-2 gap-3">
+                {[memberA, memberB].map((m, idx) => (
+                    <motion.div
+                        key={m.userId}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="rounded-2xl p-4 text-center"
+                        style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}
+                    >
+                        {/* Avatar */}
+                        <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold text-white"
+                            style={{
+                                background: idx === 0
+                                    ? 'linear-gradient(135deg, var(--accent-color), #2563eb)'
+                                    : 'linear-gradient(135deg, #f97316, #ef4444)',
+                            }}>
+                            {(m.fullName || '??').substring(0, 2).toUpperCase()}
                         </div>
-                    </div>
+
+                        {/* Name + role */}
+                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{m.fullName}</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md inline-block mt-1"
+                            style={{
+                                color: m.role === 'owner' ? 'var(--accent-color)' : 'var(--text-dim)',
+                                background: m.role === 'owner' ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                            }}>
+                            {m.role}
+                        </span>
+
+                        {/* Stats */}
+                        <div className="mt-3 space-y-1">
+                            <p className="text-xs text-[var(--text-dim)]">
+                                🔥 {m.maxStreak} streak
+                            </p>
+                            <p className="text-xs font-medium" style={{ color: 'var(--accent-color)' }}>
+                                {m.pct}% today
+                            </p>
+                        </div>
+                    </motion.div>
                 ))}
             </div>
 
-            {/* True Dynamic Synergy Bar */}
-            <div className="mt-8 w-full bg-[var(--glass-border)] h-2.5 rounded-full overflow-hidden flex shadow-inner relative">
-                <motion.div
-                    initial={{ width: '50%' }}
-                    animate={{ width: `${aWidth}%` }}
-                    transition={{ duration: 1, type: 'spring', stiffness: 50, damping: 15 }}
-                    className={`bg-blue-500/80 h-full backdrop-blur-sm ${statsA.pct > 0 ? 'shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'opacity-40'}`}
-                />
-                <motion.div
-                    initial={{ width: '50%' }}
-                    animate={{ width: `${bWidth}%` }}
-                    transition={{ duration: 1, type: 'spring', stiffness: 50, damping: 15 }}
-                    className={`bg-purple-500/80 h-full backdrop-blur-sm ${statsB.pct > 0 ? 'shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'opacity-40'}`}
-                />
-
-                {/* Center marker */}
-                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/20 z-10" />
-            </div>
-
-            <div className="flex justify-between mt-2 px-1 text-[10px] font-bold text-[var(--text-dim)] uppercase">
-                <span className={statsA.pct === 100 ? "text-blue-400" : ""}>{statsA.pct}% Done</span>
-                <span className={statsB.pct === 100 ? "text-purple-400" : ""}>{statsB.pct}% Done</span>
-            </div>
-
-            {/* List of Shared Habits */}
-            {sharedHabits.length > 0 ? (
-                <div className="mt-6 space-y-2 border-t border-[var(--glass-border)] pt-4 max-h-[250px] overflow-y-auto pr-1">
-                    <h3 className="text-xs text-[var(--text-dim)] uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-                        <Activity size={12} /> Live Workspace Habits
-                    </h3>
-                    <AnimatePresence>
-                        {sharedHabits.map((habit, i) => {
-                            const isA = habit.user_id === a.userId;
-                            const owner = isA ? a : b;
-                            const dates = Array.isArray(habit.completed_dates) ? habit.completed_dates : [];
-                            const doneToday = dates.includes(todayStr);
-
-                            return (
-                                <motion.div
-                                    key={habit.id}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${doneToday ? 'bg-white/5 border-white/10' : 'bg-[var(--glass-bg)] border-[var(--glass-border)] opacity-80'}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${isA ? 'bg-blue-500' : 'bg-purple-500'} ${doneToday ? 'shadow-[0_0_8px_currentColor]' : 'opacity-40'}`} />
-                                        <div>
-                                            <p className={`text-sm font-medium ${doneToday ? 'text-[var(--text-primary)]' : 'text-[var(--text-dim)]'}`}>
-                                                {habit.title}
-                                            </p>
-                                            <p className="text-[10px] text-[var(--text-dim)]">
-                                                By {owner.fullName.split(' ')[0]} &bull; {habit.streak} day streak
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {doneToday && (
-                                        <CheckCircle2 size={16} className={isA ? "text-blue-400" : "text-purple-400"} />
-                                    )}
-                                </motion.div>
-                            )
-                        })}
-                    </AnimatePresence>
-                </div>
-            ) : (
-                <p className="text-center text-xs text-[var(--text-dim)] mt-6 bg-white/5 py-3 rounded-lg border border-[var(--glass-border)]">
-                    Create a habit and select this workspace inside the habit modal to see live synergy!
+            {/* ── SYNERGY BAR ── */}
+            <div className="rounded-2xl p-4"
+                style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
+                <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">
+                    Synergy
                 </p>
+
+                {memberA.pct === 0 && memberB.pct === 0 ? (
+                    <div className="text-center py-2">
+                        <p className="text-xs text-[var(--text-dim)] opacity-50">No habits logged yet today</p>
+                        <div className="w-full h-3 rounded-full mt-2" style={{ background: 'var(--glass-border)' }} />
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex gap-1 h-4 rounded-full overflow-hidden" style={{ background: 'var(--glass-border)' }}>
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${memberA.pct}%` }}
+                                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                                className="rounded-l-full"
+                                style={{ background: 'linear-gradient(90deg, var(--accent-color), #2563eb)', minWidth: memberA.pct > 0 ? '2rem' : 0 }}
+                            />
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${memberB.pct}%` }}
+                                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                                className="rounded-r-full"
+                                style={{ background: 'linear-gradient(90deg, #f97316, #ef4444)', minWidth: memberB.pct > 0 ? '2rem' : 0 }}
+                            />
+                        </div>
+                        <div className="flex justify-between mt-2">
+                            <span className="text-xs text-[var(--text-dim)]">
+                                {memberA.fullName?.split(' ')[0]} {memberA.pct}%
+                            </span>
+                            <span className="text-xs text-[var(--text-dim)]">
+                                {memberB.fullName?.split(' ')[0]} {memberB.pct}%
+                            </span>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* ── SHARED HABITS LIST ── */}
+            <div className="rounded-2xl p-4"
+                style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
+                <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">
+                    Shared Habits ({habits.length})
+                </p>
+                {habits.length === 0 ? (
+                    <p className="text-xs text-[var(--text-dim)] opacity-50 text-center py-4">
+                        Add habits in the Habits tab to see them here
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {habits.map(h => {
+                            const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
+                            const creator = members.find(m => m.userId === h.user_id)?.fullName || 'Unknown';
+                            return (
+                                <div key={h.id} className="flex items-center gap-3 py-2 px-3 rounded-xl"
+                                    style={{ background: done ? 'var(--accent-glow)' : 'transparent' }}>
+                                    <div className={`w-2 h-2 rounded-full shrink-0 ${done ? '' : 'opacity-30'}`}
+                                        style={{ background: done ? 'var(--accent-color)' : 'var(--text-dim)' }} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium text-[var(--text-primary)] truncate">{h.title}</p>
+                                        <p className="text-[10px] text-[var(--text-dim)] opacity-50">
+                                            by {creator} · 🔥 {h.streak || 0}
+                                        </p>
+                                    </div>
+                                    {done && <Check size={12} style={{ color: 'var(--accent-color)' }} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Show all members if more than 2 */}
+            {members.length > 2 && (
+                <div className="rounded-2xl p-4"
+                    style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
+                    <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">
+                        All Members ({members.length})
+                    </p>
+                    <div className="space-y-2">
+                        {memberStats.slice(2).map(m => (
+                            <div key={m.userId} className="flex items-center gap-3 py-1">
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                                    style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)' }}>
+                                    {(m.fullName || '??').substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs font-medium text-[var(--text-primary)]">{m.fullName}</p>
+                                    <p className="text-[10px] text-[var(--text-dim)] opacity-50">{m.pct}% today · 🔥 {m.maxStreak}</p>
+                                </div>
+                                <span className="text-[10px] text-[var(--text-dim)]">{m.role}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
-        </motion.div>
+        </div>
     );
-};
+}
+
+export default BlendOverview;

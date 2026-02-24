@@ -4,7 +4,7 @@ import {
   Plus, Circle, CheckCircle2, Star, Trash2, Calendar as CalIcon,
   ChevronDown, ChevronRight, MoreVertical, X, Clock,
   ListTodo, SortAsc, Flag, Edit3, ArrowRight, FileText,
-  User, Briefcase, Heart, Hash, BarChart3, Target, TrendingUp, Zap
+  User, Briefcase, Heart, Hash, BarChart3, Target, TrendingUp, Zap, Users
 } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast, startOfDay, addDays, subDays } from 'date-fns';
 import clsx from 'clsx';
@@ -15,6 +15,9 @@ import PullToRefresh from '../components/PullToRefresh';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ClockPicker from '../components/ClockPicker';
 import EmptyState from '../components/EmptyState';
+import { useAuth } from '../context/AuthContext';
+import { workspaceService } from '../services/workspaceService';
+import { supabase } from '../services/supabaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    PRIORITY CONFIG
@@ -539,6 +542,7 @@ export default function MithraTasks() {
   const { tasks, taskLists, addTask, updateTask, deleteTask, toggleTask, starTask, theme, accentColor } = useData();
   const isLight = theme === 'light';
   const { addToast } = useToast();
+  const { user } = useAuth();
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedTask, setSelectedTask] = useState(null);
@@ -548,6 +552,30 @@ export default function MithraTasks() {
   const [deleteConfirm, setDeleteConfirm] = useState(null); // task ID pending delete
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [analyticsFilter, setAnalyticsFilter] = useState(null); // 'overdue' | 'high' | 'pending' | null
+
+  // ── Blend workspace tasks ──
+  const [blendWorkspace, setBlendWorkspace] = useState(null);
+  const [blendTasks, setBlendTasks] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    workspaceService.getWorkspaces(user.id)
+      .then(ws => { if (ws.length > 0) setBlendWorkspace(ws[0]); })
+      .catch(() => { });
+  }, [user]);
+
+  useEffect(() => {
+    if (!blendWorkspace) return;
+    workspaceService.getWorkspaceTasks(blendWorkspace.id)
+      .then(setBlendTasks)
+      .catch(() => { });
+  }, [blendWorkspace]);
+
+  const completeBlendTask = async (taskId) => {
+    if (!supabase) return;
+    await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
+    setBlendTasks(prev => prev.filter(t => t.id !== taskId));
+  };
 
   // ── Task Analytics ──
   const analytics = useMemo(() => {
@@ -997,6 +1025,33 @@ export default function MithraTasks() {
             />
           )}
         </AnimatePresence>
+
+        {/* ── BLEND WORKSPACE TASKS ── */}
+        {blendWorkspace && blendTasks.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
+              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--accent-color)' }}>
+                <Users size={12} /> Blend: {blendWorkspace.name}
+              </div>
+              <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
+            </div>
+            <div className="space-y-2">
+              {blendTasks.map(t => (
+                <motion.div key={t.id} layout
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl group"
+                  style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                  <button onClick={() => completeBlendTask(t.id)}
+                    className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
+                    style={{ border: '2px solid var(--glass-border)' }}>
+                  </button>
+                  <span className="flex-1 text-sm text-[var(--text-primary)]">{t.title}</span>
+                  <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── DELETE CONFIRMATION DIALOG ── */}
         <ConfirmDialog
