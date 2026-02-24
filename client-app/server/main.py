@@ -59,7 +59,8 @@ app = FastAPI(
 
 # ─── CORS ───────────────────────────────────────────────────────────────────
 default_origins = "https://mithra-lifeos.com,https://www.mithra-lifeos.com,https://mithra-life-os.vercel.app,http://localhost:5173,http://localhost:3000"
-origins = os.getenv("ALLOWED_ORIGINS", default_origins).split(",")
+origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", default_origins).split(",") if o.strip()]
+
 
 app.add_middleware(
     CORSMiddleware,
