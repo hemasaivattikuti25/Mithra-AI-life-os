@@ -338,12 +338,17 @@ export default function Settings() {
 
   const saveProfile = async () => {
     setProfileSaving(true);
-    await new Promise(r => setTimeout(r, 500));
-    updateProfile(editValues);
-    setEditingProfile(false);
-    setProfileSaving(false);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 3000);
+    try {
+      await updateProfile(editValues);
+      setEditingProfile(false);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save profile: ' + (err.message || 'Unknown error'));
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const handleEditField = (name, value) => {

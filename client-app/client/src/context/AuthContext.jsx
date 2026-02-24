@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
 
         if (event === 'PASSWORD_RECOVERY') {
           sessionStorage.setItem('mithra-password-recovery', 'true');
-          window.location.hash = '#/reset-password';
+          window.location.pathname = '/reset-password';
         } else if (event === 'SIGNED_IN' && session?.user) {
           const supaUser = {
             id: session.user.id,
@@ -164,11 +164,15 @@ export function AuthProvider({ children }) {
             avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
           }));
 
+          // Strip ?code= from URL after OAuth callback so it doesn't linger
+          if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
+            window.history.replaceState({}, '', window.location.pathname || '/');
+          }
+
           // Force navigation to dashboard if we're on landing page or auth page
-          // This fixes the issue where OAuth redirects to root but doesn't navigate
-          const currentHash = window.location.hash;
-          if (!currentHash || currentHash === '#/' || currentHash === '#/auth') {
-            window.location.hash = '#/dashboard';
+          const currentPath = window.location.pathname;
+          if (!currentPath || currentPath === '/' || currentPath === '/auth') {
+            window.location.pathname = '/dashboard';
           }
           setLoading(false);
 
@@ -494,13 +498,17 @@ export function AuthProvider({ children }) {
     // Sync profile to Supabase
     if (isSupabaseConfigured && user?.provider === 'supabase') {
       try {
-        await supabase.from('profiles').upsert({
+        const { error } = await supabase.from('profiles').upsert({
           id: user.id,
           full_name: updates.fullName || undefined,
           avatar_url: updates.avatarUrl || undefined,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'id' });
-      } catch { }
+        if (error) throw error;
+      } catch (err) {
+        console.error("Profile update failed:", err);
+        throw err;
+      }
     }
   }, [user]);
 

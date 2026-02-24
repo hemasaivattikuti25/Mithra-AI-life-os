@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
  * Workspace Service — Mithra Blend
  *
  * Shared-workspace architecture:
- *   - workspaces.created_by references auth.users(id) directly
+ *   - workspaces.owner_id references auth.users(id) directly
  *   - workspace_members for membership tracking
  *   - join_code (6-char uppercase) for easy sharing
  *   - share_link_hash for URL-based invites
@@ -68,7 +68,7 @@ export const workspaceService = {
                 .from('workspaces')
                 .insert({
                     name: name.trim(),
-                    created_by: userId,
+                    owner_id: userId,
                     join_code: joinCode,
                     share_link_hash: shareLinkHash,
                 })
@@ -83,7 +83,7 @@ export const workspaceService = {
                         .from('workspaces')
                         .insert({
                             name: name.trim(),
-                            created_by: userId,
+                            owner_id: userId,
                             join_code: retryCode,
                             share_link_hash: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
                         })
@@ -131,11 +131,10 @@ export const workspaceService = {
 
             // Extract hash from URL if it contains "join="
             if (cleaned.includes('join=')) {
-                const match = cleaned.match(/join=([a-zA-Z0-9_-]+)/);
-                if (match) cleaned = match[1];
+                cleaned = cleaned.split('join=').pop().split('&')[0].split('#')[0].trim();
             } else if (cleaned.includes('/')) {
                 // Extract last path segment
-                cleaned = cleaned.split('/').pop().split('?')[0];
+                cleaned = cleaned.split('/').pop().split('?')[0].split('#')[0].trim();
             }
 
             let workspace = null;
@@ -224,7 +223,7 @@ export const workspaceService = {
             // Query 2: Get workspace details
             const { data: workspaces, error: err2 } = await supabase
                 .from('workspaces')
-                .select('id, name, join_code, share_link_hash, created_by, created_at')
+                .select('id, name, join_code, share_link_hash, owner_id, created_at')
                 .in('id', workspaceIds);
 
             if (err2) {
@@ -248,10 +247,10 @@ export const workspaceService = {
     async getMembers(workspaceId) {
         ensureSupabase();
         try {
-            // Get memberships
+            // Try to join profiles first
             const { data: members, error: memErr } = await supabase
                 .from('workspace_members')
-                .select('user_id, role, joined_at')
+                .select('user_id, role, joined_at, profiles:user_id(display_name, avatar_url, email)')
                 .eq('workspace_id', workspaceId);
 
             if (memErr) {
@@ -260,23 +259,13 @@ export const workspaceService = {
 
             if (!members || members.length === 0) return [];
 
-            // Batch fetch profiles
-            const userIds = members.map(m => m.user_id);
-            const { data: profiles } = await supabase
-                .from('profiles')
-                .select('id, email, display_name, avatar_url')
-                .in('id', userIds);
-
-            const profileMap = {};
-            (profiles || []).forEach(p => { profileMap[p.id] = p; });
-
             return members.map(m => {
-                const p = profileMap[m.user_id];
+                const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
                 return {
                     userId: m.user_id,
                     role: m.role,
                     joinedAt: m.joined_at,
-                    fullName: p?.display_name || p?.email?.split('@')[0] || 'User',
+                    fullName: p?.display_name || p?.email?.split('@')[0] || m.user_id,
                     avatarUrl: p?.avatar_url || null,
                     email: p?.email || null,
                 };
@@ -324,11 +313,11 @@ export const workspaceService = {
         // Check if user is owner — owners must delete, not leave
         const { data: ws } = await supabase
             .from('workspaces')
-            .select('created_by')
+            .select('owner_id')
             .eq('id', workspaceId)
             .single();
 
-        if (ws?.created_by === userId) {
+        if (ws?.owner_id === userId) {
             throw new Error('You are the owner. Transfer ownership or delete the workspace instead.');
         }
 
@@ -350,11 +339,11 @@ export const workspaceService = {
         // Verify ownership
         const { data: ws } = await supabase
             .from('workspaces')
-            .select('created_by')
+            .select('owner_id')
             .eq('id', workspaceId)
             .single();
 
-        if (!ws || ws.created_by !== userId) {
+        if (!ws || ws.owner_id !== userId) {
             throw new Error('Only the owner can delete this workspace.');
         }
 

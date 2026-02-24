@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -56,14 +57,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ─── CORS ────────────────────────────────────────────────────────
-origins = [
-    "https://mithra-lifeos.com",
-    "https://www.mithra-lifeos.com",
-    "https://mithra-life-os.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
+# ─── CORS ───────────────────────────────────────────────────────────────────
+default_origins = "https://mithra-lifeos.com,https://www.mithra-lifeos.com,https://mithra-life-os.vercel.app,http://localhost:5173,http://localhost:3000"
+origins = os.getenv("ALLOWED_ORIGINS", default_origins).split(",")
 
 app.add_middleware(
     CORSMiddleware,

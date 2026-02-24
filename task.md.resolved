@@ -1,0 +1,58 @@
+# Deep Clean and Architecture Hardening: Full Audit
+
+- [x] **Part 1: SUPABASE SQL — COMPLETE REWRITE**
+  - [x] Apply rewrite rules (DROP IF EXISTS, CREATE INDEX IF NOT EXISTS, DROP TRIGGER IF EXISTS)
+  - [x] Fix `handle_new_user()` to use `ON CONFLICT (id) DO NOTHING`
+  - [x] Remove recursive RLS policies (no functions inside policies)
+  - [x] Rename `created_by` to `owner_id` uniformly for workspaces
+  - [x] Apply exact RLS patterns for `workspaces` and `workspace_members`
+  - [x] Add orphaned profiles fix script at the end
+  - [x] Add sanity test comments
+
+- [x] **Part 2: workspaceService.js — COMPLETE REWRITE**
+  - [x] Remove `withTimeout`, AbortController, and `check_membership_safe`
+  - [x] Rewrite [getWorkspaces](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/services/workspaceService.js#203-243) (flat queries, no nested joins)
+  - [x] Rewrite [createWorkspace](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/services/workspaceService.js#36-123)
+  - [x] Rewrite [getMembers](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/services/workspaceService.js#244-278)
+  - [x] Rewrite `joinWorkspace`
+  - [x] Add [leaveWorkspace](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/services/workspaceService.js#308-333)
+  - [x] Add [deleteWorkspace](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/services/workspaceService.js#334-358)
+
+- [ ] **Part 3: MithraBlend.jsx — COMPLETE REWRITE**
+  - [ ] Fix loading state (try/finally, fallback timeout without AbortController)
+  - [ ] Fix error display and add "Try Again"
+  - [ ] Fix URL auto-join
+  - [ ] Add Leave/Delete workspace actions
+  - [ ] Fix workspace tabs (member count, role badge)
+  - [ ] Fix `handleCreate`
+  - [ ] Add debug console logs
+
+- [ ] **Part 4: BlendOverview.jsx — REMOVE ALL FAKE DATA**
+  - [ ] Remove fake values and animations
+  - [ ] Fetch real habit data from Supabase
+  - [ ] Calculate actual synergy completion percentage
+  - [ ] Show shared habits list
+  - [ ] Add dynamic status badge
+
+- [ ] **Part 5: FastAPI Backend — CRITICAL FIXES**
+  - [ ] Fix CORS origins (read from env `ALLOWED_ORIGINS`)
+  - [ ] Add global exception handler
+  - [ ] Fix route handlers (try/except, return HTTPException)
+  - [ ] Add `workspace_router.py` stub routes
+
+- [ ] **Part 6: GENERAL REACT FIXES**
+  - [ ] Fix useEffect hooks (cleanup, dependencies)
+  - [ ] Fix API calls (try/catch, loading/error states)
+  - [ ] Add `ErrorBoundary.jsx` and wrap Router
+  - [ ] Fix environment variables
+  - [ ] Remove console.logs (except Blend Service)
+
+- [ ] **Part 7: AUTH & NAVIGATION FIXES**
+  - [ ] Fix URL after OAuth strip `?code=`
+  - [ ] Fix protected routes session check
+  - [ ] Fix session refresh (`onAuthStateChange` listener in [App.jsx](file:///Users/sai2005/Downloads/gitprojects/mithra_web.ai/client-app/client/src/App.jsx))
+
+- [ ] **Part 8: FINAL STEPS**
+  - [ ] Build check & fix TypeErrors
+  - [ ] Git commit and push (generate report)
+  - [ ] Update `master_codebase.txt` with the full updated codebase text

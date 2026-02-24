@@ -99,12 +99,16 @@ export default function MithraBlend() {
 
     const load = useCallback(async () => {
         if (!user) return;
+        console.log('[Blend] load() called, user:', user?.id);
         setLoading(true);
         setError('');
         try {
             const ws = await workspaceService.getWorkspaces(user.id);
+            console.log('[Blend] workspaces loaded:', ws);
             setWorkspaces(ws);
-            if (ws.length > 0 && !activeWsId) setActiveWsId(ws[0].id);
+            if (ws.length > 0 && (!activeWsId || !ws.find(w => w.id === activeWsId))) {
+                setActiveWsId(ws[0].id);
+            }
         } catch (err) {
             setError(err.message);
         } finally {
@@ -146,7 +150,7 @@ export default function MithraBlend() {
         if (!user || autoJoinAttempted) return;
         const hashParts = window.location.hash.split('?');
         const params = new URLSearchParams(hashParts[1] || '');
-        const hash = params.get('join');
+        const hash = params.get('join') || params.get('code');
         if (!hash) return;
 
         setAutoJoinAttempted(true);
@@ -156,6 +160,7 @@ export default function MithraBlend() {
                 if (result.alreadyMember) setInfo('You are already in this workspace.');
                 else setInfo(`Joined "${result.workspace.name}" successfully!`);
                 load();
+                setActiveWsId(result.workspace.id);
             })
             .catch(err => setError(err.message))
             .finally(() => setAutoJoining(false));
@@ -167,8 +172,8 @@ export default function MithraBlend() {
         if (!loading) return;
         const t = setTimeout(() => {
             setLoading(false);
-            setError('Connection timed out. Tap "Retry" to try again.');
-        }, 15000);
+            setError('Connection timed out. Please check your connection.');
+        }, 10000);
         return () => clearTimeout(t);
     }, [loading]);
 
@@ -367,12 +372,10 @@ export default function MithraBlend() {
                         <AlertCircle size={16} className="shrink-0" />
                         <span className="flex-1">{error}</span>
                         <button onClick={() => setError('')}><X size={14} /></button>
-                        {error.includes('timed out') && (
-                            <button onClick={load} className="ml-2 flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg"
-                                style={{ background: 'rgba(239,68,68,0.15)' }}>
-                                <RefreshCcw size={12} /> Retry
-                            </button>
-                        )}
+                        <button onClick={() => { setError(''); load(); }} className="ml-2 flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg"
+                            style={{ background: 'rgba(239,68,68,0.15)' }}>
+                            <RefreshCcw size={12} /> Try Again
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

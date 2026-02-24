@@ -1,6 +1,13 @@
 import React from 'react';
-import { Users, Copy, Check } from 'lucide-react';
+import { Users, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+function statusBadge(pct) {
+    if (pct === 100) return { label: 'Perfect Day', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
+    if (pct >= 50) return { label: 'On Track', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)' };
+    if (pct > 0) return { label: 'In Progress', color: '#facc15', bg: 'rgba(250,204,21,0.1)' };
+    return { label: 'Not Started', color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
+}
 
 /* ═══════════════════════════════════════════════════════════════
    BLEND OVERVIEW — Shows member cards, synergy bar, habit list
@@ -89,6 +96,7 @@ export function BlendOverview({ workspaceId, members = [], habits = [] }) {
                             <p className="text-xs font-medium" style={{ color: 'var(--accent-color)' }}>
                                 {m.pct}% today
                             </p>
+                            {(() => { const s = statusBadge(m.pct); return <span className="text-[10px] px-2 py-0.5 rounded-full inline-block mt-1" style={{ color: s.color, background: s.bg }}>{s.label}</span>; })()}
                         </div>
                     </motion.div>
                 ))}
@@ -137,38 +145,44 @@ export function BlendOverview({ workspaceId, members = [], habits = [] }) {
             </div>
 
             {/* ── SHARED HABITS LIST ── */}
-            <div className="rounded-2xl p-4"
-                style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
-                <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">
-                    Shared Habits ({habits.length})
-                </p>
-                {habits.length === 0 ? (
-                    <p className="text-xs text-[var(--text-dim)] opacity-50 text-center py-4">
-                        Add habits in the Habits tab to see them here
-                    </p>
-                ) : (
-                    <div className="space-y-2">
-                        {habits.map(h => {
-                            const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
-                            const creator = members.find(m => m.userId === h.user_id)?.fullName || 'Unknown';
-                            return (
-                                <div key={h.id} className="flex items-center gap-3 py-2 px-3 rounded-xl"
-                                    style={{ background: done ? 'var(--accent-glow)' : 'transparent' }}>
-                                    <div className={`w-2 h-2 rounded-full shrink-0 ${done ? '' : 'opacity-30'}`}
-                                        style={{ background: done ? 'var(--accent-color)' : 'var(--text-dim)' }} />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-[var(--text-primary)] truncate">{h.title}</p>
-                                        <p className="text-[10px] text-[var(--text-dim)] opacity-50">
-                                            by {creator} · 🔥 {h.streak || 0}
-                                        </p>
-                                    </div>
-                                    {done && <Check size={12} style={{ color: 'var(--accent-color)' }} />}
-                                </div>
-                            );
-                        })}
+            {(() => {
+                const habitsA = habits.filter(h => h.user_id === memberA.userId).map(h => h.title.toLowerCase().trim());
+                const habitsB = habits.filter(h => h.user_id === memberB.userId).map(h => h.title.toLowerCase().trim());
+                const sharedTitles = habitsA.filter(t => habitsB.includes(t));
+                const sharedHabits = habits.filter(h => sharedTitles.includes(h.title.toLowerCase().trim()));
+                return (
+                    <div className="rounded-2xl p-4"
+                        style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)' }}>
+                        <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-3">
+                            Shared Habits ({sharedTitles.length})
+                        </p>
+                        {sharedTitles.length === 0 ? (
+                            <p className="text-xs text-[var(--text-dim)] opacity-50 text-center py-4">
+                                No shared habits yet — add habits to this workspace
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {sharedHabits.map(h => {
+                                    const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
+                                    const creator = members.find(m => m.userId === h.user_id)?.fullName || 'Unknown';
+                                    return (
+                                        <div key={h.id} className="flex items-center gap-3 py-2 px-3 rounded-xl"
+                                            style={{ background: done ? 'var(--accent-glow)' : 'transparent' }}>
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${done ? '' : 'opacity-30'}`}
+                                                style={{ background: done ? 'var(--accent-color)' : 'var(--text-dim)' }} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-medium text-[var(--text-primary)] truncate">{h.title}</p>
+                                                <p className="text-[10px] text-[var(--text-dim)] opacity-50">by {creator} · 🔥 {h.streak || 0}</p>
+                                            </div>
+                                            {done && <Check size={12} style={{ color: 'var(--accent-color)' }} />}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                );
+            })()}
 
             {/* Show all members if more than 2 */}
             {members.length > 2 && (
