@@ -166,16 +166,17 @@ export default function MithraBlend() {
             .finally(() => setAutoJoining(false));
     }, [user, autoJoinAttempted, load]);
 
-    // ── 15-second timeout ────────────────────────────────────────
+    // ── 60-second timeout (accounts for Render free-tier cold start) ──────────
 
     useEffect(() => {
         if (!loading) return;
         const t = setTimeout(() => {
             setLoading(false);
-            setError('Connection timed out. Please check your connection.');
-        }, 10000);
+            setError('Connection timed out. The server is waking up, please click Try Again.');
+        }, 60000);
         return () => clearTimeout(t);
     }, [loading]);
+
 
     // ── Handlers ─────────────────────────────────────────────────
 
