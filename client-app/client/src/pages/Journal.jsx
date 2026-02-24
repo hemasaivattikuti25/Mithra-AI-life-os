@@ -188,7 +188,8 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
    JOURNAL CARD
    ═══════════════════════════════════════════════════════════════ */
 const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
-  const due = entry.date;
+  // Supabase returns ISO strings — always coerce to Date to prevent format() crash
+  const due = entry.date instanceof Date ? entry.date : new Date(entry.date);
   const textPrimary = 'var(--text-primary)';
 
   return (
@@ -297,17 +298,21 @@ export default function MithraJournal() {
 
         if (error) throw error;
 
-        const formatted = (cloudEntries || []).map(e => ({
-          id: e.id,
-          title: (e.content || '').split('\n')[0]?.slice(0, 80) || 'Untitled',
-          body: e.content || '',
-          mood: e.mood ? e.mood * 2 : 5,  // DB 1-5 → local 1-10
-          tags: (e.tags || []).map(t => t.startsWith('#') ? t : `#${t}`),
-          date: new Date(e.date),
-          color: (e.mood && e.mood >= 4) ? 'var(--accent-color)' : 'var(--text-primary)',
-          _cloudId: e.id,
-          _updatedAt: e.updated_at,
-        }));
+        const formatted = (cloudEntries || []).map(e => {
+          // Safely coerce date: Supabase returns a string like '2025-02-20'
+          const parsedDate = e.date ? new Date(e.date) : new Date();
+          return {
+            id: e.id,
+            title: (e.content || '').split('\n')[0]?.slice(0, 80) || 'Untitled',
+            body: e.content || '',
+            mood: e.mood ? e.mood * 2 : 5,  // DB 1-5 → local 1-10
+            tags: (e.tags || []).map(t => t.startsWith('#') ? t : `#${t}`),
+            date: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
+            color: (e.mood && e.mood >= 4) ? 'var(--accent-color)' : 'var(--text-primary)',
+            _cloudId: e.id,
+            _updatedAt: e.updated_at,
+          };
+        });
 
         setEntries(formatted); // Supabase is truth — replace, don't merge
         // Update localStorage cache

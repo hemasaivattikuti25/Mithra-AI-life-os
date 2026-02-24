@@ -58,8 +58,18 @@ app = FastAPI(
 )
 
 # ─── CORS ───────────────────────────────────────────────────────────────────
-default_origins = "https://mithra-lifeos.com,https://www.mithra-lifeos.com,https://mithra-life-os.vercel.app,http://localhost:5173,http://localhost:3000"
-origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", default_origins).split(",") if o.strip()]
+raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+if raw_origins:
+    origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+else:
+    # Explicit fallback: used when Render drops the env var (common on free tier)
+    origins = [
+        "https://mithra-lifeos.com",
+        "https://www.mithra-lifeos.com",
+        "https://mithra-life-os.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
 
 app.add_middleware(

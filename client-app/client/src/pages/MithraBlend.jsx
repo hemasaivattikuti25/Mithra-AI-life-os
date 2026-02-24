@@ -111,15 +111,21 @@ export default function MithraBlend() {
             }
         } catch (err) {
             console.error('[Blend] Load failed:', err);
-            if (err.message.includes('Failed to fetch') || err.message.includes('Network Error')) {
-                setError(`Network Error: Cannot reach backend. Check your VITE_API_URL settings.`);
+            // Immediately stop loading — do NOT wait for the 60s timeout
+            setLoading(false);
+            if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError') || err.message?.includes('Network Error')) {
+                setError('Network Error: Cannot reach the backend. The server may be waking up — please wait a moment and click Try Again.');
+            } else if (err.message?.includes('CORS')) {
+                setError('CORS Error: The backend rejected the request. Check ALLOWED_ORIGINS in your Render environment.');
             } else {
-                setError(err.message);
+                setError(err.message || 'An unknown error occurred.');
             }
+            return; // skip finally's setLoading(false) — already done
         } finally {
             setLoading(false);
         }
     }, [user, activeWsId]);
+
 
     useEffect(() => { load(); }, [load]);
 
