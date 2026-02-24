@@ -1247,7 +1247,7 @@ export default function HabitFocusHub() {
 
       {/* ── MOBILE FAB — Add Habit / Add Session above bottom nav ── */}
       <AnimatePresence>
-        {activeTab === 'habits' && (
+        {activeTab === 'tracker' && (
           <motion.button
             key="fab-habit"
             className="md:hidden fixed right-5 z-40 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center"

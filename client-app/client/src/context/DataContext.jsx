@@ -44,24 +44,39 @@ const mapTaskFromDB = (t) => ({
 
 const mapHabitToDB = (h) => ({
   id: h.id,
+  user_id: h.userId,
+  workspace_id: h.workspaceId || null,
   title: h.title,
   category: h.category || 'Personal',
+  color: h.color,
   streak: h.streak || 0,
   longest_streak: h.bestStreak || 0,
   completed_dates: h.consistency || [],
-  workspace_id: h.workspaceId || null,
+  repeat_days: h.repeatDays || [0, 1, 2, 3, 4, 5, 6],
+  frequency: h.frequency || 1,
+  reminder: h.reminder || false,
+  schedule_time: h.scheduleTime || '08:00',
+  streak_goal: h.streakGoal || 30,
+  streak_unit: h.streakUnit || 'Day',
+  focus_duration: h.focusDuration || 25,
 });
-
 const mapHabitFromDB = (h) => ({
   id: h.id,
+  workspaceId: h.workspace_id || null,
   title: h.title,
   category: h.category || 'Personal',
+  color: h.color,
   streak: h.streak || 0,
   bestStreak: h.longest_streak || 0,
   consistency: h.completed_dates || [],
-  todayDone: false,  // Recalculated by validateHabitState on mount
-  focusDuration: 25,
-  workspaceId: h.workspace_id || null,
+  repeatDays: h.repeat_days || [0, 1, 2, 3, 4, 5, 6],
+  frequency: h.frequency || 1,
+  reminder: h.reminder || false,
+  scheduleTime: h.schedule_time || '08:00',
+  streakGoal: h.streak_goal || 30,
+  streakUnit: h.streak_unit || 'Day',
+  focusDuration: h.focus_duration || 25,
+  todayDone: false,
 });
 
 const DataContext = createContext(null);

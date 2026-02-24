@@ -441,6 +441,21 @@ export default function MithraJournal() {
   })();
   const weekMoods = entries.slice(0, 7).map(e => e.mood);
 
+  // Filter logic
+  const filteredEntries = entries.filter(entry => {
+    const matchesSearch = !searchQuery ||
+      (entry.title && entry.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (entry.body && entry.body.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (entry.tags && entry.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
+
+    const matchesFilter =
+      activeFilter === 'all' ? true :
+        activeFilter === 'high' ? entry.mood >= 7 :
+          activeFilter === 'low' ? entry.mood < 5 : true;
+
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div className="flex gap-8 h-[calc(100vh-100px)] relative" style={{ color: 'var(--text-primary)' }}>
 
