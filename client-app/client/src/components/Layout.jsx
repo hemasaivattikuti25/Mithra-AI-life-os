@@ -222,14 +222,14 @@ const MobileBottomNav = () => {
     const location = useLocation();
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50"
             style={{
-                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
+                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
                 background: 'var(--nav-bg)',
                 backdropFilter: 'blur(20px)',
                 borderTop: 'none'
             }}>
-            <div className="flex items-center justify-around px-2 py-1">
+            <div className="flex items-center justify-around px-2 py-2">
                 {bottomNavItems.map(item => {
                     const isActive = location.pathname === item.path;
                     return (
@@ -265,7 +265,7 @@ export const Layout = ({ children }) => {
             <NetworkStatus />
             <DesktopSidebar />
             <MobileTopBar />
-            <main className="md:ml-20 lg:ml-64 min-h-screen relative overflow-x-hidden pt-14 md:pt-0 pb-20 md:pb-0">
+            <main className="md:ml-20 lg:ml-64 min-h-screen relative overflow-x-hidden pt-14 md:pt-0 pb-32 md:pb-0">
                 <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                     {/* Theme-aware Ambient Glows */}
                     <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-40 animate-pulse" />

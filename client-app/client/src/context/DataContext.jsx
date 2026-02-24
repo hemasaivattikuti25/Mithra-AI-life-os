@@ -478,6 +478,7 @@ export function DataProvider({ children }) {
     if (!user) {
       setTasks([]);
       setHabits([]);
+      setDataLoading(true); // show loading state for next login fetch
       hasPulledRef.current = false;
     }
   }, [user]);
