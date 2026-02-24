@@ -1,232 +1,369 @@
 import { supabase } from './supabaseClient';
 
 /**
- * Workspace Service — Manages Mithra Blend workspaces
- * Connecting directly to Supabase to bypass FastAPI routing issues 
- * and expose real RLS errors.
+ * Workspace Service — Mithra Blend
+ *
+ * Shared-workspace architecture:
+ *   - workspaces.created_by references auth.users(id) directly
+ *   - workspace_members for membership tracking
+ *   - join_code (6-char uppercase) for easy sharing
+ *   - share_link_hash for URL-based invites
+ *
+ * All functions throw on error — callers must catch.
  */
 
+// ─── Character set for join codes (excludes O/0/I/1/L to avoid confusion) ───
+const JOIN_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function generateJoinCode() {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += JOIN_CODE_CHARS[Math.floor(Math.random() * JOIN_CODE_CHARS.length)];
+    }
+    return code;
+}
+
+function ensureSupabase() {
+    if (!supabase) {
+        throw new Error('Supabase is not configured. Check your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    }
+}
+
+// ─── Exported Service ───────────────────────────────────────────────────────
+
 export const workspaceService = {
-    createWorkspace: async (name, userId) => {
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CREATE WORKSPACE
+    // ═══════════════════════════════════════════════════════════════
+    async createWorkspace(name, userId) {
+        ensureSupabase();
         try {
-            // Step 1: Verify profile exists before inserting workspace
-            const { data: profile, error: profileErr } = await supabase
+            // Step 0: Ensure profile exists (auto-upsert if trigger failed)
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('id')
                 .eq('id', userId)
                 .maybeSingle();
 
-            if (profileErr || !profile) {
-                console.warn('[Blend] Profile not found, attempting auto-recovery upsert...');
-                // Auto-fix: create the missing profile
+            if (!profile) {
                 const { data: userData } = await supabase.auth.getUser();
                 const u = userData?.user;
                 if (u) {
                     await supabase.from('profiles').upsert({
                         id: u.id,
                         email: u.email,
-                        display_name: u.user_metadata?.full_name || u.email.split('@')[0],
-                        avatar_url: u.user_metadata?.avatar_url || null
-                    });
-                    console.log('[Blend] Profile auto-recovery successful.');
-                } else {
-                    throw new Error('Profile not found and could not be created. Please log out and log back in.');
+                        display_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'User',
+                        avatar_url: u.user_metadata?.avatar_url || null,
+                    }, { onConflict: 'id', ignoreDuplicates: true });
                 }
             }
 
-            // Step 2: Create workspace
-            const shareHash = Math.random().toString(36).slice(2, 14);
+            // Step 1: Generate unique codes
+            const joinCode = generateJoinCode();
+            const shareLinkHash = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
 
+            // Step 2: Insert workspace
             const { data: ws, error: wsErr } = await supabase
                 .from('workspaces')
-                .insert({ name: name.trim(), owner_id: userId, share_link_hash: shareHash })
+                .insert({
+                    name: name.trim(),
+                    created_by: userId,
+                    join_code: joinCode,
+                    share_link_hash: shareLinkHash,
+                })
                 .select()
                 .single();
 
-            if (wsErr) throw new Error(`Workspace insert failed: ${wsErr.message} (Code: ${wsErr.code})`);
+            if (wsErr) {
+                // If join_code collision, retry once with a new code
+                if (wsErr.code === '23505' && wsErr.message?.includes('join_code')) {
+                    const retryCode = generateJoinCode();
+                    const { data: ws2, error: wsErr2 } = await supabase
+                        .from('workspaces')
+                        .insert({
+                            name: name.trim(),
+                            created_by: userId,
+                            join_code: retryCode,
+                            share_link_hash: crypto.randomUUID().replace(/-/g, '').substring(0, 16),
+                        })
+                        .select()
+                        .single();
+                    if (wsErr2) throw new Error(`Workspace insert failed: ${wsErr2.message} (Code: ${wsErr2.code})`);
+                    // Use ws2 for member insert below
+                    const { error: memErr } = await supabase
+                        .from('workspace_members')
+                        .insert({ workspace_id: ws2.id, user_id: userId, role: 'owner' });
+                    if (memErr) {
+                        await supabase.from('workspaces').delete().eq('id', ws2.id);
+                        throw new Error(`Member insert failed: ${memErr.message} (Code: ${memErr.code})`);
+                    }
+                    return ws2;
+                }
+                throw new Error(`Workspace insert failed: ${wsErr.message} (Code: ${wsErr.code})`);
+            }
 
-            // Step 3: Add owner as member
+            // Step 3: Add creator as owner member
             const { error: memErr } = await supabase
                 .from('workspace_members')
                 .insert({ workspace_id: ws.id, user_id: userId, role: 'owner' });
 
-            if (memErr) throw new Error(`Member insert failed: ${memErr.message} (Code: ${memErr.code})`);
+            if (memErr) {
+                // Rollback workspace if member insert fails
+                await supabase.from('workspaces').delete().eq('id', ws.id);
+                throw new Error(`Member insert failed: ${memErr.message} (Code: ${memErr.code})`);
+            }
 
             return ws;
         } catch (err) {
-            console.error('[Blend] createWorkspace FATAL:', err);
+            console.error('[Blend] createWorkspace error:', err);
             throw err;
         }
     },
 
-    joinWorkspace: async (shareHashOrUrl, userId) => {
+    // ═══════════════════════════════════════════════════════════════
+    //  JOIN BY CODE (accepts 6-char code, share hash, or full URL)
+    // ═══════════════════════════════════════════════════════════════
+    async joinByCode(input, userId) {
+        ensureSupabase();
         try {
-            let shareHash = shareHashOrUrl.trim();
-            if (shareHash.includes('join=')) {
-                const match = shareHash.match(/join=([a-zA-Z0-9_-]+)/);
-                if (match) shareHash = match[1];
-            } else if (shareHash.includes('/')) {
-                shareHash = shareHash.split('/').pop().split('?')[0];
+            let cleaned = input.trim();
+
+            // Extract hash from URL if it contains "join="
+            if (cleaned.includes('join=')) {
+                const match = cleaned.match(/join=([a-zA-Z0-9_-]+)/);
+                if (match) cleaned = match[1];
+            } else if (cleaned.includes('/')) {
+                // Extract last path segment
+                cleaned = cleaned.split('/').pop().split('?')[0];
             }
 
-            // 1. Find the workspace
-            const { data: ws, error: findErr } = await supabase
-                .from('workspaces')
-                .select('id')
-                .eq('share_link_hash', shareHash)
-                .single();
+            let workspace = null;
 
-            if (findErr) {
-                console.error('[Blend] Find workspace by hash error:', findErr);
-                throw new Error(`Join failed (Find WS): ${findErr.message} (Code: ${findErr.code})`);
+            // Try 1: Look up by join_code (uppercase the input for case-insensitive matching)
+            const upperCleaned = cleaned.toUpperCase();
+            if (upperCleaned.length <= 8) {
+                const { data: byCode, error: codeErr } = await supabase
+                    .from('workspaces')
+                    .select('*')
+                    .eq('join_code', upperCleaned)
+                    .maybeSingle();
+
+                if (codeErr && codeErr.code !== 'PGRST116') {
+                    throw new Error(`Lookup failed: ${codeErr.message} (Code: ${codeErr.code})`);
+                }
+                workspace = byCode;
             }
 
-            if (!ws) throw new Error('Invalid or expired invite link (Workspace not found)');
+            // Try 2: Look up by share_link_hash
+            if (!workspace) {
+                const { data: byHash, error: hashErr } = await supabase
+                    .from('workspaces')
+                    .select('*')
+                    .eq('share_link_hash', cleaned)
+                    .maybeSingle();
 
-            // 2. Check existing membership
-            const { data: existing, error: checkErr } = await supabase
+                if (hashErr && hashErr.code !== 'PGRST116') {
+                    throw new Error(`Lookup failed: ${hashErr.message} (Code: ${hashErr.code})`);
+                }
+                workspace = byHash;
+            }
+
+            if (!workspace) {
+                throw new Error('Invalid invite code or link. Please check and try again.');
+            }
+
+            // Check if already a member
+            const { data: existing } = await supabase
                 .from('workspace_members')
                 .select('workspace_id')
-                .eq('workspace_id', ws.id)
+                .eq('workspace_id', workspace.id)
                 .eq('user_id', userId)
-                .single();
-
-            if (checkErr && checkErr.code !== 'PGRST116') {
-                console.error('[Blend] Check existing member error:', checkErr);
-                throw new Error(`Join failed (Check Member): ${checkErr.message} (Code: ${checkErr.code})`);
-            }
+                .maybeSingle();
 
             if (existing) {
-                return { success: true, alreadyMember: true, workspaceId: ws.id };
+                return { workspace, alreadyMember: true };
             }
 
-            // 3. Insert membership
+            // Insert as member
             const { error: joinErr } = await supabase
                 .from('workspace_members')
-                .insert({ workspace_id: ws.id, user_id: userId, role: 'member' });
+                .insert({ workspace_id: workspace.id, user_id: userId, role: 'member' });
 
             if (joinErr) {
-                console.error('[Blend] Insert new member error:', joinErr);
-                throw new Error(`Join failed (Insert Member): ${joinErr.message} (Code: ${joinErr.code})`);
+                throw new Error(`Join failed: ${joinErr.message} (Code: ${joinErr.code})`);
             }
 
-            return { success: true, workspaceId: ws.id };
+            return { workspace, alreadyMember: false };
         } catch (err) {
-            console.error('[Blend] joinWorkspace FATAL:', err);
+            console.error('[Blend] joinByCode error:', err);
             throw err;
         }
     },
 
-    getWorkspaces: async (userId) => {
+    // ═══════════════════════════════════════════════════════════════
+    //  GET WORKSPACES (two flat queries — no nested joins)
+    // ═══════════════════════════════════════════════════════════════
+    async getWorkspaces(userId) {
+        ensureSupabase();
         try {
-            console.log('[Blend Service] getWorkspaces START for user:', userId);
             // Query 1: Get memberships
-            console.log('[Blend Service] Firing workspace_members query...');
-
-            const start1 = performance.now();
             const { data: memberships, error: err1 } = await supabase
                 .from('workspace_members')
                 .select('workspace_id, role')
                 .eq('user_id', userId);
-            console.log(`[Blend Service] workspace_members query finished in ${(performance.now() - start1).toFixed(2)}ms. Error:`, err1);
-            console.log('[DEBUG] memberships result:', memberships, 'error:', err1);
 
             if (err1) {
-                console.error('[Blend] Get memberships error:', err1);
                 throw new Error(`Members query failed: ${err1.message} (Code: ${err1.code})`);
             }
 
             if (!memberships || memberships.length === 0) return [];
 
             const workspaceIds = memberships.map(m => m.workspace_id);
-            console.log('[Blend Service] Found workspace IDs:', workspaceIds);
 
             // Query 2: Get workspace details
-            console.log('[Blend Service] Firing workspaces query...');
-            const start2 = performance.now();
             const { data: workspaces, error: err2 } = await supabase
                 .from('workspaces')
-                .select('id, name, share_link_hash, owner_id, created_at')
+                .select('id, name, join_code, share_link_hash, created_by, created_at')
                 .in('id', workspaceIds);
-            console.log(`[Blend Service] workspaces query finished in ${(performance.now() - start2).toFixed(2)}ms. Error:`, err2);
 
             if (err2) {
-                console.error('[Blend] Get workspaces error:', err2);
                 throw new Error(`Workspaces query failed: ${err2.message} (Code: ${err2.code})`);
             }
 
-            // Merge data
+            // Merge role into each workspace
             return (workspaces || []).map(ws => ({
                 ...ws,
-                userRole: memberships.find(m => m.workspace_id === ws.id)?.role || 'member'
+                userRole: memberships.find(m => m.workspace_id === ws.id)?.role || 'member',
             }));
         } catch (err) {
-            console.error('[Blend] getWorkspaces FATAL:', err);
+            console.error('[Blend] getWorkspaces error:', err);
             throw err;
         }
     },
 
-    getMembers: async (workspaceId) => {
+    // ═══════════════════════════════════════════════════════════════
+    //  GET MEMBERS (with profile data)
+    // ═══════════════════════════════════════════════════════════════
+    async getMembers(workspaceId) {
+        ensureSupabase();
         try {
-            const { data, error } = await supabase
+            // Get memberships
+            const { data: members, error: memErr } = await supabase
                 .from('workspace_members')
                 .select('user_id, role, joined_at')
                 .eq('workspace_id', workspaceId);
 
-            if (error) {
-                console.error('[Blend] getMembers query error:', error);
-                throw new Error(`Get members failed: ${error.message} (Code: ${error.code})`);
+            if (memErr) {
+                throw new Error(`Get members failed: ${memErr.message} (Code: ${memErr.code})`);
             }
 
-            if (!data) return [];
+            if (!members || members.length === 0) return [];
 
-            return data.map(m => ({
-                userId: m.user_id,
-                role: m.role,
-                fullName: `User ${m.user_id.substring(0, 4)}`, // Fallback
-                avatarUrl: null
-            }));
+            // Batch fetch profiles
+            const userIds = members.map(m => m.user_id);
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, email, display_name, avatar_url')
+                .in('id', userIds);
+
+            const profileMap = {};
+            (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+            return members.map(m => {
+                const p = profileMap[m.user_id];
+                return {
+                    userId: m.user_id,
+                    role: m.role,
+                    joinedAt: m.joined_at,
+                    fullName: p?.display_name || p?.email?.split('@')[0] || 'User',
+                    avatarUrl: p?.avatar_url || null,
+                    email: p?.email || null,
+                };
+            });
         } catch (err) {
-            console.error('[Blend] getMembers FATAL:', err);
+            console.error('[Blend] getMembers error:', err);
             throw err;
         }
     },
 
-    leaveWorkspace: async (workspaceId, userId) => {
-        try {
-            const { error } = await supabase
-                .from('workspace_members')
-                .delete()
-                .eq('workspace_id', workspaceId)
-                .eq('user_id', userId);
+    // ═══════════════════════════════════════════════════════════════
+    //  GET WORKSPACE HABITS
+    // ═══════════════════════════════════════════════════════════════
+    async getWorkspaceHabits(workspaceId) {
+        ensureSupabase();
+        const { data, error } = await supabase
+            .from('habits')
+            .select('*')
+            .eq('workspace_id', workspaceId);
 
-            if (error) {
-                console.error('[Blend] leaveWorkspace error:', error);
-                throw new Error(`Leave workspace failed: ${error.message} (Code: ${error.code})`);
-            }
-            return { success: true };
-        } catch (err) {
-            console.error('[Blend] leaveWorkspace FATAL:', err);
-            throw err;
-        }
+        if (error) throw new Error(`Workspace habits query failed: ${error.message} (Code: ${error.code})`);
+        return data || [];
     },
 
-    deleteWorkspace: async (workspaceId, userId) => {
-        try {
-            const { error } = await supabase
-                .from('workspaces')
-                .delete()
-                .eq('id', workspaceId)
-                .eq('owner_id', userId);
+    // ═══════════════════════════════════════════════════════════════
+    //  GET WORKSPACE TASKS (incomplete only)
+    // ═══════════════════════════════════════════════════════════════
+    async getWorkspaceTasks(workspaceId) {
+        ensureSupabase();
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('completed', false);
 
-            if (error) {
-                console.error('[Blend] deleteWorkspace error:', error);
-                throw new Error(`Delete workspace failed: ${error.message} (Code: ${error.code})`);
-            }
-            return { success: true };
-        } catch (err) {
-            console.error('[Blend] deleteWorkspace FATAL:', err);
-            throw err;
+        if (error) throw new Error(`Workspace tasks query failed: ${error.message} (Code: ${error.code})`);
+        return data || [];
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    //  LEAVE WORKSPACE
+    // ═══════════════════════════════════════════════════════════════
+    async leaveWorkspace(workspaceId, userId) {
+        ensureSupabase();
+        // Check if user is owner — owners must delete, not leave
+        const { data: ws } = await supabase
+            .from('workspaces')
+            .select('created_by')
+            .eq('id', workspaceId)
+            .single();
+
+        if (ws?.created_by === userId) {
+            throw new Error('You are the owner. Transfer ownership or delete the workspace instead.');
         }
-    }
+
+        const { error } = await supabase
+            .from('workspace_members')
+            .delete()
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId);
+
+        if (error) throw new Error(`Leave workspace failed: ${error.message} (Code: ${error.code})`);
+        return { success: true };
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DELETE WORKSPACE (owner only — cascade deletes members)
+    // ═══════════════════════════════════════════════════════════════
+    async deleteWorkspace(workspaceId, userId) {
+        ensureSupabase();
+        // Verify ownership
+        const { data: ws } = await supabase
+            .from('workspaces')
+            .select('created_by')
+            .eq('id', workspaceId)
+            .single();
+
+        if (!ws || ws.created_by !== userId) {
+            throw new Error('Only the owner can delete this workspace.');
+        }
+
+        const { error } = await supabase
+            .from('workspaces')
+            .delete()
+            .eq('id', workspaceId);
+
+        if (error) throw new Error(`Delete workspace failed: ${error.message} (Code: ${error.code})`);
+        return { success: true };
+    },
 };
