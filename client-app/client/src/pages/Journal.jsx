@@ -680,7 +680,7 @@ export default function MithraJournal() {
 
       {/* ── MOBILE FAB — New Journal Entry above bottom nav ── */}
       <motion.button
-        className="md:hidden fixed right-5 z-40 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center"
+        className="md:hidden fixed right-5 z-[100] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center"
         style={{
           bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
           background: 'var(--accent-color)',
