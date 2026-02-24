@@ -58,37 +58,71 @@ CREATE TABLE public.workspace_members (
     PRIMARY KEY (workspace_id, user_id)
 );
 
--- SECTION 4b: ADD workspace_id TO OTHER TABLES (idempotent)
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'tasks' AND column_name = 'workspace_id'
-    ) THEN
-        ALTER TABLE public.tasks ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
-    END IF;
+-- SECTION 4b: CORE DATA TABLES — STANDALONE (works on fresh deploy)
+-- All tables created with workspace_id FK and ON DELETE CASCADE.
 
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'habits' AND column_name = 'workspace_id'
-    ) THEN
-        ALTER TABLE public.habits ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
-    END IF;
+CREATE TABLE IF NOT EXISTS public.tasks (
+    id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    workspace_id    UUID        REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    title           TEXT        NOT NULL CHECK (char_length(trim(title)) > 0),
+    description     TEXT,
+    completed       BOOLEAN     NOT NULL DEFAULT false,
+    priority        TEXT        NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    due_date        TIMESTAMPTZ,
+    reminder_time   TIMESTAMPTZ,
+    category        TEXT,
+    tags            TEXT[]      DEFAULT '{}',
+    recurrence      TEXT,
+    snoozed_until   TIMESTAMPTZ,
+    order_index     INTEGER     DEFAULT 0,
+    created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
 
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'journal_entries' AND column_name = 'workspace_id'
-    ) THEN
-        ALTER TABLE public.journal_entries ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
-    END IF;
+CREATE TABLE IF NOT EXISTS public.habits (
+    id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    workspace_id    UUID        REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    title           TEXT        NOT NULL CHECK (char_length(trim(title)) > 0),
+    description     TEXT,
+    frequency       TEXT        NOT NULL DEFAULT 'daily',
+    color           TEXT,
+    icon            TEXT,
+    streak          INTEGER     NOT NULL DEFAULT 0,
+    consistency     TEXT[]      DEFAULT '{}',  -- array of ISO date strings: YYYY-MM-DD
+    best_streak     INTEGER     NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
 
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'focus_sessions' AND column_name = 'workspace_id'
-    ) THEN
-        ALTER TABLE public.focus_sessions ADD COLUMN workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE;
-    END IF;
-END $$;
+CREATE TABLE IF NOT EXISTS public.journal_entries (
+    id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    workspace_id    UUID        REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    title           TEXT,
+    content         TEXT        NOT NULL DEFAULT '',
+    mood            TEXT,
+    tags            TEXT[]      DEFAULT '{}',
+    -- 🔍 Gemini RAG embedding — 768-dim vector for semantic search
+    embedding       vector(768),
+    created_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.focus_sessions (
+    id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    workspace_id    UUID        REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    duration_mins   INTEGER     NOT NULL DEFAULT 25,
+    session_type    TEXT        NOT NULL DEFAULT 'pomodoro' CHECK (session_type IN ('pomodoro', 'deep', 'short_break', 'long_break')),
+    task_id         UUID        REFERENCES public.tasks(id) ON DELETE SET NULL,
+    notes           TEXT,
+    completed       BOOLEAN     NOT NULL DEFAULT false,
+    started_at      TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    ended_at        TIMESTAMPTZ
+);
+
 
 CREATE TABLE IF NOT EXISTS public.mood_logs (
     id          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),

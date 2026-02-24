@@ -101,3 +101,48 @@ async def reset_password(request: ResetPasswordRequest):
 async def confirm_reset(request: ConfirmResetRequest):
     """Confirm password reset (stub — Supabase handles this via email link)."""
     return {"message": "Password updated successfully"}
+
+
+# ─── GDPR ACCOUNT DELETION ──────────────────────────────────────────────────
+
+from fastapi import Depends
+from core.security import get_current_user
+
+@router.delete("/account")
+async def delete_account(current_user: dict = Depends(get_current_user)):
+    """Permanently delete the authenticated user's account and all their data.
+
+    Uses the Supabase admin client (service_role key) to delete the auth.users row.
+    All related data (tasks, habits, journals, workspace_members, workspaces owned)
+    is automatically wiped via ON DELETE CASCADE in our SQL schema.
+
+    ⚠️  This action is IRREVERSIBLE.
+    """
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database service unavailable")
+
+    user_id = current_user["id"]
+
+    try:
+        # Step 1: Sanity check — workspaces this user owns
+        owned = supabase.table("workspaces").select("id").eq("owner_id", user_id).execute()
+        if owned.data:
+            # Delete owned workspaces first — cascades to workspace_members
+            ws_ids = [w["id"] for w in owned.data]
+            supabase.table("workspaces").delete().in_("id", ws_ids).execute()
+
+        # Step 2: Delete the auth.users row via Supabase Admin API.
+        # This triggers ON DELETE CASCADE across all tables referencing auth.users(id).
+        response = supabase.auth.admin.delete_user(user_id)
+
+        # supabase-py returns None on success, or raises an exception
+        if hasattr(response, "error") and response.error:
+            raise Exception(response.error.message)
+
+        return {"success": True, "message": "Account and all associated data permanently deleted."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Account deletion failed: {str(e)}")
+
