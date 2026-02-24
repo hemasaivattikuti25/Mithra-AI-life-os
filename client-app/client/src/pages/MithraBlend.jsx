@@ -104,13 +104,18 @@ export default function MithraBlend() {
         setError('');
         try {
             const ws = await workspaceService.getWorkspaces(user.id);
-            console.log('[Blend] workspaces loaded:', ws);
+            console.log('[Blend] workspaces loaded successfully:', ws);
             setWorkspaces(ws);
             if (ws.length > 0 && (!activeWsId || !ws.find(w => w.id === activeWsId))) {
                 setActiveWsId(ws[0].id);
             }
         } catch (err) {
-            setError(err.message);
+            console.error('[Blend] Load failed:', err);
+            if (err.message.includes('Failed to fetch') || err.message.includes('Network Error')) {
+                setError(`Network Error: Cannot reach backend. Check your VITE_API_URL settings.`);
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
@@ -172,7 +177,9 @@ export default function MithraBlend() {
         if (!loading) return;
         const t = setTimeout(() => {
             setLoading(false);
-            setError('Connection timed out. The server is waking up, please click Try Again.');
+            const timeoutMsg = 'Connection timed out. The server is waking up, please click Try Again.';
+            console.error('[Blend] Timeout reached. This usually means the Render free tier is cold-starting or the API URL is wrong.');
+            setError(timeoutMsg);
         }, 60000);
         return () => clearTimeout(t);
     }, [loading]);

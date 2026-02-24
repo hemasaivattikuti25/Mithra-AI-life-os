@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+console.log('[WorkspaceService] Using API_URL:', API_URL);
 
 const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession();

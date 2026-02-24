@@ -1161,11 +1161,25 @@ const MithraCalendar = () => {
       </div>
 
       {/* Mobile FAB — Create Event (since left sidebar is hidden) */}
-      <button onClick={() => openNewEvent(currentDate, 9)}
-        className="lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
-        style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 4px 20px var(--accent-glow)' }}>
-        <Plus size={24} className="text-white" />
-      </button>
+      <AnimatePresence>
+        {!modalOpen && (
+          <motion.button
+            key="fab-calendar"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => openNewEvent(currentDate, 9)}
+            className="lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: 'var(--accent-color)',
+              boxShadow: '0 4px 20px var(--accent-glow)',
+              display: modalOpen ? 'none' : 'flex'
+            }}
+          >
+            <Plus size={24} className="text-white" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Event Modal */}
       <EventModal

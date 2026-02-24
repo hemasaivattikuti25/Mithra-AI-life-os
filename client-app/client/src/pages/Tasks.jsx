@@ -1082,6 +1082,7 @@ export default function MithraTasks() {
                 bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
                 background: 'var(--accent-color)',
                 boxShadow: '0 0 24px var(--accent-glow), 0 8px 20px rgba(0,0,0,0.4)',
+                display: showAddModal ? 'none' : 'flex'
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
