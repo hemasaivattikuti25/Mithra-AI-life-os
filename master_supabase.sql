@@ -20,7 +20,7 @@ BEGIN
         'tasks', 'habits',
         'journal_entries', 'focus_sessions',
         'mood_logs', 'profiles'
-      )\
+      )
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
   END LOOP;
@@ -419,15 +419,3 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.mood_logs;
-
--- ============================================================================
--- VERIFY (run these after applying — if they return without hanging, RLS is clean)
--- ============================================================================
--- SELECT * FROM public.workspace_members LIMIT 1;
--- SELECT * FROM public.workspaces LIMIT 1;
--- SELECT * FROM public.profiles LIMIT 1;
---
--- PRIVILEGE ESCALATION TEST (should return 0 rows if RLS is working):
--- -- As an authenticated non-owner, try to insert role='owner':
--- INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ('<any_ws_id>', auth.uid(), 'owner');
--- -- Expected: ERROR 42501 new row violates with check option for table "workspace_members"
