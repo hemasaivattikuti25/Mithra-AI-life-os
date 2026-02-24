@@ -20,7 +20,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 
 def validate_config():
-    """Log a clear report of which env vars are present/missing. Never crashes."""
+    """Validates environment variables. Raises RuntimeError if core vars are missing."""
     required = {
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_KEY": SUPABASE_KEY,
@@ -28,12 +28,17 @@ def validate_config():
         "GEMINI_API_KEY": GEMINI_API_KEY,
     }
     missing = [k for k, v in required.items() if not v or "your-" in v]
-    present = [k for k in required if k not in missing]
+    
+    # If core env vars are missing, we crash instead of just warning (prevents backend failures)
+    core_vars = ["SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_JWT_SECRET"]
+    if any(k in missing for k in core_vars):
+        raise RuntimeError(f"Missing required env vars: {missing}")
 
+    present = [k for k in required if k not in missing]
     if present:
         logger.info(f"✅ Config OK: {', '.join(present)}")
     if missing:
-        logger.warning(f"⚠️  Missing env vars: {', '.join(missing)}")
+        logger.warning(f"⚠️  Missing optional env vars: {', '.join(missing)}")
     return missing
 
 
