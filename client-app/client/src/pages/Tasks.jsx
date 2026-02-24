@@ -1073,20 +1073,26 @@ export default function MithraTasks() {
         </AnimatePresence>
 
         {/* ── MOBILE FAB — Add Task above bottom nav ── */}
-        <motion.button
-          className="md:hidden fixed right-5 z-[100] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center" /* Manual override */
-          style={{
-            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-            background: 'var(--accent-color)',
-            boxShadow: '0 0 24px var(--accent-glow), 0 8px 20px rgba(0,0,0,0.4)',
-          }}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          whileTap={{ scale: 0.88 }}
-          onClick={() => setShowAddModal(true)}
-        >
-          <Plus size={24} className="text-white" />
-        </motion.button>
+        <AnimatePresence>
+          {!showAddModal && (
+            <motion.button
+              key="fab-task"
+              className="md:hidden fixed right-5 z-[100] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center"
+              style={{
+                bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+                background: 'var(--accent-color)',
+                boxShadow: '0 0 24px var(--accent-glow), 0 8px 20px rgba(0,0,0,0.4)',
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileTap={{ scale: 0.88 }}
+              onClick={() => setShowAddModal(true)}
+            >
+              <Plus size={24} className="text-white" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </motion.div>
     </PullToRefresh>
   );
