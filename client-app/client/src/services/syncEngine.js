@@ -159,44 +159,14 @@ class SyncEngine {
     return data;
   }
 
-  /** Full sync: push local data + pull server data, merge by timestamp */
-  async syncTable(table, userId, localData, { onConflict = 'id', mergeKey = 'id' } = {}) {
-    if (!supabase || !this.isOnline) return localData;
-
-    try {
-      // 1. Push local data
-      if (localData && localData.length > 0) {
-        const rows = localData.map(item => ({
-          ...item,
-          user_id: userId,
-          updated_at: item.updated_at || new Date().toISOString(),
-        }));
-        const { error } = await supabase.from(table).upsert(rows, { onConflict });
-        if (error) {
-          console.warn(`[Sync] Push to ${table} failed:`, error.message);
-        }
-      }
-
-      // 2. Pull server data
-      const serverData = await this.pull(table, userId);
-      if (!serverData) return localData;
-
-      // 3. Merge: newer timestamp wins
-      const merged = new Map();
-      (localData || []).forEach(item => merged.set(item[mergeKey], item));
-      serverData.forEach(item => {
-        const local = merged.get(item[mergeKey]);
-        if (!local || new Date(item.updated_at) > new Date(local.updated_at || 0)) {
-          merged.set(item[mergeKey], item);
-        }
-      });
-
-      try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch { }
-      return Array.from(merged.values());
-    } catch (e) {
-      console.error(`[Sync] Table sync failed for ${table}:`, e);
-      return localData; // fallback to local
-    }
+  /** Full sync: DISABLED — Supabase is now the source of truth.
+   *  localStorage is cache only. Direct Supabase calls in DataContext replace this.
+   *  Kept here as a stub to avoid breaking any remaining callers. */
+  async syncTable(table, _userId, localData, _opts = {}) {
+    // DISABLED: pushing localStorage data to Supabase would overwrite fresh server data.
+    // Each page now fetches directly from Supabase on mount.
+    console.warn('[SyncEngine] syncTable is disabled. Use direct Supabase calls.');
+    return localData;
   }
 
   /* ── Status helpers ── */

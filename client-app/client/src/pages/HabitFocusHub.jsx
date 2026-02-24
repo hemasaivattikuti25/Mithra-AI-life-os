@@ -703,11 +703,44 @@ export default function HabitFocusHub() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
 
-  // Persist focus data
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-sessions'), String(sessions)); } catch { } }, [sessions]);
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-total-time'), String(totalFocusTime)); } catch { } }, [totalFocusTime]);
-  useEffect(() => { try { localStorage.setItem(getUserScopedKey('focus-history'), JSON.stringify(sessionHistory)); } catch { } }, [sessionHistory]);
+  // Persist focus data — localStorage cache only, Supabase writes happen in saveFocusSession
+  // NOTE: sessions/totalFocusTime/sessionHistory are cached AFTER successful ops, not reactively
   useEffect(() => { try { localStorage.setItem(getUserScopedKey('custom-sessions'), JSON.stringify(customSessions)); } catch { } }, [customSessions]);
+
+  // ── Helper: save completed focus session to Supabase + update localStorage cache ──
+  const saveFocusSession = async (sessionEntry) => {
+    // 1. Update local state immediately
+    setSessions(s => {
+      const next = s + 1;
+      try { localStorage.setItem(getUserScopedKey('focus-sessions'), String(next)); } catch { }
+      return next;
+    });
+    setTotalFocusTime(t => {
+      const next = t + sessionEntry.duration;
+      try { localStorage.setItem(getUserScopedKey('focus-total-time'), String(next)); } catch { }
+      return next;
+    });
+    setSessionHistory(prev => {
+      const next = [...prev, sessionEntry];
+      try { localStorage.setItem(getUserScopedKey('focus-history'), JSON.stringify(next)); } catch { }
+      return next;
+    });
+
+    // 2. Write to Supabase (fire-and-warn — focus session loss is not critical)
+    if (isSupabaseConfigured && supabase && user?.id) {
+      supabase
+        .from('focus_sessions')
+        .insert({
+          user_id: user.id,
+          habit_id: sessionEntry.habitId || null,
+          duration_minutes: sessionEntry.duration,
+          completed_at: sessionEntry.endedAt || new Date().toISOString(),
+          workspace_id: null,
+        })
+        .then(({ error }) => { if (error) console.warn('[Focus] Supabase insert failed:', error.message); })
+        .catch(() => { });
+    }
+  };
 
   // Stopwatch state
   const [mode, setMode] = useState('timer'); // 'timer' | 'stopwatch'
@@ -732,12 +765,14 @@ export default function HabitFocusHub() {
       setIsActive(false);
       setIsPaused(false);
       const dur = selectedSession?.focusDuration || selectedSession?.time || 25;
-      setSessions(s => s + 1);
-      setTotalFocusTime(t => t + dur);
-      setSessionHistory(prev => [...prev, {
-        id: `sh-${Date.now()}`, name: selectedSession?.title || selectedSession?.name || 'Session',
-        duration: dur, endedAt: new Date().toISOString(),
-      }]);
+      const entry = {
+        id: `sh-${Date.now()}`,
+        name: selectedSession?.title || selectedSession?.name || 'Session',
+        habitId: selectedSession?._type === 'habit' ? selectedSession?.id : null,
+        duration: dur,
+        endedAt: new Date().toISOString(),
+      };
+      saveFocusSession(entry);
     }
     return () => clearInterval(interval);
   }, [isActive, isPaused, timeLeft, mode, stopwatchTime, selectedSession]);
@@ -762,7 +797,6 @@ export default function HabitFocusHub() {
     }
   };
 
-  // End = finishes current timer and counts elapsed time as a session
   const endSession = () => {
     notificationManager.hapticHeavy();
     setIsActive(false);
@@ -777,12 +811,14 @@ export default function HabitFocusHub() {
       setTimeLeft(dur * 60);
     }
     if (elapsed > 0) {
-      setSessions(s => s + 1);
-      setTotalFocusTime(t => t + elapsed);
-      setSessionHistory(prev => [...prev, {
-        id: `sh-${Date.now()}`, name: selectedSession?.title || selectedSession?.name || 'Session',
-        duration: elapsed, endedAt: new Date().toISOString(),
-      }]);
+      const entry = {
+        id: `sh-${Date.now()}`,
+        name: selectedSession?.title || selectedSession?.name || 'Session',
+        habitId: selectedSession?._type === 'habit' ? selectedSession?.id : null,
+        duration: elapsed,
+        endedAt: new Date().toISOString(),
+      };
+      saveFocusSession(entry);
     }
   };
 

@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { notificationManager } from '../services/notifications';
 import { useAuth } from '../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 
@@ -174,13 +175,41 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
 export default function Dashboard() {
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSaved, setMoodSaved] = useState(false);
+  const [moodHistory, setMoodHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+    } catch { return []; }
+  });
   const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents } = useData();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
   const isLight = theme === 'light';
   const greeting = useMemo(getGreeting, []);
   const GreetingIcon = greeting.icon;
   const today = new Date();
+
+  // ── Load mood history from Supabase on mount ──
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase || !user?.id) return;
+    supabase
+      .from('mood_logs')
+      .select('mood_value, mood_label, note, logged_at')
+      .eq('user_id', user.id)
+      .order('logged_at', { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const formatted = data.map(r => ({
+            date: r.logged_at,
+            mood: r.mood_value,
+            label: r.mood_label,
+          }));
+          setMoodHistory(formatted);
+          localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(formatted));
+        }
+      })
+      .catch(() => { }); // localStorage cache already loaded in useState
+  }, [user?.id]);
 
   /* ── Today's events from real calendar data (deduplicated) ── */
   const todayEvents = useMemo(() => {
@@ -258,18 +287,25 @@ export default function Dashboard() {
     return new Promise(resolve => setTimeout(resolve, 1000));
   };
 
-  const handleMoodSelect = (mood) => {
+  const handleMoodSelect = async (mood) => {
     setSelectedMood(mood);
     setMoodSaved(false);
-    /* Persist mood to localStorage */
-    const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
-    moodHistory.push({ date: new Date().toISOString(), mood: mood.value, label: mood.label });
-    try {
-      localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-30)));
-    } catch (e) {
-      // Quota exceeded — trim more aggressively
-      try { localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(moodHistory.slice(-10))); } catch { }
+
+    // Optimistic local update
+    const entry = { date: new Date().toISOString(), mood: mood.value, label: mood.label };
+    const updated = [entry, ...moodHistory].slice(0, 30);
+    setMoodHistory(updated);
+    localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
+
+    // Persist to Supabase (non-critical — warn but don't block UI)
+    if (isSupabaseConfigured && supabase && user?.id) {
+      supabase
+        .from('mood_logs')
+        .insert({ user_id: user.id, mood_value: mood.value, mood_label: mood.label })
+        .then(({ error }) => { if (error) console.warn('[Mood] Supabase insert failed:', error.message); })
+        .catch(() => { });
     }
+
     setTimeout(() => setMoodSaved(true), 600);
   };
 
@@ -302,16 +338,12 @@ export default function Dashboard() {
     });
   }, [habits]);
 
-  /* Last mood from localStorage */
+  /* Last mood from state (Supabase-sourced after mount) */
   const lastMood = useMemo(() => {
-    try {
-      const history = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
-      if (history.length === 0) return null;
-      const last = history[history.length - 1];
-      const matching = MOOD_EMOJIS.find(m => m.value === last.mood);
-      return matching || null;
-    } catch { return null; }
-  }, [selectedMood]);
+    if (moodHistory.length === 0) return null;
+    const last = moodHistory[0]; // already sorted newest-first
+    return MOOD_EMOJIS.find(m => m.value === last.mood) || null;
+  }, [moodHistory, selectedMood]);
 
   /* Overdue tasks (past due, not completed) */
   const overdueTasks = useMemo(() => {

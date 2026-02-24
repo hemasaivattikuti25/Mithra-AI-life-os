@@ -373,21 +373,19 @@ const HABIT_CATEGORY_MAP = {
 export function DataProvider({ children }) {
   const { user } = useAuth();
 
-  // Tasks — load from localStorage, fall back to initial data
+  // Tasks — start empty, Supabase is truth, localStorage is offline cache
   const [tasks, setTasks] = useState(() => {
+    // Instant fallback from cache while Supabase fetch happens
     const stored = loadFromStorage('tasks', null);
     if (stored && Array.isArray(stored) && stored.length > 0) {
-      // Rehydrate date objects
-      return stored.map(t => ({
-        ...t,
-        dueDate: t.dueDate ? new Date(t.dueDate) : null,
-      }));
+      return stored.map(t => ({ ...t, dueDate: t.dueDate ? new Date(t.dueDate) : null }));
     }
     return INITIAL_TASKS;
   });
   const [taskLists] = useState(INITIAL_LISTS);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // Habits — load from localStorage, fall back to initial data
+  // Habits — start empty, Supabase is truth, localStorage is offline cache
   const [habits, setHabits] = useState(() => {
     const stored = loadFromStorage('habits', null);
     if (stored && Array.isArray(stored) && stored.length > 0) return stored;
@@ -471,9 +469,9 @@ export function DataProvider({ children }) {
   useEffect(() => { saveToStorage('syncSettings', syncSettings); }, [syncSettings]);
   useEffect(() => { saveToStorage('notificationSettings', notificationSettings); }, [notificationSettings]);
 
-  // Persist tasks and habits to localStorage
-  useEffect(() => { saveToStorage('tasks', tasks); }, [tasks]);
-  useEffect(() => { saveToStorage('habits', habits); }, [habits]);
+  // NOTE: tasks/habits are NO LONGER auto-saved to localStorage on every change.
+  // localStorage is only updated as a cache AFTER successful Supabase operations.
+  // This prevents stale localStorage from overwriting fresh Supabase data.
 
   // Wipe memory on logout to prevent data crossover between user sessions
   useEffect(() => {
@@ -485,55 +483,63 @@ export function DataProvider({ children }) {
   }, [user]);
 
   /* ══════════════════════════════════════════════════════════════
-     SUPABASE SYNC — Pull on mount, push on CRUD
+     SUPABASE-FIRST: Fetch on mount, write before state update
      ═══════════════════════════════════════════════════════════ */
   const hasPulledRef = useRef(false);
 
-  // Initial pull from Supabase when user is authenticated
+  // Fetch personal tasks + habits from Supabase on mount
   useEffect(() => {
-    if (!isSupabaseConfigured || hasPulledRef.current) return;
+    if (!isSupabaseConfigured || !user || hasPulledRef.current) return;
 
-    const pullFromCloud = async () => {
+    const fetchFromSupabase = async () => {
+      setDataLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.id) return;
+        if (!session?.user?.id) {
+          setDataLoading(false);
+          return;
+        }
         const userId = session.user.id;
 
-        // Pull tasks — We pull all accessible tasks. RLS ensures we only see own + workspace tasks.
-        const { data: cloudTasks } = await supabase
+        // Fetch PERSONAL tasks only (workspace_id IS NULL)
+        const { data: cloudTasks, error: taskErr } = await supabase
           .from('tasks')
-          .select('*');
+          .select('*')
+          .eq('user_id', userId)
+          .is('workspace_id', null)
+          .order('created_at', { ascending: false });
 
-        if (cloudTasks && cloudTasks.length > 0) {
+        if (!taskErr && cloudTasks) {
           const mapped = cloudTasks.map(mapTaskFromDB);
           setTasks(mapped);
+          saveToStorage('tasks', mapped); // update cache
         }
 
-        // Pull habits — We pull all accessible habits. RLS ensures we only see own + workspace habits.
-        const { data: cloudHabits } = await supabase
+        // Fetch PERSONAL habits only (workspace_id IS NULL)
+        const { data: cloudHabits, error: habitErr } = await supabase
           .from('habits')
-          .select('*');
+          .select('*')
+          .eq('user_id', userId)
+          .is('workspace_id', null);
 
-        if (cloudHabits && cloudHabits.length > 0) {
+        if (!habitErr && cloudHabits) {
           const mapped = cloudHabits.map(mapHabitFromDB);
           setHabits(mapped);
+          saveToStorage('habits', mapped); // update cache
         }
 
         hasPulledRef.current = true;
-        console.log('[Sync] Initial pull complete');
+        console.log('[Sync] Supabase-first fetch complete: tasks=', cloudTasks?.length || 0, 'habits=', cloudHabits?.length || 0);
       } catch (err) {
-        console.warn('[Sync] Initial pull failed:', err);
+        console.warn('[Sync] Supabase fetch failed, using localStorage cache:', err.message);
+        // Cache is already loaded in useState — no action needed
+      } finally {
+        setDataLoading(false);
       }
     };
 
-    pullFromCloud();
-  }, []);
-
-  // Helper: push a change to Supabase in the background
-  const syncToCloud = useCallback((table, action, data) => {
-    if (!isSupabaseConfigured) return;
-    syncEngine.enqueue({ table, action, data });
-  }, []);
+    fetchFromSupabase();
+  }, [user]);
 
   // Computed accent colors for JS usage (charts, inline styles, etc.)
   const accentColor = useMemo(() => {
@@ -616,66 +622,227 @@ export function DataProvider({ children }) {
     syncReminders();
   }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders]);
 
-  /* ── Task CRUD (with cloud sync) ── */
-  const addTask = useCallback((task) => {
-    setTasks(prev => [...prev, task]);
-    syncToCloud('tasks', 'upsert', mapTaskToDB(task));
-  }, [syncToCloud]);
+  /* ── Task CRUD — Supabase-first ── */
+  const addTask = useCallback(async (task) => {
+    if (isSupabaseConfigured && user) {
+      const dbTask = mapTaskToDB({ ...task, userId: user.id });
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert(dbTask)
+        .select()
+        .single();
 
-  const updateTask = useCallback((updated) => {
-    setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-    syncToCloud('tasks', 'upsert', mapTaskToDB(updated));
-  }, [syncToCloud]);
+      if (error) {
+        console.error('[Tasks] Add failed:', error.message);
+        throw error;
+      }
 
-  const deleteTask = useCallback((id) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-    syncToCloud('tasks', 'delete', { id });
-  }, [syncToCloud]);
-  const toggleTask = useCallback((id) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== id) return t;
-      const willComplete = !t.completed;
-      // If completing a recurring task, auto-create next occurrence
-      if (willComplete && t.recurrence && t.recurrence !== 'none' && t.dueDate) {
-        const due = new Date(t.dueDate);
-        let nextDate;
-        switch (t.recurrence) {
-          case 'daily': nextDate = addDays(due, 1); break;
-          case 'weekly': nextDate = addDays(due, 7); break;
-          case 'monthly': nextDate = new Date(due.getFullYear(), due.getMonth() + 1, due.getDate()); break;
-          default: nextDate = null;
-        }
-        if (nextDate) {
-          setTimeout(() => {
-            setTasks(p => [...p, {
-              ...t,
-              id: `${t.id}-${Date.now()}`,
-              completed: false,
-              dueDate: nextDate,
-            }]);
-          }, 0);
+      const mapped = mapTaskFromDB(data);
+      setTasks(prev => {
+        const next = [mapped, ...prev];
+        saveToStorage('tasks', next);
+        return next;
+      });
+      return mapped;
+    }
+    // Offline fallback
+    const offlineTask = { ...task, id: task.id || crypto.randomUUID() };
+    setTasks(prev => {
+      const next = [offlineTask, ...prev];
+      saveToStorage('tasks', next);
+      return next;
+    });
+    return offlineTask;
+  }, [user]);
+
+  const updateTask = useCallback(async (updated) => {
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('tasks')
+        .update(mapTaskToDB(updated))
+        .eq('id', updated.id);
+
+      if (error) {
+        console.error('[Tasks] Update failed:', error.message);
+        throw error;
+      }
+    }
+
+    setTasks(prev => {
+      const next = prev.map(t => t.id === updated.id ? updated : t);
+      saveToStorage('tasks', next);
+      return next;
+    });
+  }, [user]);
+
+  const deleteTask = useCallback(async (id) => {
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('[Tasks] Delete failed:', error.message);
+        throw error;
+      }
+    }
+
+    setTasks(prev => {
+      const next = prev.filter(t => t.id !== id);
+      saveToStorage('tasks', next);
+      return next;
+    });
+  }, [user]);
+
+  const toggleTask = useCallback(async (id) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const willComplete = !task.completed;
+    const updated = { ...task, completed: willComplete };
+
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: willComplete })
+        .eq('id', id);
+
+      if (error) {
+        console.error('[Tasks] Toggle failed:', error.message);
+        throw error;
+      }
+    }
+
+    // If completing a recurring task, auto-create next occurrence
+    if (willComplete && task.recurrence && task.recurrence !== 'none' && task.dueDate) {
+      const due = new Date(task.dueDate);
+      let nextDate;
+      switch (task.recurrence) {
+        case 'daily': nextDate = addDays(due, 1); break;
+        case 'weekly': nextDate = addDays(due, 7); break;
+        case 'monthly': nextDate = new Date(due.getFullYear(), due.getMonth() + 1, due.getDate()); break;
+        default: nextDate = null;
+      }
+      if (nextDate) {
+        const recurringTask = {
+          ...task,
+          id: crypto.randomUUID(),
+          completed: false,
+          dueDate: nextDate,
+          userId: user?.id,
+        };
+        // Add recurring task to Supabase
+        if (isSupabaseConfigured && user) {
+          supabase.from('tasks').insert(mapTaskToDB(recurringTask)).then(() => {
+            setTasks(p => {
+              const next = [...p, recurringTask];
+              saveToStorage('tasks', next);
+              return next;
+            });
+          });
+        } else {
+          setTasks(p => [...p, recurringTask]);
         }
       }
-      return { ...t, completed: willComplete };
-    }));
-  }, []);
-  const starTask = useCallback((id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, starred: !t.starred } : t)), []);
+    }
 
-  /* ── Habit CRUD (with cloud sync) ── */
-  const addHabit = useCallback((habit) => {
-    setHabits(prev => [...prev, habit]);
-    syncToCloud('habits', 'upsert', mapHabitToDB(habit));
-  }, [syncToCloud]);
+    setTasks(prev => {
+      const next = prev.map(t => t.id === id ? updated : t);
+      saveToStorage('tasks', next);
+      return next;
+    });
+  }, [tasks, user]);
 
-  const updateHabit = useCallback((updated) => {
-    setHabits(prev => prev.map(h => h.id === updated.id ? updated : h));
-    syncToCloud('habits', 'upsert', mapHabitToDB(updated));
-  }, [syncToCloud]);
+  const starTask = useCallback(async (id) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const newStarred = !task.starred;
 
-  const deleteHabit = useCallback((id) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
-    syncToCloud('habits', 'delete', { id });
-  }, [syncToCloud]);
+    if (isSupabaseConfigured && user) {
+      await supabase.from('tasks').update({ starred: newStarred }).eq('id', id);
+    }
+
+    setTasks(prev => {
+      const next = prev.map(t => t.id === id ? { ...t, starred: newStarred } : t);
+      saveToStorage('tasks', next);
+      return next;
+    });
+  }, [tasks, user]);
+
+  /* ── Habit CRUD — Supabase-first ── */
+  const addHabit = useCallback(async (habit) => {
+    if (isSupabaseConfigured && user) {
+      const dbHabit = mapHabitToDB({ ...habit });
+      dbHabit.user_id = user.id;
+      const { data, error } = await supabase
+        .from('habits')
+        .insert(dbHabit)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Habits] Add failed:', error.message);
+        throw error;
+      }
+
+      const mapped = mapHabitFromDB(data);
+      setHabits(prev => {
+        const next = [...prev, mapped];
+        saveToStorage('habits', next);
+        return next;
+      });
+      return mapped;
+    }
+    // Offline fallback
+    const offlineHabit = { ...habit, id: habit.id || crypto.randomUUID() };
+    setHabits(prev => {
+      const next = [...prev, offlineHabit];
+      saveToStorage('habits', next);
+      return next;
+    });
+    return offlineHabit;
+  }, [user]);
+
+  const updateHabit = useCallback(async (updated) => {
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('habits')
+        .update(mapHabitToDB(updated))
+        .eq('id', updated.id);
+
+      if (error) {
+        console.error('[Habits] Update failed:', error.message);
+        throw error;
+      }
+    }
+
+    setHabits(prev => {
+      const next = prev.map(h => h.id === updated.id ? updated : h);
+      saveToStorage('habits', next);
+      return next;
+    });
+  }, [user]);
+
+  const deleteHabit = useCallback(async (id) => {
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('habits')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('[Habits] Delete failed:', error.message);
+        throw error;
+      }
+    }
+
+    setHabits(prev => {
+      const next = prev.filter(h => h.id !== id);
+      saveToStorage('habits', next);
+      return next;
+    });
+  }, [user]);
 
   // Streak milestones
   const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 180, 365];
@@ -744,41 +911,53 @@ export function DataProvider({ children }) {
     return () => unsub();
   }, [fireNotification]);
 
-  const toggleHabit = useCallback((id) => {
-    setHabits(prev => prev.map(h => {
-      if (h.id !== id) return h;
+  const toggleHabit = useCallback(async (id) => {
+    const habit = habits.find(h => h.id === id);
+    if (!habit) return;
 
-      const todayStr = getTodayStr();
-      const consistency = h.consistency || [];
-      const alreadyDone = consistency.includes(todayStr);
+    const todayStr = getTodayStr();
+    const consistency = habit.consistency || [];
+    const alreadyDone = consistency.includes(todayStr);
 
-      let newConsistency = consistency;
-      if (alreadyDone) {
-        newConsistency = consistency.filter(d => d !== todayStr);
-      } else {
-        newConsistency = [...consistency, todayStr];
+    const newConsistency = alreadyDone
+      ? consistency.filter(d => d !== todayStr)
+      : [...consistency, todayStr];
+
+    const newStreak = calculateStreak(newConsistency);
+    const isDone = !alreadyDone;
+
+    const updated = {
+      ...habit,
+      todayDone: isDone,
+      streak: newStreak,
+      bestStreak: Math.max(habit.bestStreak || 0, newStreak),
+      consistency: newConsistency,
+    };
+
+    // Write to Supabase FIRST
+    if (isSupabaseConfigured && user) {
+      const { error } = await supabase
+        .from('habits')
+        .update(mapHabitToDB(updated))
+        .eq('id', id);
+
+      if (error) {
+        console.error('[Habits] Toggle failed:', error.message);
+        // Don't throw — toggling should degrade gracefully
       }
+    }
 
-      const newStreak = calculateStreak(newConsistency);
-      const isDone = !alreadyDone;
+    if (isDone && !alreadyDone && STREAK_MILESTONES.includes(newStreak)) {
+      setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
+      setTimeout(() => setLastMilestone(null), 5000);
+    }
 
-      const updated = {
-        ...h,
-        todayDone: isDone,
-        streak: newStreak,
-        bestStreak: Math.max(h.bestStreak || 0, newStreak),
-        consistency: newConsistency,
-      };
-
-      if (isDone && !alreadyDone && STREAK_MILESTONES.includes(newStreak)) {
-        setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
-        setTimeout(() => setLastMilestone(null), 5000);
-      }
-
-      syncToCloud('habits', 'upsert', mapHabitToDB(updated));
-      return updated;
-    }));
-  }, [syncToCloud]);
+    setHabits(prev => {
+      const next = prev.map(h => h.id === id ? updated : h);
+      saveToStorage('habits', next);
+      return next;
+    });
+  }, [habits, user]);
 
   /* ── Generate calendar events from tasks ── */
   const taskCalendarEvents = useMemo(() => {
@@ -920,13 +1099,15 @@ export function DataProvider({ children }) {
     googleEvents,
     // Export
     exportData,
+    // Loading state
+    dataLoading,
   }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings,
     theme, colorTheme, accentColor, notifications, focusSound, notificationSettings, googleEvents,
     addTask, updateTask, deleteTask, toggleTask, starTask,
     addHabit, updateHabit, deleteHabit, toggleHabit,
     toggleTheme, changeColorTheme, toggleNotifications, toggleFocusSound,
     updateNotificationSettings, requestNotificationPermission,
-    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar, exportData]);
+    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar, exportData, dataLoading]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

@@ -263,6 +263,7 @@ export default function MithraJournal() {
   const { theme } = useData();
   const { user } = useAuth();
   const isLight = theme === 'light';
+  // Entries: show localStorage cache instantly, then replace with Supabase data
   const [entries, setEntries] = useState(() => {
     try {
       const saved = localStorage.getItem(getUserScopedKey('journal-entries'));
@@ -280,30 +281,27 @@ export default function MithraJournal() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ── Cloud Sync: Load from Supabase on mount, merge with localStorage ──
+  // ── PRIMARY: Load from Supabase on mount (localStorage is cache only) ──
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase || !user?.id) return;
 
-    const fetchAndMerge = async () => {
+    const fetchFromSupabase = async () => {
       try {
         setIsSyncing(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
         const { data: cloudEntries, error } = await supabase
           .from('journal_entries')
           .select('id, content, mood, tags, date, created_at, updated_at')
-          .order('date', { ascending: false });
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .limit(100);
 
         if (error) throw error;
-        if (!cloudEntries || cloudEntries.length === 0) return;
 
-        // Convert cloud entries to local format
-        const cloudFormatted = cloudEntries.map(e => ({
+        const formatted = (cloudEntries || []).map(e => ({
           id: e.id,
           title: (e.content || '').split('\n')[0]?.slice(0, 80) || 'Untitled',
           body: e.content || '',
-          mood: e.mood ? e.mood * 2 : 5,  // DB is 1-5, local is 1-10
+          mood: e.mood ? e.mood * 2 : 5,  // DB 1-5 → local 1-10
           tags: (e.tags || []).map(t => t.startsWith('#') ? t : `#${t}`),
           date: new Date(e.date),
           color: (e.mood && e.mood >= 4) ? 'var(--accent-color)' : 'var(--text-primary)',
@@ -311,96 +309,92 @@ export default function MithraJournal() {
           _updatedAt: e.updated_at,
         }));
 
-        setEntries(prev => {
-          // Merge: cloud wins on conflict (same ID), add unique local entries
-          const cloudIds = new Set(cloudFormatted.map(e => e.id));
-          const localOnly = prev.filter(e => !cloudIds.has(e.id) && !e._cloudId);
-          const merged = [...cloudFormatted, ...localOnly];
-          // Sort by date descending
-          merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-          return merged;
-        });
+        setEntries(formatted); // Supabase is truth — replace, don't merge
+        // Update localStorage cache
+        localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(formatted));
+        console.log('[Journal] Loaded', formatted.length, 'entries from Supabase');
       } catch (err) {
-        console.warn('[Journal] Cloud sync failed:', err);
+        console.warn('[Journal] Supabase fetch failed, using localStorage cache:', err.message);
+        // localStorage cache already loaded in useState — no action needed
       } finally {
         setIsSyncing(false);
       }
     };
 
-    fetchAndMerge();
+    fetchFromSupabase();
   }, [user?.id]);
 
-  // ── Persist entries to localStorage (optimistic) ──
-  useEffect(() => {
-    try {
-      localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(entries));
-    } catch (e) {
-      console.warn('Failed to save journal entries:', e.message);
-    }
-  }, [entries]);
+  // NOTE: localStorage is NO LONGER auto-updated on every entry change.
+  // Cache is updated AFTER successful Supabase operations only.
 
-  // ── Cloud save helper ──
+  // ── Supabase-first: upsert to DB, update state from response ──
   const syncToCloud = async (entry, action = 'upsert') => {
-    if (!isSupabaseConfigured || !supabase || !user?.id) return;
+    if (!isSupabaseConfigured || !supabase || !user?.id) return null;
 
-    try {
-      setIsSyncing(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      if (action === 'delete') {
-        await supabase.from('journal_entries').delete().eq('id', entry.id);
-      } else {
-        const dbEntry = {
-          id: entry.id?.toString().includes('-') ? entry.id : undefined,
-          user_id: user.id,
-          content: entry.title ? `${entry.title}\n\n${entry.body}` : entry.body,
-          mood: Math.max(1, Math.min(5, Math.round(entry.mood / 2))),  // local 1-10 → DB 1-5
-          tags: (entry.tags || []).map(t => t.replace('#', '')),
-          date: entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : entry.date,
-        };
-
-        const { data, error } = await supabase
-          .from('journal_entries')
-          .upsert(dbEntry, { onConflict: 'id' })
-          .select('id')
-          .single();
-
-        if (error) throw error;
-
-        // Update local entry with cloud ID if it was a new entry
-        if (data?.id && data.id !== entry.id) {
-          setEntries(prev => prev.map(e =>
-            e.id === entry.id ? { ...e, id: data.id, _cloudId: data.id } : e
-          ));
-        }
-      }
-    } catch (err) {
-      console.warn('[Journal] Cloud save failed, entry safe in localStorage:', err);
-    } finally {
-      setIsSyncing(false);
+    if (action === 'delete') {
+      const { error } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', entry.id);
+      if (error) throw error;
+      return null;
     }
+
+    const dbEntry = {
+      ...(entry._cloudId || (typeof entry.id === 'string' && entry.id.includes('-') ? { id: entry.id } : {})),
+      user_id: user.id,
+      content: entry.title ? `${entry.title}\n\n${entry.body}` : entry.body,
+      mood: Math.max(1, Math.min(5, Math.round((entry.mood || 5) / 2))),
+      tags: (entry.tags || []).map(t => t.replace('#', '')),
+      date: entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : entry.date,
+    };
+
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .upsert(dbEntry, { onConflict: 'id' })
+      .select('id, created_at, updated_at')
+      .single();
+
+    if (error) throw error;
+    return data; // caller uses this to update state with real DB id
   };
 
-  const filteredEntries = entries.filter(e => {
-    const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (e.tags || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    if (activeFilter === 'high') return matchesSearch && e.mood >= 7;
-    if (activeFilter === 'low') return matchesSearch && e.mood < 5;
-    return matchesSearch;
-  });
+  const handleSaveEntry = async (entry) => {
+    try {
+      setIsSyncing(true);
+      const dbResult = await syncToCloud(entry);
 
-  const handleSaveEntry = (entry) => {
-    if (editingEntry) {
-      setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
-      if (selectedEntry?.id === entry.id) setSelectedEntry(entry);
-    } else {
-      setEntries(prev => [entry, ...prev]);
+      // If DB returned a new id (new entry), update the entry's id
+      const finalEntry = dbResult?.id && dbResult.id !== entry.id
+        ? { ...entry, id: dbResult.id, _cloudId: dbResult.id }
+        : { ...entry, _cloudId: entry._cloudId || dbResult?.id };
+
+      if (editingEntry) {
+        setEntries(prev => {
+          const next = prev.map(e => e.id === entry.id || e.id === editingEntry.id ? finalEntry : e);
+          localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(next));
+          return next;
+        });
+        if (selectedEntry?.id === entry.id) setSelectedEntry(finalEntry);
+      } else {
+        setEntries(prev => {
+          const next = [finalEntry, ...prev];
+          localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(next));
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('[Journal] Save failed:', err.message);
+      // Optimistic fallback — save to state even if Supabase failed
+      if (editingEntry) {
+        setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
+      } else {
+        setEntries(prev => [entry, ...prev]);
+      }
+    } finally {
+      setIsSyncing(false);
+      setEditingEntry(null);
     }
-    setEditingEntry(null);
-    // Background cloud sync
-    syncToCloud(entry);
   };
 
   const handleEditEntry = (entry) => {
@@ -409,12 +403,21 @@ export default function MithraJournal() {
     setEditorOpen(true);
   };
 
-  const handleDeleteEntry = (id) => {
+  const handleDeleteEntry = async (id) => {
     const entry = entries.find(e => e.id === id);
-    setEntries(prev => prev.filter(e => e.id !== id));
+    if (!entry) return;
+    try {
+      await syncToCloud(entry, 'delete'); // await the delete
+    } catch (err) {
+      console.error('[Journal] Delete failed:', err.message);
+      // Still remove from local state — user intent is clear
+    }
+    setEntries(prev => {
+      const next = prev.filter(e => e.id !== id);
+      localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(next));
+      return next;
+    });
     if (selectedEntry?.id === id) setSelectedEntry(null);
-    // Background cloud delete
-    if (entry) syncToCloud(entry, 'delete');
   };
 
   // Stats
