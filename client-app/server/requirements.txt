@@ -6,7 +6,6 @@ python-dotenv
 bcrypt
 PyJWT
 python-multipart
-chromadb
 pydantic
 stripe
 httpx

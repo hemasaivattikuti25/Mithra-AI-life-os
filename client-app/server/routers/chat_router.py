@@ -274,5 +274,5 @@ Dost:
             "reply": "I hit a snag processing that. Could you rephrase? 🤔",
             "action": None,
             "memory_used": False,
-            "usage": usage if 'usage' in dir() else {},
+            "usage": usage,
         }

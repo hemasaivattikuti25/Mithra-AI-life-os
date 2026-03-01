@@ -17,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Sliding window store: { "ip:bucket" -> [timestamp, ...] }
 _windows = defaultdict(list)
+_last_cleanup = time.time()
 
 # Limits per path prefix (requests per 60 seconds)
 RATE_LIMITS = {
@@ -25,6 +26,7 @@ RATE_LIMITS = {
 }
 DEFAULT_LIMIT = 60
 WINDOW_SECONDS = 60
+CLEANUP_INTERVAL = 300  # Full cleanup every 5 minutes
 
 
 def _get_limit(path: str) -> int:
@@ -75,10 +77,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Record this request
         _windows[bucket_key].append(now)
 
-        # Periodic cleanup (every 100 requests, prune stale buckets)
-        if sum(len(v) for v in _windows.values()) % 100 == 0:
+        # Time-based cleanup: prune stale buckets every CLEANUP_INTERVAL seconds
+        global _last_cleanup
+        if now - _last_cleanup > CLEANUP_INTERVAL:
+            _last_cleanup = now
             stale_keys = [
-                k for k, v in _windows.items()
+                k for k, v in list(_windows.items())
                 if not v or v[-1] < now - WINDOW_SECONDS * 2
             ]
             for k in stale_keys:

@@ -25,6 +25,7 @@ export default defineConfig({
           'lucide': ['lucide-react'],
           // Large pages
           'dost': ['./src/pages/DostMode.jsx'],
+          'blend': ['./src/pages/MithraBlend.jsx'],
           'calendar': ['./src/pages/Calendar.jsx'],
         },
       },

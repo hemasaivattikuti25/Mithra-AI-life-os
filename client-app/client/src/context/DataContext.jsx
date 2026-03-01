@@ -748,15 +748,29 @@ export function DataProvider({ children }) {
           dueDate: nextDate,
           userId: user?.id,
         };
-        // Add recurring task to Supabase
+        // Add recurring task — await with rollback on failure
         if (isSupabaseConfigured && user) {
-          supabase.from('tasks').insert(mapTaskToDB(recurringTask)).then(() => {
+          try {
+            const { error: insertErr } = await supabase.from('tasks').insert(mapTaskToDB(recurringTask));
+            if (insertErr) throw insertErr;
             setTasks(p => {
               const next = [...p, recurringTask];
               saveToStorage('tasks', next);
               return next;
             });
-          });
+          } catch (recurErr) {
+            console.error('[Tasks] Recurring insert failed, rolling back toggle:', recurErr.message || recurErr);
+            // Rollback: undo the original toggle
+            if (isSupabaseConfigured && user) {
+              await supabase.from('tasks').update({ completed: !willComplete }).eq('id', id).catch(() => {});
+            }
+            setTasks(prev => {
+              const next = prev.map(t => t.id === id ? task : t); // restore original
+              saveToStorage('tasks', next);
+              return next;
+            });
+            return; // exit early — don't apply the toggle below
+          }
         } else {
           setTasks(p => [...p, recurringTask]);
         }

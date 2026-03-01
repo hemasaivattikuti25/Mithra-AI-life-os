@@ -14,6 +14,7 @@ logger = logging.getLogger("mithra.config")
 # ─── Configuration ───────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
@@ -60,6 +61,26 @@ def _init_supabase():
         supabase = None
 
 _init_supabase()
+
+
+# ─── Supabase Admin Client (service_role — for backend operations that bypass RLS) ───
+supabase_admin = None
+
+def _init_supabase_admin():
+    global supabase_admin
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY and "your-" not in SUPABASE_SERVICE_KEY:
+        try:
+            from supabase import create_client
+            supabase_admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+            logger.info("✅ Supabase Admin (service_role) connected")
+        except Exception as e:
+            logger.warning(f"⚠️  Supabase Admin init failed: {e}")
+            supabase_admin = None
+    else:
+        logger.warning("⚠️  SUPABASE_SERVICE_KEY missing — transfer_ownership will use anon key (may fail on RLS)")
+        supabase_admin = None
+
+_init_supabase_admin()
 
 
 # ─── Gemini Model (LAZY — only loads on first AI request) ────────

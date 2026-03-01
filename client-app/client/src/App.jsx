@@ -4,7 +4,7 @@ import { Layout } from './components/Layout';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
 import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton } from './components/LoadingSkeleton';
 import OnboardingTour from './components/OnboardingTour';
 import SearchDialog from './components/SearchDialog';
@@ -13,6 +13,7 @@ import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
 import { registerServiceWorker } from './services/notifications';
+import { checkSupabaseHealth, isSupabaseConfigured } from './services/supabaseClient';
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -190,6 +191,7 @@ function App() {
       <AuthProvider>
         <DataProvider>
           <ToastProvider>
+            <SupabaseHealthGate />
             <Router>
               <AppRoutes />
             </Router>
@@ -198,6 +200,20 @@ function App() {
       </AuthProvider>
     </ErrorBoundary>
   );
+}
+
+/** Runs once on mount — pings Supabase and warns if latency > 2s */
+function SupabaseHealthGate() {
+  const { addToast } = useToast();
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    checkSupabaseHealth().then(({ ok, latency }) => {
+      if (ok && latency > 2000) {
+        addToast({ message: 'Slow connection detected. Some features may load slowly.', type: 'warning', duration: 6000 });
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
 }
 
 export default App;

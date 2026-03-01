@@ -272,7 +272,7 @@ export const Layout = ({ children }) => {
                     <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-30" />
                     <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-[var(--visor-glow)] rounded-full blur-[150px] opacity-20" />
                 </div>
-                <div className="relative z-10">
+                <div className="relative">
                     {children}
                 </div>
             </main>

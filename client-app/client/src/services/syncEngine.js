@@ -159,14 +159,43 @@ class SyncEngine {
     return data;
   }
 
-  /** Full sync: DISABLED — Supabase is now the source of truth.
-   *  localStorage is cache only. Direct Supabase calls in DataContext replace this.
-   *  Kept here as a stub to avoid breaking any remaining callers. */
-  async syncTable(table, _userId, localData, _opts = {}) {
-    // DISABLED: pushing localStorage data to Supabase would overwrite fresh server data.
-    // Each page now fetches directly from Supabase on mount.
-    console.warn('[SyncEngine] syncTable is disabled. Use direct Supabase calls.');
-    return localData;
+  /** Full sync: pull remote rows, merge with local cache (server-wins on conflict).
+   *  Returns merged dataset. Queued offline mutations are flushed first. */
+  async syncTable(table, userId, localData, opts = {}) {
+    if (!supabase || !this.isOnline || !userId) {
+      return localData; // offline — return cached data as-is
+    }
+
+    // 1. Flush any pending queue items for this table first
+    await this.processQueue();
+
+    // 2. Pull all remote rows
+    let remote;
+    try {
+      remote = await this.pull(table, userId, opts.select || '*');
+    } catch (e) {
+      console.warn(`[SyncEngine] Pull failed for ${table}:`, e.message);
+      return localData; // network error — keep local cache
+    }
+    if (!remote) return localData;
+
+    // 3. Server-wins merge: index remote by id, overlay onto local
+    const remoteMap = new Map(remote.map(r => [r.id, r]));
+    const localMap = new Map((localData || []).map(l => [l.id, l]));
+
+    // Start with all remote rows (they win on conflict)
+    const merged = new Map(remoteMap);
+
+    // Add local-only rows that aren't on remote (offline-created, not yet synced)
+    for (const [id, localRow] of localMap) {
+      if (!merged.has(id)) {
+        merged.set(id, localRow);
+      }
+    }
+
+    const result = Array.from(merged.values());
+    try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch {}
+    return result;
   }
 
   /* ── Status helpers ── */

@@ -11,7 +11,7 @@ Tokens are stored in Supabase `google_calendar_tokens` table.
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import httpx
 
@@ -103,13 +103,13 @@ class GoogleCalendarService:
             data = response.json()
             new_access_token = data["access_token"]
             expires_in = data.get("expires_in", 3600)
-            expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat()
+            expires_at = (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat()
 
             # Store refreshed token
             supabase.table("google_calendar_tokens").update({
                 "access_token": new_access_token,
                 "expires_at": expires_at,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("user_id", user_id).execute()
 
             logger.info(f"[token] Token refreshed for user={user_id[:8]}, expires_in={expires_in}s")
@@ -127,7 +127,7 @@ class GoogleCalendarService:
         if not supabase:
             raise CalendarError("Database not configured", status_code=503)
 
-        expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat()
+        expires_at = (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat()
 
         supabase.table("google_calendar_tokens").upsert({
             "user_id": user_id,
@@ -135,7 +135,7 @@ class GoogleCalendarService:
             "refresh_token": refresh_token,
             "expires_at": expires_at,
             "scope": scope,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }, on_conflict="user_id").execute()
 
         logger.info(f"[token] Stored tokens for user={user_id[:8]}")

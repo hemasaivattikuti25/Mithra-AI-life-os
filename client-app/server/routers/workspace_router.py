@@ -5,7 +5,7 @@ import logging
 import uuid
 import hashlib
 
-from core.config import supabase
+from core.config import supabase, supabase_admin
 from core.security import get_current_user
 
 logger = logging.getLogger("workspace_router")
@@ -94,17 +94,13 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
     """Join a workspace using a share hash."""
     user_id = current_user["id"]
     try:
-        # We have to fetch all workspaces to check the hash since it's computed on the fly
-        all_wsResponse = supabase.table("workspaces").select("id").execute()
+        # Query directly by share_link_hash (indexed column)
+        ws_res = supabase.table("workspaces").select("id").eq("share_link_hash", req.hash.strip()).execute()
         
-        target_ws_id = None
-        for ws in all_wsResponse.data:
-            if generate_share_hash(ws["id"]) == req.hash.strip():
-                target_ws_id = ws["id"]
-                break
-                
-        if not target_ws_id:
+        if not ws_res.data:
             raise HTTPException(status_code=404, detail="Invalid invite link")
+        
+        target_ws_id = ws_res.data[0]["id"]
 
         # Check if already a member
         existing = supabase.table("workspace_members").select("*").eq("workspace_id", target_ws_id).eq("user_id", user_id).execute()
@@ -216,13 +212,16 @@ async def transfer_ownership(
         raise HTTPException(status_code=400, detail="You are already the owner.")
 
     try:
+        # Use admin client (service_role) to bypass RLS, fall back to anon if not configured
+        admin = supabase_admin or supabase
+
         # 1. Verify caller is the current owner
-        ws_check = supabase.table("workspaces").select("owner_id").eq("id", workspace_id).single().execute()
+        ws_check = admin.table("workspaces").select("owner_id").eq("id", workspace_id).single().execute()
         if not ws_check.data or ws_check.data["owner_id"] != user_id:
             raise HTTPException(status_code=403, detail="Only the current owner can transfer ownership.")
 
         # 2. Verify new_owner is already a member of this workspace
-        member_check = supabase.table("workspace_members") \
+        member_check = admin.table("workspace_members") \
             .select("user_id") \
             .eq("workspace_id", workspace_id) \
             .eq("user_id", new_owner_id) \
@@ -231,20 +230,20 @@ async def transfer_ownership(
             raise HTTPException(status_code=404, detail="Target user is not a member of this workspace.")
 
         # 3. Atomically update workspace owner_id (service_role bypasses RLS)
-        supabase.table("workspaces") \
+        admin.table("workspaces") \
             .update({"owner_id": new_owner_id}) \
             .eq("id", workspace_id) \
             .execute()
 
         # 4. Demote old owner → member
-        supabase.table("workspace_members") \
+        admin.table("workspace_members") \
             .update({"role": "member"}) \
             .eq("workspace_id", workspace_id) \
             .eq("user_id", user_id) \
             .execute()
 
         # 5. Promote new owner → owner
-        supabase.table("workspace_members") \
+        admin.table("workspace_members") \
             .update({"role": "owner"}) \
             .eq("workspace_id", workspace_id) \
             .eq("user_id", new_owner_id) \

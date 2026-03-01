@@ -155,6 +155,44 @@ export default function MithraBlend() {
         return () => { cancelled = true; };
     }, [activeWsId, user]);
 
+    // ── Realtime: live-refresh workspace data on remote changes ──
+
+    useEffect(() => {
+        if (!activeWsId || !supabase) return;
+
+        const channel = supabase
+            .channel(`blend-${activeWsId}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'workspace_members', filter: `workspace_id=eq.${activeWsId}` },
+                (payload) => {
+                    console.log('[Blend] Realtime workspace_members change:', payload.eventType);
+                    // Re-fetch members + workspace list
+                    workspaceService.getMembers(activeWsId).then(setMembers).catch(() => {});
+                    load();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'workspace_habits', filter: `workspace_id=eq.${activeWsId}` },
+                (payload) => {
+                    console.log('[Blend] Realtime workspace_habits change:', payload.eventType);
+                    workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'workspace_tasks', filter: `workspace_id=eq.${activeWsId}` },
+                (payload) => {
+                    console.log('[Blend] Realtime workspace_tasks change:', payload.eventType);
+                    workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [activeWsId, load]);
+
     // ── URL auto-join ────────────────────────────────────────────
 
     useEffect(() => {
@@ -273,7 +311,7 @@ export default function MithraBlend() {
                 workspace_id: activeWorkspace.id,
                 user_id: user.id,
                 streak: 0,
-                consistency: [],
+                completed_dates: [],
             });
             setNewHabitTitle('');
             setAddingHabit(false);

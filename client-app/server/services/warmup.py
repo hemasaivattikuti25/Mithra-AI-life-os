@@ -26,7 +26,7 @@ async def keep_alive():
         # 1. Self-ping Render HTTP process (prevents spin-down)
         if SELF_URL:
             try:
-                urllib.request.urlopen(f"{SELF_URL}/health", timeout=10)
+                urllib.request.urlopen(f"{SELF_URL}/ping", timeout=10)
                 logger.info("Warmup: Self-ping OK")
             except Exception as e:
                 logger.warning(f"Warmup: Self-ping failed (non-fatal): {e}")

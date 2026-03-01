@@ -146,17 +146,51 @@ CREATE TABLE public.profiles (
     updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── GOOGLE CALENDAR TOKENS ──────────────────────────────────────────
+CREATE TABLE public.google_calendar_tokens (
+    user_id       UUID    PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    access_token  TEXT    NOT NULL,
+    refresh_token TEXT    NOT NULL,
+    expires_at    TEXT    NOT NULL,
+    scope         TEXT    DEFAULT '',
+    updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── NOTIFICATION SETTINGS ───────────────────────────────────────────
+CREATE TABLE public.notification_settings (
+    user_id          UUID    PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    push_enabled     BOOLEAN DEFAULT true,
+    email_enabled    BOOLEAN DEFAULT false,
+    reminder_time    TEXT    DEFAULT '08:00',
+    habit_reminders  BOOLEAN DEFAULT true,
+    task_reminders   BOOLEAN DEFAULT true,
+    updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── AI USAGE TRACKING ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.ai_usage (
+    id          UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id     UUID        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    date        DATE        NOT NULL DEFAULT CURRENT_DATE,
+    count       INTEGER     DEFAULT 0 NOT NULL,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, date)
+);
+
 -- SECTION 5: INDEXES
 CREATE INDEX IF NOT EXISTS idx_wm_user_id          ON public.workspace_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_wm_workspace_id     ON public.workspace_members(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_workspaces_owner    ON public.workspaces(owner_id);
 CREATE INDEX IF NOT EXISTS idx_workspaces_joincode ON public.workspaces(join_code);
+CREATE INDEX IF NOT EXISTS idx_workspaces_hash     ON public.workspaces(share_link_hash);
 CREATE INDEX IF NOT EXISTS idx_tasks_user          ON public.tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_workspace     ON public.tasks(workspace_id) WHERE workspace_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_habits_user         ON public.habits(user_id);
 CREATE INDEX IF NOT EXISTS idx_habits_workspace    ON public.habits(workspace_id) WHERE workspace_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_journal_user        ON public.journal_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_mood_logs_user      ON public.mood_logs(user_id, logged_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user_date  ON public.ai_usage(user_id, date);
 
 -- SECTION 6: ENABLE RLS
 ALTER TABLE public.workspaces        ENABLE ROW LEVEL SECURITY;
@@ -167,6 +201,9 @@ ALTER TABLE public.journal_entries   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.focus_sessions    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mood_logs         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.google_calendar_tokens  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_settings   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_usage                ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- SECTION 7: ZERO-TRUST RLS POLICIES
@@ -348,3 +385,105 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.workspace_members;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.habits;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.mood_logs;
+
+-- ============================================================================
+-- SECTION 11: RLS POLICIES FOR NEW TABLES
+-- ============================================================================
+
+-- ─── GOOGLE CALENDAR TOKENS (own tokens only) ───────────────────────
+CREATE POLICY "gcal_tokens_own" ON public.google_calendar_tokens
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ─── NOTIFICATION SETTINGS (own settings only) ──────────────────────
+CREATE POLICY "notif_settings_own" ON public.notification_settings
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ─── AI USAGE (own usage only) ───────────────────────────────────────
+CREATE POLICY "ai_usage_own" ON public.ai_usage
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- SECTION 12: RPC FUNCTIONS (used by backend AI chat & plan gating)
+-- ============================================================================
+
+-- ─── match_journal_entries — RAG semantic search via pgvector ────────
+CREATE OR REPLACE FUNCTION public.match_journal_entries(
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.5,
+  match_count int DEFAULT 5,
+  p_user_id uuid DEFAULT NULL
+)
+RETURNS TABLE (
+  id uuid,
+  content text,
+  date text,
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    je.id,
+    je.content,
+    je.date,
+    1 - (je.embedding <=> query_embedding) AS similarity
+  FROM public.journal_entries je
+  WHERE
+    (p_user_id IS NULL OR je.user_id = p_user_id)
+    AND je.embedding IS NOT NULL
+    AND 1 - (je.embedding <=> query_embedding) > match_threshold
+  ORDER BY je.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+-- ─── get_user_plan_limits — Returns plan tier limits for a user ─────
+CREATE OR REPLACE FUNCTION public.get_user_plan_limits(p_user_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  result json;
+BEGIN
+  -- Free tier defaults (expand when paid plans are added)
+  result := json_build_object(
+    'plan', 'free',
+    'ai_messages_per_day', 50,
+    'workspaces_limit', 3,
+    'members_per_workspace', 10
+  );
+  RETURN result;
+END;
+$$;
+
+-- ─── increment_and_check_ai_usage — Tracks daily AI usage ──────────
+CREATE OR REPLACE FUNCTION public.increment_and_check_ai_usage(
+  p_user_id uuid,
+  p_limit integer DEFAULT 20
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    current_count integer;
+BEGIN
+    INSERT INTO public.ai_usage (user_id, date, count)
+    VALUES (p_user_id, CURRENT_DATE, 1)
+    ON CONFLICT (user_id, date)
+    DO UPDATE SET count = ai_usage.count + 1, updated_at = NOW()
+    RETURNING count INTO current_count;
+
+    RETURN jsonb_build_object(
+        'count', current_count,
+        'limit', p_limit,
+        'allowed', current_count <= p_limit
+    );
+END;
+$$;

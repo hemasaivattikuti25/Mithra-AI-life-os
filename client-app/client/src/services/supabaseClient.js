@@ -6,6 +6,10 @@ import { createClient } from '@supabase/supabase-js';
    Gracefully handles missing credentials (offline-only mode).
    When VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are not set,
    the app falls back to localStorage-only operation.
+   
+   Includes a retry-capable fetch wrapper to handle transient
+   network failures common in regions with unstable connectivity
+   (e.g. India, Southeast Asia).
    ═══════════════════════════════════════════════════════════════ */
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -20,6 +24,30 @@ if (!isConfigured) {
   );
 }
 
+/* ─── Retry-capable fetch for unstable networks ─────────────── */
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000; // Exponential backoff: 1s, 2s, 4s
+const FETCH_TIMEOUT_MS = 20000; // 20s timeout for India/high-latency regions
+
+function retryFetch(url, options = {}) {
+  let attempt = 0;
+  const execute = () =>
+    fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+      .catch((err) => {
+        attempt++;
+        if (
+          attempt <= MAX_RETRIES &&
+          (err.name === 'TypeError' || err.name === 'AbortError' || err.message?.includes('Failed to fetch'))
+        ) {
+          const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+          console.warn(`[Supabase] Retry attempt ${attempt}/${MAX_RETRIES} for ${typeof url === 'string' ? url.split('?')[0] : 'request'} — waiting ${delay}ms`);
+          return new Promise((resolve) => setTimeout(resolve, delay)).then(execute);
+        }
+        throw err;
+      });
+  return execute();
+}
+
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -32,6 +60,9 @@ export const supabase = isConfigured
     },
     realtime: {
       params: { eventsPerSecond: 2 },
+    },
+    global: {
+      fetch: retryFetch,
     },
   })
   : null;
@@ -180,3 +211,20 @@ export const authService = {
     return true;
   },
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   SUPABASE HEALTH CHECK — Measures latency, called on app startup
+   ═══════════════════════════════════════════════════════════════ */
+export async function checkSupabaseHealth() {
+  if (!supabase) return { ok: false, error: 'Not configured' };
+  try {
+    const start = Date.now();
+    await supabase.from('profiles').select('id').limit(1);
+    const latency = Date.now() - start;
+    console.log('[Supabase] Latency:', latency + 'ms');
+    return { ok: true, latency };
+  } catch (err) {
+    console.error('[Supabase] Health check failed:', err.message);
+    return { ok: false, error: err.message };
+  }
+}

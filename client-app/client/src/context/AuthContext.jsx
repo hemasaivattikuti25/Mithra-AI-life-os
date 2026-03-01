@@ -329,10 +329,11 @@ export function AuthProvider({ children }) {
   const signIn = useCallback(async ({ email, password }) => {
     // ── Supabase path ──
     if (isSupabaseConfigured) {
-      const { session, error } = await authService.signIn(email, password);
-      if (error) throw new Error(error.message || 'Sign in failed');
+      // authService.signIn returns { user, session } and throws on error
+      const data = await authService.signIn(email, password);
+      if (!data?.user) throw new Error('Sign in failed — no user returned');
 
-      const supaUser = session.user;
+      const supaUser = data.user;
       const authUser = { id: supaUser.id, email: supaUser.email, provider: 'supabase' };
       setUser(authUser);
 

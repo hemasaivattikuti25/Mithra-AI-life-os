@@ -69,6 +69,9 @@ else:
         "https://mithra-life-os.vercel.app",
         "http://localhost:5173",
         "http://localhost:3000",
+        # Capacitor (Android/iOS WebView)
+        "capacitor://localhost",
+        "http://localhost",
     ]
 
 
