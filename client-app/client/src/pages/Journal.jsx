@@ -85,7 +85,7 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-2xl p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-2xl p-4"
         >
           <motion.div
             initial={{ scale: 0.9, y: 30 }}

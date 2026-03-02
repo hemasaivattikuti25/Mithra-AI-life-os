@@ -1,4 +1,4 @@
-"""
+ø"""
 Google Calendar Service — Clean, production-safe integration.
 
 Handles:

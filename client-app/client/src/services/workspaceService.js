@@ -3,6 +3,25 @@ import { supabase } from './supabaseClient';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 console.log('[WorkspaceService] Using API_URL:', API_URL);
 
+const FETCH_TIMEOUT = 30000; // 30 seconds — enough for Render cold start, fails before 60s UI timeout
+
+/** Fetch with AbortController timeout so requests don't hang forever */
+async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        return res;
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            throw new Error('Request timed out. The server may be waking up — please try again in a moment.');
+        }
+        throw err;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return {
@@ -13,7 +32,7 @@ const getAuthHeaders = async () => {
 
 export const workspaceService = {
     async createWorkspace(name, userId) {
-        const res = await fetch(`${API_URL}/api/workspaces`, {
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces`, {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify({ name: name.trim() })
@@ -28,7 +47,7 @@ export const workspaceService = {
         if (hash.includes('join=')) hash = hash.split('join=').pop().split('&')[0].split('#')[0].trim();
         else if (hash.includes('/')) hash = hash.split('/').pop().split('?')[0].split('#')[0].trim();
 
-        const res = await fetch(`${API_URL}/api/workspaces/join`, {
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/join`, {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify({ hash })
@@ -44,14 +63,14 @@ export const workspaceService = {
     },
 
     async getWorkspaces(userId) {
-        const res = await fetch(`${API_URL}/api/workspaces`, { headers: await getAuthHeaders() });
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces`, { headers: await getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to load workspaces');
         const data = await res.json();
         return data.workspaces || [];
     },
 
     async getMembers(workspaceId) {
-        const res = await fetch(`${API_URL}/api/workspaces/${workspaceId}/members`, { headers: await getAuthHeaders() });
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}/members`, { headers: await getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to load members');
         const data = await res.json();
         return data.members || [];
@@ -72,7 +91,7 @@ export const workspaceService = {
     },
 
     async leaveWorkspace(workspaceId, userId) {
-        const res = await fetch(`${API_URL}/api/workspaces/${workspaceId}/leave`, {
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}/leave`, {
             method: 'DELETE',
             headers: await getAuthHeaders()
         });
@@ -81,7 +100,7 @@ export const workspaceService = {
     },
 
     async deleteWorkspace(workspaceId, userId) {
-        const res = await fetch(`${API_URL}/api/workspaces/${workspaceId}`, {
+        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}`, {
             method: 'DELETE',
             headers: await getAuthHeaders()
         });
