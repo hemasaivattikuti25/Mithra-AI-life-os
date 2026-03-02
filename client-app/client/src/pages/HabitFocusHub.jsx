@@ -41,7 +41,7 @@ const Heatmap = ({ habits, accentColor }) => {
   const [hoveredDay, setHoveredDay] = useState(null);
   const { theme } = useData();
   const startDate = startOfYear(today);
-  const days = useMemo(() => eachDayOfInterval({ start: startDate, end: today }), []);
+  const days = useMemo(() => eachDayOfInterval({ start: startDate, end: today }), [startDate.getTime(), today.getTime()]);
   const totalDaysInYear = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
   const weeks = useMemo(() => {
     const r = []; let cw = [];
@@ -668,7 +668,11 @@ export default function HabitFocusHub() {
     const consistency = Array.isArray(habit.consistency) ? habit.consistency : [];
     const alreadyDone = consistency.includes(todayStr);
     const updated = alreadyDone ? consistency.filter(d => d !== todayStr) : [...consistency, todayStr];
-    await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
+    const { error } = await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
+    if (error) {
+      console.error('[Habits] toggleBlendHabit failed:', error.message);
+      return;
+    }
     setBlendHabits(prev => prev.map(h => h.id === habit.id ? { ...h, consistency: updated } : h));
   };
 

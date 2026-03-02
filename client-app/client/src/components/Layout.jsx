@@ -13,8 +13,6 @@ import SyncStatus from './SyncStatus';
 
 const OnboardingTour = lazy(() => import('./OnboardingTour'));
 
-const luxuryEase = [0.22, 1, 0.36, 1];
-
 /* Sidebar profile helpers */
 const ProfileAvatar = ({ size = 'w-9 h-9' }) => {
     const { profile } = useAuth();
@@ -258,7 +256,6 @@ const MobileBottomNav = () => {
    ═══════════════════════════════════════════════════════════════ */
 export const Layout = ({ children }) => {
     const { theme } = useData();
-    const isLight = theme === 'light';
 
     return (
         <div className="min-h-screen font-sans transition-all duration-400 text-[var(--text-primary)] selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]" style={{ backgroundColor: 'var(--body-bg)' }}>

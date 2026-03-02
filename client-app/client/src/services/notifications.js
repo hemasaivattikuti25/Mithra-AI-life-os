@@ -66,7 +66,7 @@ class NotificationManager {
             await LocalNotifications.schedule({
                 notifications: [
                     {
-                        id: task.id ? parseInt(task.id.toString().slice(-6)) : Math.floor(Math.random() * 1000000),
+                        id: task.id ? (parseInt(task.id.toString().replace(/\D/g, '').slice(-6), 10) || Math.floor(Math.random() * 999999)) : Math.floor(Math.random() * 1000000),
                         title: '⏰ Task Reminder',
                         body: `"${task.title}" is due in ${minutesBefore} minutes!`,
                         schedule: { at: notifyAt },
@@ -78,11 +78,15 @@ class NotificationManager {
         } else {
             // Web fallback (volatile - only works if tab is open)
             const delay = notifyAt.getTime() - Date.now();
-            setTimeout(() => {
-                new Notification('⏰ Task Reminder', {
-                    body: `"${task.title}" is due in ${minutesBefore} minutes!`,
-                });
-            }, delay);
+            // Clamp to max safe setTimeout value (~24.8 days) to prevent immediate firing
+            const MAX_DELAY = 2147483647; // 2^31 - 1 ms
+            if (delay > 0 && delay <= MAX_DELAY) {
+                setTimeout(() => {
+                    new Notification('⏰ Task Reminder', {
+                        body: `"${task.title}" is due in ${minutesBefore} minutes!`,
+                    });
+                }, delay);
+            }
         }
     }
 
@@ -98,7 +102,7 @@ class NotificationManager {
         await LocalNotifications.schedule({
             notifications: [
                 {
-                    id: habit.id ? parseInt(habit.id.toString().slice(-6)) : Math.floor(Math.random() * 1000000),
+                    id: habit.id ? (parseInt(habit.id.toString().replace(/\D/g, '').slice(-6), 10) || Math.floor(Math.random() * 999999)) : Math.floor(Math.random() * 1000000),
                     title: '🔥 Habit Time',
                     body: `It's time for: ${habit.title}. Keep your streak alive!`,
                     schedule: {

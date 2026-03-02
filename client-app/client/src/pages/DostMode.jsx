@@ -11,7 +11,6 @@ import { supabase } from '../services/supabaseClient';
 import { format, addDays, parse } from 'date-fns';
 import axios from 'axios';
 import clsx from 'clsx';
-import * as XLSX from 'xlsx';
 
 /* =========================================
    API Configuration
@@ -384,8 +383,9 @@ export default function DostMode() {
           addAiMsg(`📋 **Imported ${importedTasks.length} tasks** from ${file.name}!\n\n${importedTasks.slice(0, 5).map(t => `• ${t.title}`).join('\n')}${importedTasks.length > 5 ? `\n• ...and ${importedTasks.length - 5} more` : ''}`, { type: 'action' });
         }
       } else if (ext === 'xlsx' || ext === 'xls') {
-        // Parse Excel file using SheetJS
+        // Parse Excel file using SheetJS (dynamic import to avoid 290KB bundle hit)
         try {
+          const XLSX = await import('xlsx');
           const arrayBuffer = await file.arrayBuffer();
           const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];

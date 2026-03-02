@@ -561,19 +561,23 @@ export default function MithraTasks() {
     if (!user) return;
     workspaceService.getWorkspaces(user.id)
       .then(ws => { if (ws.length > 0) setBlendWorkspace(ws[0]); })
-      .catch(() => { });
+      .catch(err => console.warn('[Tasks] Workspace load failed:', err.message));
   }, [user]);
 
   useEffect(() => {
     if (!blendWorkspace) return;
     workspaceService.getWorkspaceTasks(blendWorkspace.id)
       .then(setBlendTasks)
-      .catch(() => { });
+      .catch(err => console.warn('[Tasks] Blend tasks load failed:', err.message));
   }, [blendWorkspace]);
 
   const completeBlendTask = async (taskId) => {
     if (!supabase) return;
-    await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
+    const { error } = await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
+    if (error) {
+      console.error('[Tasks] completeBlendTask failed:', error.message);
+      return;
+    }
     setBlendTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
@@ -633,8 +637,8 @@ export default function MithraTasks() {
     return [...taskList].sort((a, b) => {
       if (a.starred !== b.starred) return a.starred ? -1 : 1;
       if (sortBy === 'date') {
-        const ad = a.dueDate ? a.dueDate.getTime() : Infinity;
-        const bd = b.dueDate ? b.dueDate.getTime() : Infinity;
+        const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
         return ad - bd;
       }
       if (sortBy === 'priority') {
@@ -675,7 +679,6 @@ export default function MithraTasks() {
   }, []);
 
   const handleRefresh = async () => {
-    console.log('[Mithra] Tasks refresh');
     return new Promise(resolve => setTimeout(resolve, 1000));
   };
 

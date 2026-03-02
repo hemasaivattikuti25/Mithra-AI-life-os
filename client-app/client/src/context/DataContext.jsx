@@ -992,7 +992,8 @@ export function DataProvider({ children }) {
 
       if (error) {
         console.error('[Habits] Toggle failed:', error.message);
-        // Don't throw — toggling should degrade gracefully
+        // Rollback — don't apply local state change on DB error
+        return;
       }
     }
 

@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-console.log('[WorkspaceService] Using API_URL:', API_URL);
 
 const FETCH_TIMEOUT = 30000; // 30 seconds — enough for Render cold start, fails before 60s UI timeout
 
@@ -24,9 +23,12 @@ async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
 
 const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+        throw new Error('Not authenticated — please sign in again.');
+    }
     return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`
+        'Authorization': `Bearer ${session.access_token}`
     };
 };
 

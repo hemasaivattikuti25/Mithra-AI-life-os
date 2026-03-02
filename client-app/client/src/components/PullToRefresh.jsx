@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { notificationManager } from '../services/notifications';
 
@@ -12,7 +12,6 @@ export default function PullToRefresh({ onRefresh, children }) {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const containerRef = useRef(null);
     const startY = useRef(0);
-    const controls = useAnimation();
 
     const PULL_THRESHOLD = 80;
 

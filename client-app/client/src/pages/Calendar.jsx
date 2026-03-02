@@ -185,12 +185,10 @@ const loadEvents = () => {
 
 const saveEvents = (events) => {
   try {
-    try {
-      localStorage.setItem(getUserScopedKey('calendar-events'), JSON.stringify(events));
-    } catch (e) {
-      console.warn('Failed to save calendar events:', e.message);
-    }
-  } catch { }
+    localStorage.setItem(getUserScopedKey('calendar-events'), JSON.stringify(events));
+  } catch (e) {
+    console.warn('Failed to save calendar events:', e.message);
+  }
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -253,16 +251,18 @@ const expandRepeatingEvents = (events) => {
 /* ═══════════════════════════════════════════════════════════════
    INITIAL EVENTS
    ═══════════════════════════════════════════════════════════════ */
-const now = new Date();
-const makeEvent = (id, title, dayOffset, startH, startM, endH, endM, category) => ({
-  id,
-  title,
-  start: setMinutes(setHours(addDays(startOfDay(now), dayOffset), startH), startM),
-  end: setMinutes(setHours(addDays(startOfDay(now), dayOffset), endH), endM),
-  category,
-  location: '',
-  description: '',
-});
+const makeEvent = (id, title, dayOffset, startH, startM, endH, endM, category) => {
+  const now = new Date();
+  return {
+    id,
+    title,
+    start: setMinutes(setHours(addDays(startOfDay(now), dayOffset), startH), startM),
+    end: setMinutes(setHours(addDays(startOfDay(now), dayOffset), endH), endM),
+    category,
+    location: '',
+    description: '',
+  };
+};
 
 /* No mock events — start with empty calendar */
 const INITIAL_EVENTS = [];

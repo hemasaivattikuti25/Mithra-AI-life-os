@@ -99,12 +99,10 @@ export default function MithraBlend() {
 
     const load = useCallback(async () => {
         if (!user) return;
-        console.log('[Blend] load() called, user:', user?.id);
         setLoading(true);
         setError('');
         try {
             const ws = await workspaceService.getWorkspaces(user.id);
-            console.log('[Blend] workspaces loaded successfully:', ws);
             setWorkspaces(ws);
             if (ws.length > 0 && (!activeWsId || !ws.find(w => w.id === activeWsId))) {
                 setActiveWsId(ws[0].id);
@@ -166,7 +164,6 @@ export default function MithraBlend() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'workspace_members', filter: `workspace_id=eq.${activeWsId}` },
                 (payload) => {
-                    console.log('[Blend] Realtime workspace_members change:', payload.eventType);
                     // Re-fetch members + workspace list
                     workspaceService.getMembers(activeWsId).then(setMembers).catch(() => {});
                     load();
@@ -176,7 +173,6 @@ export default function MithraBlend() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'habits', filter: `workspace_id=eq.${activeWsId}` },
                 (payload) => {
-                    console.log('[Blend] Realtime habits change:', payload.eventType);
                     workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
                 }
             )
@@ -184,7 +180,6 @@ export default function MithraBlend() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'tasks', filter: `workspace_id=eq.${activeWsId}` },
                 (payload) => {
-                    console.log('[Blend] Realtime tasks change:', payload.eventType);
                     workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
                 }
             )
@@ -306,13 +301,14 @@ export default function MithraBlend() {
     const handleAddHabit = async () => {
         if (!newHabitTitle.trim() || !activeWorkspace) return;
         try {
-            await supabase.from('habits').insert({
+            const { error } = await supabase.from('habits').insert({
                 title: newHabitTitle.trim(),
                 workspace_id: activeWorkspace.id,
                 user_id: user.id,
                 streak: 0,
                 completed_dates: [],
             });
+            if (error) throw new Error(error.message);
             setNewHabitTitle('');
             setAddingHabit(false);
             const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
@@ -325,13 +321,14 @@ export default function MithraBlend() {
     const handleAddTask = async () => {
         if (!newTaskTitle.trim() || !activeWorkspace) return;
         try {
-            await supabase.from('tasks').insert({
+            const { error } = await supabase.from('tasks').insert({
                 title: newTaskTitle.trim(),
                 workspace_id: activeWorkspace.id,
                 user_id: user.id,
                 completed: false,
                 priority: 'medium',
             });
+            if (error) throw new Error(error.message);
             setNewTaskTitle('');
             setAddingTask(false);
             const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
@@ -348,15 +345,25 @@ export default function MithraBlend() {
         const updated = alreadyDone
             ? consistency.filter(d => d !== todayStr)
             : [...consistency, todayStr];
-        await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
-        const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
-        setWorkspaceHabits(h);
+        try {
+            const { error } = await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
+            if (error) throw new Error(error.message);
+            const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
+            setWorkspaceHabits(h);
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     const completeTask = async (taskId) => {
-        await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
-        const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
-        setWorkspaceTasks(t);
+        try {
+            const { error } = await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
+            if (error) throw new Error(error.message);
+            const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
+            setWorkspaceTasks(t);
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     // Helper: get member name by user_id
@@ -621,9 +628,9 @@ export default function MithraBlend() {
                                         <GlassCard className="text-center py-8">
                                             <p className="text-sm text-[var(--text-dim)] opacity-60">No shared habits yet. Add one!</p>
                                         </GlassCard>
-                                    ) : (
-                                        workspaceHabits.map(h => {
-                                            const todayStr = new Date().toISOString().split('T')[0];
+                                    ) : (() => {
+                                        const todayStr = new Date().toISOString().split('T')[0];
+                                        return workspaceHabits.map(h => {
                                             const done = Array.isArray(h.consistency) && h.consistency.includes(todayStr);
                                             return (
                                                 <GlassCard key={h.id} className="flex items-center gap-3">
@@ -645,8 +652,8 @@ export default function MithraBlend() {
                                                     <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
                                                 </GlassCard>
                                             );
-                                        })
-                                    )}
+                                        });
+                                    })()}
                                 </div>
                             )}
 

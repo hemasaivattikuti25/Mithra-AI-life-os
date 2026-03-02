@@ -188,6 +188,11 @@ export default function Dashboard() {
   const GreetingIcon = greeting.icon;
   const today = new Date();
 
+  // Cache focus session count to avoid localStorage reads in render
+  const focusSessionCount = useMemo(() => {
+    try { return localStorage.getItem(getUserScopedKey('focus-sessions')) || '0'; } catch { return '0'; }
+  }, []);
+
   // ── Load mood history from Supabase on mount ──
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase || !user?.id) return;
@@ -197,7 +202,11 @@ export default function Dashboard() {
       .eq('user_id', user.id)
       .order('logged_at', { ascending: false })
       .limit(30)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[Mood] Failed to load mood history:', error.message);
+          return;
+        }
         if (data && data.length > 0) {
           const formatted = data.map(r => ({
             date: r.logged_at,
@@ -282,8 +291,6 @@ export default function Dashboard() {
   };
 
   const handleRefresh = async () => {
-    // Ping cloud or re-sync state
-    console.log('[Mithra] Manual refresh triggered');
     return new Promise(resolve => setTimeout(resolve, 1000));
   };
 
@@ -783,7 +790,7 @@ export default function Dashboard() {
             { label: 'Tasks Done', value: String(completedTasks), icon: CheckCircle2, change: `${pendingCount} left` },
             { label: 'Habits Done', value: `${habits ? habits.filter(h => h.todayDone).length : 0}/${totalHabits}`, icon: Flame, change: 'Today' },
             { label: 'Best Streak', value: `${bestStreak}d`, icon: Target, change: bestStreakHabit },
-            { label: 'Focus Sessions', value: (() => { try { return localStorage.getItem(getUserScopedKey('focus-sessions')) || '0'; } catch { return '0'; } })(), icon: BookOpen, change: 'Total' },
+            { label: 'Focus Sessions', value: focusSessionCount, icon: BookOpen, change: 'Total' },
           ].map((stat, i) => {
             const Icon = stat.icon;
             return (

@@ -11,6 +11,8 @@ export default function NetworkStatus() {
   const [justCameBack, setJustCameBack] = useState(false);
 
   useEffect(() => {
+    let timeoutId = null;
+
     const goOffline = () => {
       setIsOffline(true);
       setShowBanner(true);
@@ -21,7 +23,7 @@ export default function NetworkStatus() {
       setIsOffline(false);
       setJustCameBack(true);
       // Show "back online" for 3s then hide
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setShowBanner(false);
         setJustCameBack(false);
       }, 3000);
@@ -31,6 +33,7 @@ export default function NetworkStatus() {
     window.addEventListener('offline', goOffline);
 
     return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       window.removeEventListener('online', goOnline);
       window.removeEventListener('offline', goOffline);
     };
