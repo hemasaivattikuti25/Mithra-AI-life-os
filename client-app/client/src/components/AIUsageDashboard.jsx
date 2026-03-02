@@ -4,7 +4,7 @@ import { TrendingUp, Zap, Crown, BarChart3, AlertCircle } from 'lucide-react';
 
 /**
  * AIUsageDashboard — Shows daily AI usage, plan limits, and Pro upgrade prompt.
- * Fetches data from Supabase `usage_tracking` and `plans` tables.
+ * Fetches data from Supabase `ai_usage` table and `get_user_plan_limits` RPC.
  *
  * Usage: <AIUsageDashboard userId={user.id} />
  */
@@ -35,8 +35,8 @@ export default function AIUsageDashboard({ supabase, userId }) {
                 const dateStr = weekAgo.toISOString().split('T')[0];
 
                 const { data: usageData } = await supabase
-                    .from('usage_tracking')
-                    .select('date, ai_calls, tokens_used')
+                    .from('ai_usage')
+                    .select('date, count')
                     .eq('user_id', userId)
                     .gte('date', dateStr)
                     .order('date', { ascending: true });
@@ -51,8 +51,8 @@ export default function AIUsageDashboard({ supabase, userId }) {
                     filled.push({
                         day: DAYS[d.getDay()],
                         date: key,
-                        calls: found?.ai_calls || 0,
-                        tokens: found?.tokens_used || 0,
+                        calls: found?.count || 0,
+                        tokens: 0,
                     });
                 }
                 setWeeklyData(filled);

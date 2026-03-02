@@ -789,15 +789,34 @@ export function DataProvider({ children }) {
     if (!task) return;
     const newStarred = !task.starred;
 
-    if (isSupabaseConfigured && user) {
-      await supabase.from('tasks').update({ starred: newStarred }).eq('id', id);
-    }
-
+    // Optimistic update first
     setTasks(prev => {
       const next = prev.map(t => t.id === id ? { ...t, starred: newStarred } : t);
       saveToStorage('tasks', next);
       return next;
     });
+
+    if (isSupabaseConfigured && user) {
+      try {
+        const { error } = await supabase.from('tasks').update({ starred: newStarred }).eq('id', id);
+        if (error) {
+          console.error('[Tasks] Star failed:', error.message);
+          // Rollback on failure
+          setTasks(prev => {
+            const next = prev.map(t => t.id === id ? { ...t, starred: !newStarred } : t);
+            saveToStorage('tasks', next);
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error('[Tasks] Star error:', err);
+        setTasks(prev => {
+          const next = prev.map(t => t.id === id ? { ...t, starred: !newStarred } : t);
+          saveToStorage('tasks', next);
+          return next;
+        });
+      }
+    }
   }, [tasks, user]);
 
   /* ── Habit CRUD — Supabase-first ── */

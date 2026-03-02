@@ -174,17 +174,17 @@ export default function MithraBlend() {
             )
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'workspace_habits', filter: `workspace_id=eq.${activeWsId}` },
+                { event: '*', schema: 'public', table: 'habits', filter: `workspace_id=eq.${activeWsId}` },
                 (payload) => {
-                    console.log('[Blend] Realtime workspace_habits change:', payload.eventType);
+                    console.log('[Blend] Realtime habits change:', payload.eventType);
                     workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
                 }
             )
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'workspace_tasks', filter: `workspace_id=eq.${activeWsId}` },
+                { event: '*', schema: 'public', table: 'tasks', filter: `workspace_id=eq.${activeWsId}` },
                 (payload) => {
-                    console.log('[Blend] Realtime workspace_tasks change:', payload.eventType);
+                    console.log('[Blend] Realtime tasks change:', payload.eventType);
                     workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
                 }
             )
