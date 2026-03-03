@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { format, addDays, subDays, isSameDay, startOfDay, setHours, setMinutes } from 'date-fns';
 import { notificationManager } from '../services/notifications';
 import { syncEngine } from '../services/syncEngine';
-import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
-import { listGoogleEvents } from '../services/googleCalendar';
+import { apiFetch } from '../services/firebaseClient';
 import { useAuth } from './AuthContext';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -446,35 +445,7 @@ export function DataProvider({ children }) {
     syncTasksToCalendar: true,
     syncHabitsToCalendar: true,
     syncFocusToTracker: true,
-    syncGoogleCalendar: false, // User toggle for G-Cal
   }));
-
-  // Google Calendar Events State
-  const [googleEvents, setGoogleEvents] = useState([]);
-
-  const fetchGoogleEvents = useCallback(async () => {
-    if (!isSupabaseConfigured || !syncSettings.syncGoogleCalendar) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.provider_token) {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1); // 1 month back
-        const end = new Date(now.getFullYear(), now.getMonth() + 3, 1);   // 3 months forward
-        const events = await listGoogleEvents(session.provider_token, start, end);
-        setGoogleEvents(events);
-        console.log('[Mithra] Synced', events.length, 'Google Calendar events');
-      }
-    } catch (err) {
-      console.warn('[Mithra] Google Calendar sync failed:', err);
-    }
-  }, [syncSettings.syncGoogleCalendar]);
-
-  // Initial sync and poll
-  useEffect(() => {
-    fetchGoogleEvents();
-    const interval = setInterval(fetchGoogleEvents, 5 * 60 * 1000); // 5 mins
-    return () => clearInterval(interval);
-  }, [fetchGoogleEvents]);
 
   // Persist settings to localStorage whenever they change
   useEffect(() => { saveToStorage('theme', theme); }, [theme]);
@@ -485,8 +456,8 @@ export function DataProvider({ children }) {
   useEffect(() => { saveToStorage('notificationSettings', notificationSettings); }, [notificationSettings]);
 
   // NOTE: tasks/habits are NO LONGER auto-saved to localStorage on every change.
-  // localStorage is only updated as a cache AFTER successful Supabase operations.
-  // This prevents stale localStorage from overwriting fresh Supabase data.
+  // localStorage is only updated as a cache AFTER successful API operations.
+  // This prevents stale localStorage from overwriting fresh server data.
 
   // Wipe memory on logout to prevent data crossover between user sessions
   useEffect(() => {
@@ -499,62 +470,44 @@ export function DataProvider({ children }) {
   }, [user]);
 
   /* ══════════════════════════════════════════════════════════════
-     SUPABASE-FIRST: Fetch on mount, write before state update
+     API-FIRST: Fetch on mount, write before state update
      ═══════════════════════════════════════════════════════════ */
   const hasPulledRef = useRef(false);
 
-  // Fetch personal tasks + habits from Supabase on mount
+  // Fetch personal tasks + habits from API on mount
   useEffect(() => {
-    if (!isSupabaseConfigured || !user || hasPulledRef.current) return;
+    if (!user || hasPulledRef.current) return;
 
-    const fetchFromSupabase = async () => {
+    const fetchFromAPI = async () => {
       setDataLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.id) {
-          setDataLoading(false);
-          return;
-        }
-        const userId = session.user.id;
-
-        // Fetch PERSONAL tasks only (workspace_id IS NULL)
-        const { data: cloudTasks, error: taskErr } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', userId)
-          .is('workspace_id', null)
-          .order('created_at', { ascending: false });
-
-        if (!taskErr && cloudTasks) {
-          const mapped = cloudTasks.map(mapTaskFromDB);
+        // Fetch tasks via API
+        const tasksRes = await apiFetch('/tasks');
+        if (tasksRes.tasks) {
+          const mapped = tasksRes.tasks.map(mapTaskFromDB);
           setTasks(mapped);
           saveToStorage('tasks', mapped); // update cache
         }
 
-        // Fetch PERSONAL habits only (workspace_id IS NULL)
-        const { data: cloudHabits, error: habitErr } = await supabase
-          .from('habits')
-          .select('*')
-          .eq('user_id', userId)
-          .is('workspace_id', null);
-
-        if (!habitErr && cloudHabits) {
-          const mapped = cloudHabits.map(mapHabitFromDB);
+        // Fetch habits via API
+        const habitsRes = await apiFetch('/habits');
+        if (habitsRes.habits) {
+          const mapped = habitsRes.habits.map(mapHabitFromDB);
           setHabits(mapped);
           saveToStorage('habits', mapped); // update cache
         }
 
         hasPulledRef.current = true;
-        console.log('[Sync] Supabase-first fetch complete: tasks=', cloudTasks?.length || 0, 'habits=', cloudHabits?.length || 0);
+        console.log('[Sync] API fetch complete: tasks=', tasksRes.tasks?.length || 0, 'habits=', habitsRes.habits?.length || 0);
       } catch (err) {
-        console.warn('[Sync] Supabase fetch failed, using localStorage cache:', err.message);
+        console.warn('[Sync] API fetch failed, using localStorage cache:', err.message);
         // Cache is already loaded in useState — no action needed
       } finally {
         setDataLoading(false);
       }
     };
 
-    fetchFromSupabase();
+    fetchFromAPI();
   }, [user]);
 
   // Computed accent colors for JS usage (charts, inline styles, etc.)
@@ -638,28 +591,28 @@ export function DataProvider({ children }) {
     syncReminders();
   }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders]);
 
-  /* ── Task CRUD — Supabase-first ── */
+  /* ── Task CRUD — API-first ── */
   const addTask = useCallback(async (task) => {
-    if (isSupabaseConfigured && user) {
-      const dbTask = mapTaskToDB({ ...task, userId: user.id });
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert(dbTask)
-        .select()
-        .single();
+    if (user) {
+      try {
+        const res = await apiFetch('/tasks', {
+          method: 'POST',
+          body: JSON.stringify(mapTaskToDB({ ...task, userId: user.id })),
+        });
 
-      if (error) {
+        if (res.task) {
+          const mapped = mapTaskFromDB(res.task);
+          setTasks(prev => {
+            const next = [mapped, ...prev];
+            saveToStorage('tasks', next);
+            return next;
+          });
+          return mapped;
+        }
+      } catch (error) {
         console.error('[Tasks] Add failed:', error.message);
-        throw error;
+        // Fall through to offline mode
       }
-
-      const mapped = mapTaskFromDB(data);
-      setTasks(prev => {
-        const next = [mapped, ...prev];
-        saveToStorage('tasks', next);
-        return next;
-      });
-      return mapped;
     }
     // Offline fallback
     const offlineTask = { ...task, id: task.id || crypto.randomUUID() };
@@ -672,15 +625,15 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const updateTask = useCallback(async (updated) => {
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('tasks')
-        .update(mapTaskToDB(updated))
-        .eq('id', updated.id);
-
-      if (error) {
+    if (user) {
+      try {
+        await apiFetch(`/tasks/${updated.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(mapTaskToDB(updated)),
+        });
+      } catch (error) {
         console.error('[Tasks] Update failed:', error.message);
-        throw error;
+        // Continue with local update as fallback
       }
     }
 
@@ -692,15 +645,12 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const deleteTask = useCallback(async (id) => {
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
+    if (user) {
+      try {
+        await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
+      } catch (error) {
         console.error('[Tasks] Delete failed:', error.message);
-        throw error;
+        // Continue with local delete as fallback
       }
     }
 
@@ -718,15 +668,15 @@ export function DataProvider({ children }) {
     const willComplete = !task.completed;
     const updated = { ...task, completed: willComplete };
 
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ completed: willComplete })
-        .eq('id', id);
-
-      if (error) {
+    if (user) {
+      try {
+        await apiFetch(`/tasks/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ completed: willComplete }),
+        });
+      } catch (error) {
         console.error('[Tasks] Toggle failed:', error.message);
-        throw error;
+        // Continue with local toggle as fallback
       }
     }
 
@@ -748,28 +698,26 @@ export function DataProvider({ children }) {
           dueDate: nextDate,
           userId: user?.id,
         };
-        // Add recurring task — await with rollback on failure
-        if (isSupabaseConfigured && user) {
+        // Add recurring task via API
+        if (user) {
           try {
-            const { error: insertErr } = await supabase.from('tasks').insert(mapTaskToDB(recurringTask));
-            if (insertErr) throw insertErr;
+            await apiFetch('/tasks', {
+              method: 'POST',
+              body: JSON.stringify(mapTaskToDB(recurringTask)),
+            });
             setTasks(p => {
               const next = [...p, recurringTask];
               saveToStorage('tasks', next);
               return next;
             });
           } catch (recurErr) {
-            console.error('[Tasks] Recurring insert failed, rolling back toggle:', recurErr.message || recurErr);
-            // Rollback: undo the original toggle
-            if (isSupabaseConfigured && user) {
-              await supabase.from('tasks').update({ completed: !willComplete }).eq('id', id).catch(() => {});
-            }
-            setTasks(prev => {
-              const next = prev.map(t => t.id === id ? task : t); // restore original
+            console.error('[Tasks] Recurring insert failed:', recurErr.message || recurErr);
+            // Just add locally as fallback
+            setTasks(p => {
+              const next = [...p, recurringTask];
               saveToStorage('tasks', next);
               return next;
             });
-            return; // exit early — don't apply the toggle below
           }
         } else {
           setTasks(p => [...p, recurringTask]);
@@ -796,20 +744,15 @@ export function DataProvider({ children }) {
       return next;
     });
 
-    if (isSupabaseConfigured && user) {
+    if (user) {
       try {
-        const { error } = await supabase.from('tasks').update({ starred: newStarred }).eq('id', id);
-        if (error) {
-          console.error('[Tasks] Star failed:', error.message);
-          // Rollback on failure
-          setTasks(prev => {
-            const next = prev.map(t => t.id === id ? { ...t, starred: !newStarred } : t);
-            saveToStorage('tasks', next);
-            return next;
-          });
-        }
+        await apiFetch(`/tasks/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ starred: newStarred }),
+        });
       } catch (err) {
         console.error('[Tasks] Star error:', err);
+        // Rollback on failure
         setTasks(prev => {
           const next = prev.map(t => t.id === id ? { ...t, starred: !newStarred } : t);
           saveToStorage('tasks', next);
@@ -819,29 +762,30 @@ export function DataProvider({ children }) {
     }
   }, [tasks, user]);
 
-  /* ── Habit CRUD — Supabase-first ── */
+  /* ── Habit CRUD — API-first ── */
   const addHabit = useCallback(async (habit) => {
-    if (isSupabaseConfigured && user) {
-      const dbHabit = mapHabitToDB({ ...habit });
-      dbHabit.user_id = user.id;
-      const { data, error } = await supabase
-        .from('habits')
-        .insert(dbHabit)
-        .select()
-        .single();
+    if (user) {
+      try {
+        const dbHabit = mapHabitToDB({ ...habit });
+        dbHabit.user_id = user.id;
+        const res = await apiFetch('/habits', {
+          method: 'POST',
+          body: JSON.stringify(dbHabit),
+        });
 
-      if (error) {
+        if (res.habit) {
+          const mapped = mapHabitFromDB(res.habit);
+          setHabits(prev => {
+            const next = [...prev, mapped];
+            saveToStorage('habits', next);
+            return next;
+          });
+          return mapped;
+        }
+      } catch (error) {
         console.error('[Habits] Add failed:', error.message);
-        throw error;
+        // Fall through to offline mode
       }
-
-      const mapped = mapHabitFromDB(data);
-      setHabits(prev => {
-        const next = [...prev, mapped];
-        saveToStorage('habits', next);
-        return next;
-      });
-      return mapped;
     }
     // Offline fallback
     const offlineHabit = { ...habit, id: habit.id || crypto.randomUUID() };
@@ -854,15 +798,15 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const updateHabit = useCallback(async (updated) => {
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('habits')
-        .update(mapHabitToDB(updated))
-        .eq('id', updated.id);
-
-      if (error) {
+    if (user) {
+      try {
+        await apiFetch(`/habits/${updated.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(mapHabitToDB(updated)),
+        });
+      } catch (error) {
         console.error('[Habits] Update failed:', error.message);
-        throw error;
+        // Continue with local update as fallback
       }
     }
 
@@ -874,15 +818,12 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const deleteHabit = useCallback(async (id) => {
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('habits')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
+    if (user) {
+      try {
+        await apiFetch(`/habits/${id}`, { method: 'DELETE' });
+      } catch (error) {
         console.error('[Habits] Delete failed:', error.message);
-        throw error;
+        // Continue with local delete as fallback
       }
     }
 
@@ -983,17 +924,16 @@ export function DataProvider({ children }) {
       consistency: newConsistency,
     };
 
-    // Write to Supabase FIRST
-    if (isSupabaseConfigured && user) {
-      const { error } = await supabase
-        .from('habits')
-        .update(mapHabitToDB(updated))
-        .eq('id', id);
-
-      if (error) {
+    // Write to API FIRST
+    if (user) {
+      try {
+        await apiFetch(`/habits/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(mapHabitToDB(updated)),
+        });
+      } catch (error) {
         console.error('[Habits] Toggle failed:', error.message);
-        // Rollback — don't apply local state change on DB error
-        return;
+        // Continue with local update as fallback
       }
     }
 
@@ -1094,9 +1034,6 @@ export function DataProvider({ children }) {
   const toggleSyncFocus = useCallback(() => {
     setSyncSettings(prev => ({ ...prev, syncFocusToTracker: !prev.syncFocusToTracker }));
   }, []);
-  const toggleSyncGoogleCalendar = useCallback(() => {
-    setSyncSettings(prev => ({ ...prev, syncGoogleCalendar: !prev.syncGoogleCalendar }));
-  }, []);
 
   /* ── Export ALL data ── */
   const exportData = useCallback(() => {
@@ -1145,19 +1082,18 @@ export function DataProvider({ children }) {
     // Notifications
     notificationSettings, updateNotificationSettings, requestNotificationPermission, REMINDER_OPTIONS,
     // Settings
-    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar,
-    googleEvents,
+    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus,
     // Export
     exportData,
     // Loading state
     dataLoading,
   }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings,
-    theme, colorTheme, accentColor, notifications, focusSound, notificationSettings, googleEvents,
+    theme, colorTheme, accentColor, notifications, focusSound, notificationSettings,
     addTask, updateTask, deleteTask, toggleTask, starTask,
     addHabit, updateHabit, deleteHabit, toggleHabit,
     toggleTheme, changeColorTheme, toggleNotifications, toggleFocusSound,
     updateNotificationSettings, requestNotificationPermission,
-    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, toggleSyncGoogleCalendar, exportData, dataLoading]);
+    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, exportData, dataLoading]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

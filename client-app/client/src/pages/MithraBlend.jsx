@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
 import { BlendOverview } from '../components/BlendOverview';
-import { supabase } from '../services/supabaseClient';
+import { apiFetch } from '../services/firebaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -153,39 +153,24 @@ export default function MithraBlend() {
         return () => { cancelled = true; };
     }, [activeWsId, user]);
 
-    // ── Realtime: live-refresh workspace data on remote changes ──
+    // ── Polling: refresh workspace data periodically (replaces Supabase realtime) ──
 
     useEffect(() => {
-        if (!activeWsId || !supabase) return;
+        if (!activeWsId) return;
 
-        const channel = supabase
-            .channel(`blend-${activeWsId}`)
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'workspace_members', filter: `workspace_id=eq.${activeWsId}` },
-                (payload) => {
-                    // Re-fetch members + workspace list
-                    workspaceService.getMembers(activeWsId).then(setMembers).catch(() => {});
-                    load();
-                }
-            )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'habits', filter: `workspace_id=eq.${activeWsId}` },
-                (payload) => {
-                    workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
-                }
-            )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'tasks', filter: `workspace_id=eq.${activeWsId}` },
-                (payload) => {
-                    workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
-                }
-            )
-            .subscribe();
+        const refreshData = () => {
+            workspaceService.getMembers(activeWsId).then(setMembers).catch(() => {});
+            workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
+            workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
+        };
 
-        return () => { supabase.removeChannel(channel); };
+        // Initial load
+        refreshData();
+
+        // Poll every 30 seconds for updates
+        const interval = setInterval(refreshData, 30000);
+
+        return () => clearInterval(interval);
     }, [activeWsId, load]);
 
     // ── URL auto-join ────────────────────────────────────────────
@@ -301,14 +286,15 @@ export default function MithraBlend() {
     const handleAddHabit = async () => {
         if (!newHabitTitle.trim() || !activeWorkspace) return;
         try {
-            const { error } = await supabase.from('habits').insert({
-                title: newHabitTitle.trim(),
-                workspace_id: activeWorkspace.id,
-                user_id: user.id,
-                streak: 0,
-                completed_dates: [],
+            await apiFetch('/habits', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: newHabitTitle.trim(),
+                    workspace_id: activeWorkspace.id,
+                    streak: 0,
+                    completed_dates: [],
+                })
             });
-            if (error) throw new Error(error.message);
             setNewHabitTitle('');
             setAddingHabit(false);
             const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
@@ -321,14 +307,15 @@ export default function MithraBlend() {
     const handleAddTask = async () => {
         if (!newTaskTitle.trim() || !activeWorkspace) return;
         try {
-            const { error } = await supabase.from('tasks').insert({
-                title: newTaskTitle.trim(),
-                workspace_id: activeWorkspace.id,
-                user_id: user.id,
-                completed: false,
-                priority: 'medium',
+            await apiFetch('/tasks', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: newTaskTitle.trim(),
+                    workspace_id: activeWorkspace.id,
+                    completed: false,
+                    priority: 'medium',
+                })
             });
-            if (error) throw new Error(error.message);
             setNewTaskTitle('');
             setAddingTask(false);
             const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
@@ -346,8 +333,10 @@ export default function MithraBlend() {
             ? consistency.filter(d => d !== todayStr)
             : [...consistency, todayStr];
         try {
-            const { error } = await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
-            if (error) throw new Error(error.message);
+            await apiFetch(`/habits/${habit.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ consistency: updated })
+            });
             const h = await workspaceService.getWorkspaceHabits(activeWorkspace.id);
             setWorkspaceHabits(h);
         } catch (err) {
@@ -357,8 +346,10 @@ export default function MithraBlend() {
 
     const completeTask = async (taskId) => {
         try {
-            const { error } = await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
-            if (error) throw new Error(error.message);
+            await apiFetch(`/tasks/${taskId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ completed: true })
+            });
             const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
             setWorkspaceTasks(t);
         } catch (err) {

@@ -13,7 +13,7 @@ import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
 import { registerServiceWorker } from './services/notifications';
-import { checkSupabaseHealth, isSupabaseConfigured } from './services/supabaseClient';
+import { checkBackendHealth } from './services/firebaseClient';
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -191,7 +191,7 @@ function App() {
       <AuthProvider>
         <DataProvider>
           <ToastProvider>
-            <SupabaseHealthGate />
+            <BackendHealthGate />
             <Router>
               <AppRoutes />
             </Router>
@@ -202,12 +202,11 @@ function App() {
   );
 }
 
-/** Runs once on mount — pings Supabase and warns if latency > 2s */
-function SupabaseHealthGate() {
+/** Runs once on mount — pings backend and warns if latency > 2s */
+function BackendHealthGate() {
   const { addToast } = useToast();
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    checkSupabaseHealth().then(({ ok, latency }) => {
+    checkBackendHealth().then(({ ok, latency }) => {
       if (ok && latency > 2000) {
         addToast({ message: 'Slow connection detected. Some features may load slowly.', type: 'warning', duration: 6000 });
       }

@@ -1,46 +1,13 @@
-import { supabase } from './supabaseClient';
+import { apiFetch } from './firebaseClient';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-const FETCH_TIMEOUT = 30000; // 30 seconds — enough for Render cold start, fails before 60s UI timeout
-
-/** Fetch with AbortController timeout so requests don't hang forever */
-async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-    try {
-        const res = await fetch(url, { ...options, signal: controller.signal });
-        return res;
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            throw new Error('Request timed out. The server may be waking up — please try again in a moment.');
-        }
-        throw err;
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
-const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-        throw new Error('Not authenticated — please sign in again.');
-    }
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-    };
-};
+// workspaceService now uses apiFetch which handles auth automatically
 
 export const workspaceService = {
     async createWorkspace(name, userId) {
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces`, {
+        const data = await apiFetch('/workspaces', {
             method: 'POST',
-            headers: await getAuthHeaders(),
             body: JSON.stringify({ name: name.trim() })
         });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed to create workspace');
-        const data = await res.json();
         return data.workspace;
     },
 
@@ -49,14 +16,10 @@ export const workspaceService = {
         if (hash.includes('join=')) hash = hash.split('join=').pop().split('&')[0].split('#')[0].trim();
         else if (hash.includes('/')) hash = hash.split('/').pop().split('?')[0].split('#')[0].trim();
 
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/join`, {
+        const data = await apiFetch('/workspaces/join', {
             method: 'POST',
-            headers: await getAuthHeaders(),
             body: JSON.stringify({ hash })
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Invalid invite link');
 
         // Fetch updated workspaces to return the full workspace object
         const wsList = await this.getWorkspaces(userId);
@@ -65,49 +28,32 @@ export const workspaceService = {
     },
 
     async getWorkspaces(userId) {
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces`, { headers: await getAuthHeaders() });
-        if (!res.ok) throw new Error('Failed to load workspaces');
-        const data = await res.json();
+        const data = await apiFetch('/workspaces');
         return data.workspaces || [];
     },
 
     async getMembers(workspaceId) {
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}/members`, { headers: await getAuthHeaders() });
-        if (!res.ok) throw new Error('Failed to load members');
-        const data = await res.json();
+        const data = await apiFetch(`/workspaces/${workspaceId}/members`);
         return data.members || [];
     },
 
     async getWorkspaceHabits(workspaceId) {
-        // Safe to use Supabase client directly for SELECT operations
-        const { data, error } = await supabase.from('habits').select('*').eq('workspace_id', workspaceId);
-        if (error) throw error;
-        return data || [];
+        const data = await apiFetch(`/habits?workspace_id=${workspaceId}`);
+        return data.habits || [];
     },
 
     async getWorkspaceTasks(workspaceId) {
-        // Safe to use Supabase client directly for SELECT operations
-        const { data, error } = await supabase.from('tasks').select('*').eq('workspace_id', workspaceId).eq('completed', false);
-        if (error) throw error;
-        return data || [];
+        const data = await apiFetch(`/tasks?workspace_id=${workspaceId}&completed=false`);
+        return data.tasks || [];
     },
 
     async leaveWorkspace(workspaceId, userId) {
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}/leave`, {
-            method: 'DELETE',
-            headers: await getAuthHeaders()
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed to leave workspace');
+        await apiFetch(`/workspaces/${workspaceId}/leave`, { method: 'DELETE' });
         return { success: true };
     },
 
     async deleteWorkspace(workspaceId, userId) {
-        const res = await fetchWithTimeout(`${API_URL}/api/workspaces/${workspaceId}`, {
-            method: 'DELETE',
-            headers: await getAuthHeaders()
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed to delete workspace');
+        await apiFetch(`/workspaces/${workspaceId}`, { method: 'DELETE' });
         return { success: true };
     }
 };
-// Manual override

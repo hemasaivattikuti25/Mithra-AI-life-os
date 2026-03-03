@@ -8,7 +8,7 @@ import {
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
-import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import { useAuth } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
 
@@ -282,24 +282,18 @@ export default function MithraJournal() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ── PRIMARY: Load from Supabase on mount (localStorage is cache only) ──
+  // ── PRIMARY: Load from API on mount (localStorage is cache only) ──
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !user?.id) return;
+    if (!isFirebaseConfigured || !user?.id) return;
 
-    const fetchFromSupabase = async () => {
+    const fetchFromAPI = async () => {
       try {
         setIsSyncing(true);
-        const { data: cloudEntries, error } = await supabase
-          .from('journal_entries')
-          .select('id, content, mood, tags, date, created_at, updated_at')
-          .eq('user_id', user.id)
-          .order('date', { ascending: false })
-          .limit(100);
-
-        if (error) throw error;
+        const res = await apiFetch('/journal-entries?limit=100');
+        const cloudEntries = res.journalEntries || res.data || [];
 
         const formatted = (cloudEntries || []).map(e => {
-          // Safely coerce date: Supabase returns a string like '2025-02-20'
+          // Safely coerce date: API returns a string like '2025-02-20'
           const parsedDate = e.date ? new Date(e.date) : new Date();
           return {
             id: e.id,
@@ -314,54 +308,56 @@ export default function MithraJournal() {
           };
         });
 
-        setEntries(formatted); // Supabase is truth — replace, don't merge
+        setEntries(formatted); // API is truth — replace, don't merge
         // Update localStorage cache
         localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(formatted));
-        console.log('[Journal] Loaded', formatted.length, 'entries from Supabase');
+        console.log('[Journal] Loaded', formatted.length, 'entries from API');
       } catch (err) {
-        console.warn('[Journal] Supabase fetch failed, using localStorage cache:', err.message);
+        console.warn('[Journal] API fetch failed, using localStorage cache:', err.message);
         // localStorage cache already loaded in useState — no action needed
       } finally {
         setIsSyncing(false);
       }
     };
 
-    fetchFromSupabase();
+    fetchFromAPI();
   }, [user?.id]);
 
   // NOTE: localStorage is NO LONGER auto-updated on every entry change.
-  // Cache is updated AFTER successful Supabase operations only.
+  // Cache is updated AFTER successful API operations only.
 
-  // ── Supabase-first: upsert to DB, update state from response ──
+  // ── API-first: upsert to DB, update state from response ──
   const syncToCloud = async (entry, action = 'upsert') => {
-    if (!isSupabaseConfigured || !supabase || !user?.id) return null;
+    if (!isFirebaseConfigured || !user?.id) return null;
 
     if (action === 'delete') {
-      const { error } = await supabase
-        .from('journal_entries')
-        .delete()
-        .eq('id', entry.id);
-      if (error) throw error;
+      await apiFetch(`/journal-entries/${entry.id}`, { method: 'DELETE' });
       return null;
     }
 
     const dbEntry = {
-      ...(entry._cloudId || (typeof entry.id === 'string' && entry.id.includes('-') ? { id: entry.id } : {})),
-      user_id: user.id,
       content: entry.title ? `${entry.title}\n\n${entry.body}` : entry.body,
       mood: Math.max(1, Math.min(5, Math.round((entry.mood || 5) / 2))),
       tags: (entry.tags || []).map(t => t.replace('#', '')),
       date: entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : entry.date,
     };
 
-    const { data, error } = await supabase
-      .from('journal_entries')
-      .upsert(dbEntry, { onConflict: 'id' })
-      .select('id, created_at, updated_at')
-      .single();
+    let data;
+    if (entry._cloudId || (typeof entry.id === 'string' && entry.id.includes('-'))) {
+      // Update existing entry
+      data = await apiFetch(`/journal-entries/${entry._cloudId || entry.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbEntry)
+      });
+    } else {
+      // Create new entry
+      data = await apiFetch('/journal-entries', {
+        method: 'POST',
+        body: JSON.stringify(dbEntry)
+      });
+    }
 
-    if (error) throw error;
-    return data; // caller uses this to update state with real DB id
+    return data.journalEntry || data; // caller uses this to update state with real DB id
   };
 
   const handleSaveEntry = async (entry) => {

@@ -7,7 +7,7 @@ import {
   X, FileSpreadsheet, Image as ImageIcon
 } from 'lucide-react';
 import { useData, getUserScopedKey } from '../context/DataContext';
-import { supabase } from '../services/supabaseClient';
+import { authService } from '../services/firebaseClient';
 import { format, addDays, parse } from 'date-fns';
 import axios from 'axios';
 import clsx from 'clsx';
@@ -730,14 +730,12 @@ export default function DostMode() {
                   parts: [m.content || ''],
                 }));
 
-              // Get Supabase auth token
+              // Get Firebase auth token
               let authHeaders = {};
               try {
-                if (supabase) {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (session?.access_token) {
-                    authHeaders = { Authorization: `Bearer ${session.access_token}` };
-                  }
+                const token = await authService.getIdToken();
+                if (token) {
+                  authHeaders = { Authorization: `Bearer ${token}` };
                 }
               } catch { /* offline — no token */ }
 

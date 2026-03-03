@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { authService, isSupabaseConfigured, supabase } from '../services/supabaseClient';
+import { authService, isFirebaseConfigured, firebaseAuth } from '../services/firebaseClient';
 
 const AuthContext = createContext(null);
-
-/* Google icon SVG as a component */
-const GOOGLE_PROVIDER = 'google';
 
 /* ── SHA-256 hashing with salt (Web Crypto API) — used for offline/fallback auth ── */
 const generateSalt = () => {
@@ -65,147 +62,42 @@ export function AuthProvider({ children }) {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     dateJoined: new Date().toISOString(),
   });
-  const [loading, setLoading] = useState(isSupabaseConfigured && !user); // Optimistic: if user exists locally, don't show loading
+  const [loading, setLoading] = useState(isFirebaseConfigured && !user);
   const authListenerRef = useRef(null);
 
   const isAuthenticated = !!user;
 
   /* ══════════════════════════════════════════════════════════════
-     Supabase Auth State Listener
-     — Automatically restores session from cookies/localStorage
-     — Handles token refresh, sign-in/out events
+     Firebase Auth State Listener
      ═══════════════════════════════════════════════════════════ */
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isFirebaseConfigured || !firebaseAuth) {
       setLoading(false);
       return;
     }
 
-    const resolveProfileName = (supabaseUser, dbProfile) => {
-      const metadata = supabaseUser?.user_metadata || {};
-      const full = dbProfile?.full_name || metadata.full_name || metadata.name;
-      if (full) return full;
-      if (supabaseUser?.email) return supabaseUser.email.split('@')[0];
-      return 'User';
-    };
-
-    // Check for existing session on mount
-    const initSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          const supaUser = {
-            id: session.user.id,
-            email: session.user.email,
-            provider: 'supabase',
-          };
-          setUser(supaUser);
-
-          // Pull profile from Supabase
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-
-            setProfile(prev => ({
-              ...prev,
-              fullName: resolveProfileName(session.user, profileData),
-              email: session.user.email,
-              avatarUrl: profileData?.avatar_url || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
-              dateJoined: profileData?.created_at || prev.dateJoined,
-            }));
-          } catch (err) {
-            setProfile(prev => ({
-              ...prev,
-              fullName: resolveProfileName(session.user, null),
-              email: session.user.email,
-              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
-            }));
-            console.warn('[Mithra] Profile fetch warning:', err);
-          }
-        }
-      } catch (err) {
-        console.warn('[Mithra] Session restore error:', err);
-        // If session restore fails hard, clear local storage to prevent loops
-        if (err.message?.includes('JWT')) {
-          localStorage.removeItem('mithra-supabase-auth');
-        }
-      } finally {
+    const { unsubscribe } = authService.onAuthStateChange((event, firebaseUser) => {
+      if (event === 'SIGNED_IN' && firebaseUser) {
+        const authUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          provider: 'firebase',
+        };
+        setUser(authUser);
+        setProfile(prev => ({
+          ...prev,
+          fullName: firebaseUser.displayName || prev.fullName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || prev.email,
+          avatarUrl: firebaseUser.photoURL || prev.avatarUrl,
+        }));
+        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
         setLoading(false);
       }
-    };
+    });
 
-    initSession();
-
-    // Listen for auth state changes (sign in, sign out, token refresh, password recovery)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[Mithra] Auth event:', event);
-
-        if (event === 'PASSWORD_RECOVERY') {
-          sessionStorage.setItem('mithra-password-recovery', 'true');
-          window.location.pathname = '/reset-password';
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          const supaUser = {
-            id: session.user.id,
-            email: session.user.email,
-            provider: 'supabase',
-          };
-          setUser(supaUser);
-
-          // Instant optimistic update
-          setProfile(prev => ({
-            ...prev,
-            fullName: resolveProfileName(session.user, null),
-            email: session.user.email,
-            avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || prev.avatarUrl,
-          }));
-
-          // Strip ?code= from URL after OAuth callback so it doesn't linger
-          if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
-            window.history.replaceState({}, '', window.location.pathname || '/');
-          }
-
-          // Force navigation to dashboard if we're on landing page or auth page
-          const currentPath = window.location.pathname;
-          if (!currentPath || currentPath === '/' || currentPath === '/auth') {
-            window.location.pathname = '/dashboard';
-          }
-          setLoading(false);
-
-          // Background fetch for db profile to avoid UI blocking
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-
-            if (profileData) {
-              setProfile(prev => ({
-                ...prev,
-                fullName: resolveProfileName(session.user, profileData),
-                avatarUrl: profileData.avatar_url || prev.avatarUrl,
-                dateJoined: profileData.created_at || prev.dateJoined,
-              }));
-            }
-          } catch { }
-
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    authListenerRef.current = subscription;
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    authListenerRef.current = { unsubscribe };
+    return () => unsubscribe();
   }, []);
 
   // Persist auth state to localStorage (cache for offline)
@@ -231,12 +123,10 @@ export function AuthProvider({ children }) {
 
   /* ── Helper to clear old user data for fresh start ── */
   const clearOldUserData = useCallback((userId) => {
-    // Clear any global (non-scoped) mithra data that might have lingered
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('mithra-') && !key.includes(userId)) {
-        // Remove old user-scoped data and global data
         if (key.match(/mithra-(tasks|habits|calendar-events|journal|mood|focus|chat-history)/)) {
           keysToRemove.push(key);
         }
@@ -246,34 +136,30 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
-     SIGN UP — Supabase-first, localStorage fallback
+     SIGN UP — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signUp = useCallback(async ({ fullName, email, password }) => {
-    // ── Supabase path ──
-    if (isSupabaseConfigured) {
-      const data = await authService.signUp(email, password, fullName);
-      if (!data || !data.user) throw new Error('Sign up failed - please try again');
-      const supaUser = data.user;
+    if (isFirebaseConfigured) {
+      const result = await authService.signUp(email, password, fullName);
+      if (!result?.user) throw new Error('Sign up failed - please try again');
+      const fbUser = result.user;
 
-      // Clear any old demo/test data for this new user
-      clearOldUserData(supaUser.id);
+      clearOldUserData(fbUser.uid);
 
-      const authUser = { id: supaUser.id, email: supaUser.email, provider: 'supabase' };
+      const authUser = { id: fbUser.uid, email: fbUser.email, provider: 'firebase' };
       setUser(authUser);
       setProfile(prev => ({
         ...prev,
         fullName,
-        email: supaUser.email,
+        email: fbUser.email,
         dateJoined: new Date().toISOString(),
       }));
 
-      // Also cache in localStorage for offline access
-      _cacheUserLocally({ fullName, email, password, id: supaUser.id });
-
+      _cacheUserLocally({ fullName, email, password, id: fbUser.uid });
       return authUser;
     }
 
-    // ── localStorage fallback path ──
+    // localStorage fallback path
     const users = loadUsers();
     const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (exists) throw new Error('An account with this email already exists');
@@ -289,9 +175,7 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString(),
     };
 
-    // Clear any old demo/test data for this new user
     clearOldUserData(newUser.id);
-
     users.push(newUser);
     try {
       localStorage.setItem('mithra-users', JSON.stringify(users));
@@ -319,47 +203,29 @@ export function AuthProvider({ children }) {
       email: newUser.email,
       dateJoined: newUser.createdAt,
     }));
-
     return authUser;
-  }, []);
+  }, [clearOldUserData]);
 
   /* ══════════════════════════════════════════════════════════════
-     SIGN IN — Supabase-first, localStorage fallback
+     SIGN IN — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signIn = useCallback(async ({ email, password }) => {
-    // ── Supabase path ──
-    if (isSupabaseConfigured) {
-      // authService.signIn returns { user, session } and throws on error
-      const data = await authService.signIn(email, password);
-      if (!data?.user) throw new Error('Sign in failed — no user returned');
-
-      const supaUser = data.user;
-      const authUser = { id: supaUser.id, email: supaUser.email, provider: 'supabase' };
+    if (isFirebaseConfigured) {
+      const result = await authService.signIn(email, password);
+      if (!result?.user) throw new Error('Sign in failed — no user returned');
+      const fbUser = result.user;
+      const authUser = { id: fbUser.uid, email: fbUser.email, provider: 'firebase' };
       setUser(authUser);
-
-      // Pull profile from Supabase
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', supaUser.id)
-          .single();
-
-        if (profileData) {
-          setProfile(prev => ({
-            ...prev,
-            fullName: profileData.full_name || prev.fullName,
-            email: supaUser.email,
-            avatarUrl: profileData.avatar_url || prev.avatarUrl,
-            dateJoined: profileData.created_at || prev.dateJoined,
-          }));
-        }
-      } catch { }
-
+      setProfile(prev => ({
+        ...prev,
+        fullName: fbUser.displayName || prev.fullName,
+        email: fbUser.email,
+        avatarUrl: fbUser.photoURL || prev.avatarUrl,
+      }));
       return authUser;
     }
 
-    // ── localStorage fallback path ──
+    // localStorage fallback path
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!found) throw new Error('No account found with this email');
@@ -395,33 +261,22 @@ export function AuthProvider({ children }) {
     } catch {
       setProfile(prev => ({ ...prev, email: found.email }));
     }
-
     return authUser;
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
      SIGN OUT
      ═══════════════════════════════════════════════════════════ */
-  /* ══════════════════════════════════════════════════════════════
-     SIGN OUT
-     ═══════════════════════════════════════════════════════════ */
   const signOut = useCallback(async () => {
-    // 1. Immediate local cleanup (Optimistic UI)
     setUser(null);
     setProfile({
-      fullName: '',
-      email: '',
-      phone: '',
-      bio: '',
-      avatarUrl: '',
-      location: '',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      fullName: '', email: '', phone: '', bio: '', avatarUrl: '',
+      location: '', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       dateJoined: new Date().toISOString(),
     });
 
     try {
       localStorage.removeItem('mithra-auth');
-      // Aggressively clear other keys to ensure no stale state
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('mithra-') && !key.includes('theme')) {
           localStorage.removeItem(key);
@@ -429,39 +284,42 @@ export function AuthProvider({ children }) {
       });
     } catch { }
 
-    // 2. Background server cleanup
-    if (isSupabaseConfigured) {
-      try {
-        await authService.signOut();
-      } catch (err) {
-        console.warn('Background signout error:', err);
-      }
+    if (isFirebaseConfigured) {
+      try { await authService.signOut(); } catch (err) { console.warn('Background signout error:', err); }
     }
 
-    // 3. Force Hard Reload to clear all React state and memory
     window.location.href = '/';
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
-     SIGN IN WITH GOOGLE (OAuth)
+     SIGN IN WITH GOOGLE (Firebase Popup)
      ═══════════════════════════════════════════════════════════ */
   const signInWithGoogle = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      throw new Error('Google sign-in requires Supabase to be configured. Please set up your Supabase credentials.');
+    if (!isFirebaseConfigured) {
+      throw new Error('Google sign-in requires Firebase to be configured.');
     }
-    return await authService.signInWithGoogle();
+    const result = await authService.signInWithGoogle();
+    if (!result?.user) throw new Error('Google sign-in failed');
+    const fbUser = result.user;
+    const authUser = { id: fbUser.uid, email: fbUser.email, provider: 'firebase' };
+    setUser(authUser);
+    setProfile(prev => ({
+      ...prev,
+      fullName: fbUser.displayName || prev.fullName,
+      email: fbUser.email,
+      avatarUrl: fbUser.photoURL || prev.avatarUrl,
+    }));
+    return authUser;
   }, []);
 
   /* ══════════════════════════════════════════════════════════════
      PASSWORD RESET
      ═══════════════════════════════════════════════════════════ */
   const resetPassword = useCallback(async (email) => {
-    if (isSupabaseConfigured) {
-      const { error } = await authService.resetPassword(email);
-      if (error) throw new Error(error.message);
+    if (isFirebaseConfigured) {
+      await authService.resetPassword(email);
       return true;
     }
-
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!found) throw new Error('No account found with this email');
@@ -470,13 +328,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const confirmResetPassword = useCallback(async (email, newPassword) => {
-    if (isSupabaseConfigured) {
-      // With Supabase, the reset flow is handled via email link + updatePassword
-      const { error } = await authService.updatePassword(newPassword);
-      if (error) throw new Error(error.message);
+    if (isFirebaseConfigured) {
+      await authService.updatePassword(newPassword);
       return true;
     }
-
     const users = loadUsers();
     const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
     if (idx === -1) throw new Error('No account found with this email');
@@ -495,31 +350,13 @@ export function AuthProvider({ children }) {
      ═══════════════════════════════════════════════════════════ */
   const updateProfile = useCallback(async (updates) => {
     setProfile(prev => ({ ...prev, ...updates }));
-
-    // Sync profile to Supabase
-    if (isSupabaseConfigured && user?.provider === 'supabase') {
-      try {
-        const { error } = await supabase.from('profiles').upsert({
-          id: user.id,
-          full_name: updates.fullName || undefined,
-          avatar_url: updates.avatarUrl || undefined,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' });
-        if (error) throw error;
-      } catch (err) {
-        console.error("Profile update failed:", err);
-        throw err;
-      }
-    }
-  }, [user]);
+  }, []);
 
   const updatePassword = useCallback(async (currentPassword, newPassword) => {
     if (!user) throw new Error('Not authenticated');
 
-    if (isSupabaseConfigured && user.provider === 'supabase') {
-      // Supabase handles password verification internally
-      const { error } = await authService.updatePassword(newPassword);
-      if (error) throw new Error(error.message);
+    if (isFirebaseConfigured && user.provider === 'firebase') {
+      await authService.updatePassword(newPassword);
       return true;
     }
 
@@ -543,39 +380,25 @@ export function AuthProvider({ children }) {
     return true;
   }, [user]);
 
-  /* ── Helper: cache Supabase user locally for offline access ── */
+  /* ── Helper: cache Firebase user locally for offline access ── */
   const _cacheUserLocally = async ({ fullName, email, password, id }) => {
     try {
       const users = loadUsers();
       if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
         const salt = generateSalt();
         const hashedPassword = await hashPassword(password, salt);
-        users.push({
-          id,
-          email: email.toLowerCase(),
-          password: hashedPassword,
-          salt,
-          createdAt: new Date().toISOString(),
-        });
+        users.push({ id, email: email.toLowerCase(), password: hashedPassword, salt, createdAt: new Date().toISOString() });
         localStorage.setItem('mithra-users', JSON.stringify(users));
       }
     } catch { }
   };
 
   const value = useMemo(() => ({
-    user,
-    profile,
-    isAuthenticated,
-    loading,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    resetPassword,
-    confirmResetPassword,
-    updateProfile,
-    updatePassword,
-  }), [user, profile, isAuthenticated, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, confirmResetPassword, updateProfile, updatePassword]);
+    user, profile, isAuthenticated, loading,
+    signUp, signIn, signInWithGoogle, signOut,
+    resetPassword, confirmResetPassword, updateProfile, updatePassword,
+  }), [user, profile, isAuthenticated, loading, signUp, signIn, signInWithGoogle, signOut,
+    resetPassword, confirmResetPassword, updateProfile, updatePassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

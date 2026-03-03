@@ -15,7 +15,7 @@ Usage:
 
 from fastapi import Depends, HTTPException, Path
 from core.security import get_current_user
-from core.config import supabase
+from core.config import get_db
 
 
 async def require_workspace_member(
@@ -26,23 +26,23 @@ async def require_workspace_member(
     Returns membership info { workspace_id, user_id, role }.
     Raises 403 if not a member.
     """
-    if not supabase:
+    pool = get_db()
+    if not pool:
         raise HTTPException(status_code=503, detail="Database not configured")
 
-    result = supabase.table("workspace_members") \
-        .select("workspace_id, user_id, role") \
-        .eq("workspace_id", workspace_id) \
-        .eq("user_id", current_user["id"]) \
-        .maybe_single() \
-        .execute()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT workspace_id, user_id, role FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+            workspace_id, current_user["id"]
+        )
 
-    if not result.data:
+    if not row:
         raise HTTPException(
             status_code=403,
             detail="You are not a member of this workspace.",
         )
 
-    return result.data
+    return dict(row)
 
 
 async def require_workspace_owner(
@@ -66,16 +66,17 @@ async def require_workspace_owner(
 
 async def check_workspace_access(user_id: str, workspace_id: str) -> bool:
     """Non-throwing check: returns True if user is a member of workspace."""
-    if not supabase or not workspace_id:
+    pool = get_db()
+    if not pool or not workspace_id:
         return False
 
     try:
-        result = supabase.table("workspace_members") \
-            .select("workspace_id") \
-            .eq("workspace_id", workspace_id) \
-            .eq("user_id", user_id) \
-            .maybe_single() \
-            .execute()
-        return bool(result.data)
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT workspace_id FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+                workspace_id, user_id
+            )
+        return row is not None
     except Exception:
+        return False
         return False

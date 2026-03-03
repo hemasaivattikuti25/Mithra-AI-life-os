@@ -1,11 +1,11 @@
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { apiFetch } from './firebaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    SYNC ENGINE — Offline-first bidirectional sync
    
    Strategy:
    • localStorage is the fast cache (reads are instant)
-   • Supabase is the source of truth (writes are queued)
+   • Backend API is the source of truth (writes are queued)
    • Changes made offline are queued and flushed on reconnect
    • Conflict resolution: server-wins with timestamp comparison
    ═══════════════════════════════════════════════════════════════ */
@@ -73,14 +73,14 @@ class SyncEngine {
     });
     this._saveQueue(queue);
 
-    if (this.isOnline && isSupabaseConfigured) {
+    if (this.isOnline) {
       this.processQueue();
     }
   }
 
   /** Process all pending operations */
   async processQueue() {
-    if (!supabase || this.syncInProgress || !this.isOnline) return;
+    if (this.syncInProgress || !this.isOnline) return;
     this.syncInProgress = true;
     this.notify('syncing');
 
@@ -112,32 +112,31 @@ class SyncEngine {
     this.notify(failed.length > 0 ? 'partial' : 'synced');
   }
 
-  /** Execute a single sync operation against Supabase */
+  /** Execute a single sync operation against API */
   async _executeOperation(op) {
-    if (!supabase) throw new Error('Supabase not configured');
-
+    const endpoint = `/${op.table}`;
+    
     switch (op.action) {
-      case 'upsert': {
-        const { error } = await supabase.from(op.table).upsert(op.data, { onConflict: op.onConflict || 'id' });
-        if (error) throw error;
-        break;
-      }
+      case 'upsert':
       case 'insert': {
-        const { error } = await supabase.from(op.table).insert(op.data);
-        if (error) throw error;
+        await apiFetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(op.data),
+        });
         break;
       }
       case 'update': {
         const { id, ...updateData } = op.data;
-        const { error } = await supabase.from(op.table).update(updateData).eq('id', id);
-        if (error) throw error;
+        await apiFetch(`${endpoint}/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updateData),
+        });
         break;
       }
       case 'delete': {
         const id = op.data?.id || op.match?.id;
         if (!id) throw new Error('Delete requires an id');
-        const { error } = await supabase.from(op.table).delete().eq('id', id);
-        if (error) throw error;
+        await apiFetch(`${endpoint}/${id}`, { method: 'DELETE' });
         break;
       }
       default:
@@ -149,20 +148,20 @@ class SyncEngine {
 
   /** Pull all rows for a user from a table */
   async pull(table, userId, select = '*') {
-    if (!supabase || !this.isOnline) return null;
-    const { data, error } = await supabase
-      .from(table)
-      .select(select)
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data;
+    if (!this.isOnline) return null;
+    try {
+      const res = await apiFetch(`/${table}`);
+      return res[table] || res.data || [];
+    } catch (error) {
+      console.warn(`[SyncEngine] Pull failed for ${table}:`, error.message);
+      return null;
+    }
   }
 
   /** Full sync: pull remote rows, merge with local cache (server-wins on conflict).
    *  Returns merged dataset. Queued offline mutations are flushed first. */
   async syncTable(table, userId, localData, opts = {}) {
-    if (!supabase || !this.isOnline || !userId) {
+    if (!this.isOnline || !userId) {
       return localData; // offline — return cached data as-is
     }
 
@@ -209,7 +208,7 @@ class SyncEngine {
   }
 
   get isConfigured() {
-    return isSupabaseConfigured;
+    return true; // Always configured when using Firebase
   }
 }
 

@@ -7,10 +7,10 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.config import supabase, get_model, validate_config
+from core.config import get_db, get_model, validate_config, init_db_pool, close_db_pool
 from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router
-from routers import calendar_router, workspace_router
+from routers import workspace_router
 from services.warmup import keep_alive
 
 # ─── Structured logging ─────────────────────────────────────────
@@ -34,7 +34,10 @@ async def lifespan(app: FastAPI):
     if missing:
         logger.warning(f"Starting in degraded mode — missing: {', '.join(missing)}")
 
-    # Start background warmup worker (keeps Supabase/Render alive)
+    # Initialize Neon PostgreSQL connection pool
+    await init_db_pool()
+
+    # Start background warmup worker (keeps DB/Render alive)
     warmup_task = asyncio.create_task(keep_alive())
 
     logger.info("✅ Mithra Backend ready to accept requests")
@@ -47,6 +50,9 @@ async def lifespan(app: FastAPI):
         await warmup_task
     except asyncio.CancelledError:
         pass
+    
+    # Close DB pool
+    await close_db_pool()
 
 
 # ─── App ─────────────────────────────────────────────────────────
@@ -105,7 +111,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
-app.include_router(calendar_router.router, prefix="/api/calendar", tags=["Google Calendar"])
 app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"])
 
 
@@ -113,12 +118,13 @@ app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"]
 @app.get("/")
 def health_check():
     """Full health check with service statuses."""
+    db_pool = get_db()
     return {
         "status": "online",
-        "system": "Mithra Brain Active (Clean Architecture)",
-        "version": "3.1.0",
+        "system": "Mithra Brain Active (Firebase + Neon)",
+        "version": "4.0.0",
         "services": {
-            "supabase": "connected" if supabase else "unavailable",
+            "database": "connected" if db_pool else "unavailable",
             "gemini": "available" if get_model() else "disabled",
         },
         "timestamp": datetime.now().isoformat(),

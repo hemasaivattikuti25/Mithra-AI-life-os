@@ -1,10 +1,11 @@
 """
 Mithra OS — Backend Configuration
-Gracefully handles missing credentials so the server can start in demo mode.
+Firebase Auth + Neon PostgreSQL (replaces Supabase)
 Gemini is lazy-loaded on first AI request to save memory on cold start.
 """
 import os
 import logging
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,75 +13,89 @@ load_dotenv()
 logger = logging.getLogger("mithra.config")
 
 # ─── Configuration ───────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "")
+FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 
 def validate_config():
-    """Validates environment variables. Raises RuntimeError if core vars are missing."""
+    """Validates environment variables. Logs warnings for missing optional vars."""
     required = {
-        "SUPABASE_URL": SUPABASE_URL,
-        "SUPABASE_KEY": SUPABASE_KEY,
-        "SUPABASE_JWT_SECRET": SUPABASE_JWT_SECRET,
+        "NEON_DATABASE_URL": NEON_DATABASE_URL,
+        "FIREBASE_SERVICE_ACCOUNT_JSON": FIREBASE_SERVICE_ACCOUNT_JSON,
         "GEMINI_API_KEY": GEMINI_API_KEY,
     }
     missing = [k for k, v in required.items() if not v or "your-" in v]
     
-    # If core env vars are missing, we crash instead of just warning (prevents backend failures)
-    core_vars = ["SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_JWT_SECRET"]
-    if any(k in missing for k in core_vars):
-        raise RuntimeError(f"Missing required env vars: {missing}")
+    # Core vars for production
+    core_vars = ["NEON_DATABASE_URL", "FIREBASE_SERVICE_ACCOUNT_JSON"]
+    if ENVIRONMENT == "production" and any(k in missing for k in core_vars):
+        raise RuntimeError(f"Missing required env vars for production: {missing}")
 
     present = [k for k in required if k not in missing]
     if present:
         logger.info(f"✅ Config OK: {', '.join(present)}")
     if missing:
-        logger.warning(f"⚠️  Missing optional env vars: {', '.join(missing)}")
+        logger.warning(f"⚠️  Missing env vars: {', '.join(missing)}")
     return missing
 
 
-# ─── Supabase Client (eager — needed for health check) ───────────
-supabase = None
+# ─── Firebase Admin SDK (for token verification) ─────────────────
+_firebase_initialized = False
 
-def _init_supabase():
-    global supabase
-    if SUPABASE_URL and SUPABASE_KEY and "your-" not in SUPABASE_URL:
-        try:
-            from supabase import create_client
-            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-            logger.info("✅ Supabase connected")
-        except Exception as e:
-            logger.error(f"⚠️  Supabase init failed: {e}")
-            supabase = None
-    else:
-        logger.warning("⚠️  Supabase credentials missing — DB features disabled")
-        supabase = None
+def _init_firebase():
+    global _firebase_initialized
+    if _firebase_initialized or not FIREBASE_SERVICE_ACCOUNT_JSON:
+        return
+    try:
+        import firebase_admin
+        from firebase_admin import credentials
+        cred_dict = json.loads(FIREBASE_SERVICE_ACCOUNT_JSON)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        _firebase_initialized = True
+        logger.info("✅ Firebase Admin SDK initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Firebase Admin init failed: {e}")
 
-_init_supabase()
+_init_firebase()
 
 
-# ─── Supabase Admin Client (service_role — for backend operations that bypass RLS) ───
-supabase_admin = None
+# ─── Neon PostgreSQL Connection Pool (asyncpg) ───────────────────
+# Pool is created async in main.py lifespan, stored here for access
+db_pool = None
 
-def _init_supabase_admin():
-    global supabase_admin
-    if SUPABASE_URL and SUPABASE_SERVICE_KEY and "your-" not in SUPABASE_SERVICE_KEY:
-        try:
-            from supabase import create_client
-            supabase_admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-            logger.info("✅ Supabase Admin (service_role) connected")
-        except Exception as e:
-            logger.warning(f"⚠️  Supabase Admin init failed: {e}")
-            supabase_admin = None
-    else:
-        logger.warning("⚠️  SUPABASE_SERVICE_KEY missing — transfer_ownership will use anon key (may fail on RLS)")
-        supabase_admin = None
+async def init_db_pool():
+    """Initialize the asyncpg connection pool. Call from lifespan."""
+    global db_pool
+    if not NEON_DATABASE_URL:
+        logger.warning("⚠️  NEON_DATABASE_URL missing — DB features disabled")
+        return
+    try:
+        import asyncpg
+        db_pool = await asyncpg.create_pool(
+            NEON_DATABASE_URL,
+            min_size=1,
+            max_size=5,
+            command_timeout=30,
+        )
+        logger.info("✅ Neon PostgreSQL pool connected")
+    except Exception as e:
+        logger.error(f"⚠️  Neon DB pool init failed: {e}")
+        db_pool = None
 
-_init_supabase_admin()
+async def close_db_pool():
+    """Close the asyncpg connection pool. Call from lifespan shutdown."""
+    global db_pool
+    if db_pool:
+        await db_pool.close()
+        db_pool = None
+        logger.info("✅ Neon DB pool closed")
+
+def get_db():
+    """Get the asyncpg connection pool."""
+    return db_pool
 
 
 # ─── Gemini Model (LAZY — only loads on first AI request) ────────

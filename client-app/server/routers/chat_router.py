@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from schemas.models import ChatRequest
 from core.security import get_current_user
 from core.plan_gate import require_ai_access
-from core.config import get_model, supabase, get_embedding
+from core.config import get_model, get_db, get_embedding
 from datetime import date, datetime
 import json
 import logging
@@ -12,7 +12,7 @@ logger = logging.getLogger("mithra.chat")
 router = APIRouter()
 
 
-def _fetch_user_context(user_id: str) -> dict:
+async def _fetch_user_context(user_id: str) -> dict:
     """Fetch live tasks, habits, and today's mood for the user.
     Returns a dict with structured context for the system prompt."""
     context = {
@@ -21,58 +21,47 @@ def _fetch_user_context(user_id: str) -> dict:
         "today_mood": None,
     }
 
-    if not supabase:
+    pool = get_db()
+    if not pool:
         return context
 
     try:
-        # Pending tasks — top 10 by priority + due date
-        tasks_res = (
-            supabase.table("tasks")
-            .select("title, priority, due_date, starred, completed")
-            .eq("user_id", user_id)
-            .eq("completed", False)
-            .order("starred", desc=True)
-            .order("due_date", desc=False)
-            .limit(10)
-            .execute()
-        )
-        if tasks_res.data:
-            context["pending_tasks"] = tasks_res.data
+        async with pool.acquire() as conn:
+            # Pending tasks — top 10 by priority + due date
+            tasks = await conn.fetch(
+                """SELECT title, priority, due_date, starred, completed
+                   FROM tasks WHERE user_id = $1 AND completed = false
+                   ORDER BY starred DESC, due_date ASC NULLS LAST
+                   LIMIT 10""",
+                user_id
+            )
+            if tasks:
+                context["pending_tasks"] = [dict(t) for t in tasks]
+            
+            # Active habits with streak info
+            habits = await conn.fetch(
+                """SELECT title, category, streak, longest_streak, completed_dates
+                   FROM habits WHERE user_id = $1 LIMIT 15""",
+                user_id
+            )
+            if habits:
+                today_str = date.today().isoformat()
+                for h in habits:
+                    completed_dates = h.get("completed_dates", [])
+                    h_dict = dict(h)
+                    h_dict["today_done"] = today_str in completed_dates if completed_dates else False
+                    context["habits"].append(h_dict)
+            
+            # Today's journal mood
+            journal = await conn.fetchrow(
+                """SELECT mood, content FROM journal_entries
+                   WHERE user_id = $1 AND date = $2 LIMIT 1""",
+                user_id, date.today().isoformat()
+            )
+            if journal:
+                context["today_mood"] = journal.get("mood")
     except Exception as e:
-        logger.debug(f"Failed to fetch tasks: {e}")
-
-    try:
-        # Active habits with streak info
-        habits_res = (
-            supabase.table("habits")
-            .select("title, category, streak, longest_streak, completed_dates")
-            .eq("user_id", user_id)
-            .limit(15)
-            .execute()
-        )
-        if habits_res.data:
-            today_str = date.today().isoformat()
-            for h in habits_res.data:
-                completed_dates = h.get("completed_dates", [])
-                h["today_done"] = today_str in completed_dates if completed_dates else False
-            context["habits"] = habits_res.data
-    except Exception as e:
-        logger.debug(f"Failed to fetch habits: {e}")
-
-    try:
-        # Today's journal mood
-        journal_res = (
-            supabase.table("journal_entries")
-            .select("mood, content")
-            .eq("user_id", user_id)
-            .eq("date", date.today().isoformat())
-            .limit(1)
-            .execute()
-        )
-        if journal_res.data:
-            context["today_mood"] = journal_res.data[0].get("mood")
-    except Exception as e:
-        logger.debug(f"Failed to fetch mood: {e}")
+        logger.debug(f"Failed to fetch context: {e}")
 
     return context
 
@@ -151,29 +140,29 @@ async def chat_with_dost(
                 "usage": usage,
             }
 
-        # --- Fetch Live User Context (Problem 4) ---
-        user_ctx = _fetch_user_context(user_id)
+        # --- Fetch Live User Context ---
+        user_ctx = await _fetch_user_context(user_id)
         context_block = _build_context_block(user_ctx)
 
-        # --- RAG Memory Retrieval ---
+        # --- RAG Memory Retrieval (vector similarity search) ---
         memory_context = ""
+        pool = get_db()
         try:
-            if supabase:
+            if pool:
                 msg_embedding = get_embedding(user_msg)
-                related_data = supabase.rpc(
-                    'match_journal_entries',
-                    {
-                        'query_embedding': msg_embedding,
-                        'match_threshold': 0.5,
-                        'match_count': 5,
-                        'p_user_id': user_id,
-                    }
-                ).execute()
-
-                if related_data.data:
+                async with pool.acquire() as conn:
+                    # pgvector cosine similarity search
+                    rows = await conn.fetch(
+                        """SELECT content, date FROM journal_entries
+                           WHERE user_id = $1 AND embedding IS NOT NULL
+                           ORDER BY embedding <=> $2::vector
+                           LIMIT 5""",
+                        user_id, str(msg_embedding)
+                    )
+                if rows:
                     memory_context = "\n".join([
-                        f"- {item['content']} (Date: {item.get('date', 'N/A')})"
-                        for item in related_data.data
+                        f"- {row['content']} (Date: {row.get('date', 'N/A')})"
+                        for row in rows
                     ])
         except Exception as e:
             logger.debug(f"RAG Error: {e}")

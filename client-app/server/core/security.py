@@ -1,9 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
-from jwt.exceptions import PyJWTError as JWTError
 import logging
-from core.config import SUPABASE_JWT_SECRET, ENVIRONMENT
+from core.config import ENVIRONMENT
 
 logger = logging.getLogger("mithra.security")
 
@@ -11,11 +9,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """Verify Supabase JWT and extract user info.
+    """Verify Firebase ID token and extract user info.
     
-    The frontend sends: Authorization: Bearer <supabase_access_token>
-    We verify it against SUPABASE_JWT_SECRET.
-    This works for ALL auth methods (email/password, Google OAuth, etc.)
+    The frontend sends: Authorization: Bearer <firebase_id_token>
+    We verify it using Firebase Admin SDK.
     """
     if not token:
         raise HTTPException(
@@ -24,52 +21,49 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    jwt_secret = SUPABASE_JWT_SECRET
-    if not jwt_secret:
+    try:
+        from firebase_admin import auth as firebase_auth
+        decoded = firebase_auth.verify_id_token(token)
+        
+        user_id = decoded.get("uid")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload — no uid")
+        
+        return {
+            "id": user_id,
+            "email": decoded.get("email", ""),
+            "fullName": decoded.get("name", decoded.get("email", "User").split("@")[0]),
+        }
+    except ImportError:
+        # Firebase Admin not installed or not initialized
         if ENVIRONMENT == "production":
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Server auth misconfigured — SUPABASE_JWT_SECRET missing",
+                detail="Server auth misconfigured — Firebase Admin not available",
             )
-        # Dev fallback: try to decode without verification
-        logger.warning("No SUPABASE_JWT_SECRET — decoding JWT without verification (dev only)")
+        # Dev fallback: decode JWT without verification (INSECURE)
+        logger.warning("Firebase Admin not available — using fallback decode (dev only)")
         try:
+            import jwt
             payload = jwt.decode(token, options={"verify_signature": False})
-        except JWTError:
+            return {
+                "id": payload.get("sub") or payload.get("user_id") or "dev-user",
+                "email": payload.get("email", "dev@example.com"),
+                "fullName": payload.get("name", "Dev User"),
+            }
+        except Exception:
             raise HTTPException(status_code=401, detail="Invalid token")
-    else:
-        try:
-            payload = jwt.decode(
-                token,
-                jwt_secret,
-                algorithms=["HS256"],
-                audience="authenticated",
-            )
-        except jwt.ExpiredSignatureError:
+    except Exception as e:
+        error_msg = str(e)
+        if "expired" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        except JWTError as e:
-            logger.warning(f"JWT verification failed: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-    # Extract user info from Supabase JWT claims
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token payload — no sub claim")
-
-    email = payload.get("email", "")
-    user_metadata = payload.get("user_metadata", {})
-    full_name = user_metadata.get("full_name", user_metadata.get("name", "User"))
-
-    return {
-        "id": user_id,
-        "email": email,
-        "fullName": full_name,
-    }
+        logger.warning(f"Firebase token verification failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

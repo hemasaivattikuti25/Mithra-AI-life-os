@@ -17,7 +17,7 @@ import ClockPicker from '../components/ClockPicker';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
-import { supabase } from '../services/supabaseClient';
+import { apiFetch } from '../services/firebaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    PRIORITY CONFIG
@@ -572,13 +572,15 @@ export default function MithraTasks() {
   }, [blendWorkspace]);
 
   const completeBlendTask = async (taskId) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('tasks').update({ completed: true }).eq('id', taskId);
-    if (error) {
+    try {
+      await apiFetch(`/tasks/${taskId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ completed: true })
+      });
+      setBlendTasks(prev => prev.filter(t => t.id !== taskId));
+    } catch (error) {
       console.error('[Tasks] completeBlendTask failed:', error.message);
-      return;
     }
-    setBlendTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
   // ── Task Analytics ──

@@ -12,7 +12,7 @@ import { notificationManager } from '../services/notifications';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
-import { supabase } from '../services/supabaseClient';
+import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
@@ -663,17 +663,19 @@ export default function HabitFocusHub() {
   }, [blendWorkspace]);
 
   const toggleBlendHabit = async (habit) => {
-    if (!supabase) return;
     const todayStr = new Date().toISOString().split('T')[0];
     const consistency = Array.isArray(habit.consistency) ? habit.consistency : [];
     const alreadyDone = consistency.includes(todayStr);
     const updated = alreadyDone ? consistency.filter(d => d !== todayStr) : [...consistency, todayStr];
-    const { error } = await supabase.from('habits').update({ consistency: updated }).eq('id', habit.id);
-    if (error) {
+    try {
+      await apiFetch(`/habits/${habit.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ consistency: updated })
+      });
+      setBlendHabits(prev => prev.map(h => h.id === habit.id ? { ...h, consistency: updated } : h));
+    } catch (error) {
       console.error('[Habits] toggleBlendHabit failed:', error.message);
-      return;
     }
-    setBlendHabits(prev => prev.map(h => h.id === habit.id ? { ...h, consistency: updated } : h));
   };
 
   // Focus state
@@ -707,11 +709,11 @@ export default function HabitFocusHub() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
 
-  // Persist focus data — localStorage cache only, Supabase writes happen in saveFocusSession
+  // Persist focus data — localStorage cache only, API writes happen in saveFocusSession
   // NOTE: sessions/totalFocusTime/sessionHistory are cached AFTER successful ops, not reactively
   useEffect(() => { try { localStorage.setItem(getUserScopedKey('custom-sessions'), JSON.stringify(customSessions)); } catch { } }, [customSessions]);
 
-  // ── Helper: save completed focus session to Supabase + update localStorage cache ──
+  // ── Helper: save completed focus session to API + update localStorage cache ──
   const saveFocusSession = async (sessionEntry) => {
     // 1. Update local state immediately
     setSessions(s => {
@@ -730,19 +732,17 @@ export default function HabitFocusHub() {
       return next;
     });
 
-    // 2. Write to Supabase (fire-and-warn — focus session loss is not critical)
-    if (isSupabaseConfigured && supabase && user?.id) {
-      supabase
-        .from('focus_sessions')
-        .insert({
-          user_id: user.id,
+    // 2. Write to API (fire-and-warn — focus session loss is not critical)
+    if (isFirebaseConfigured && user?.id) {
+      apiFetch('/focus-sessions', {
+        method: 'POST',
+        body: JSON.stringify({
           habit_id: sessionEntry.habitId || null,
           duration_minutes: sessionEntry.duration,
           completed_at: sessionEntry.endedAt || new Date().toISOString(),
-          workspace_id: null,
         })
-        .then(({ error }) => { if (error) console.warn('[Focus] Supabase insert failed:', error.message); })
-        .catch(() => { });
+      })
+        .catch((err) => console.warn('[Focus] API insert failed:', err.message));
     }
   };
 

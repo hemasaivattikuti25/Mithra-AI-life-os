@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { notificationManager } from '../services/notifications';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 
@@ -193,21 +193,13 @@ export default function Dashboard() {
     try { return localStorage.getItem(getUserScopedKey('focus-sessions')) || '0'; } catch { return '0'; }
   }, []);
 
-  // ── Load mood history from Supabase on mount ──
+  // ── Load mood history from API on mount ──
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !user?.id) return;
-    supabase
-      .from('mood_logs')
-      .select('mood_value, mood_label, note, logged_at')
-      .eq('user_id', user.id)
-      .order('logged_at', { ascending: false })
-      .limit(30)
-      .then(({ data, error }) => {
-        if (error) {
-          console.warn('[Mood] Failed to load mood history:', error.message);
-          return;
-        }
-        if (data && data.length > 0) {
+    if (!isFirebaseConfigured || !user?.id) return;
+    apiFetch('/mood-logs?limit=30')
+      .then((res) => {
+        const data = res.moodLogs || res.data || [];
+        if (data.length > 0) {
           const formatted = data.map(r => ({
             date: r.logged_at,
             mood: r.mood_value,
@@ -304,13 +296,13 @@ export default function Dashboard() {
     setMoodHistory(updated);
     localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
 
-    // Persist to Supabase (non-critical — warn but don't block UI)
-    if (isSupabaseConfigured && supabase && user?.id) {
-      supabase
-        .from('mood_logs')
-        .insert({ user_id: user.id, mood_value: mood.value, mood_label: mood.label })
-        .then(({ error }) => { if (error) console.warn('[Mood] Supabase insert failed:', error.message); })
-        .catch(() => { });
+    // Persist to API (non-critical — warn but don't block UI)
+    if (isFirebaseConfigured && user?.id) {
+      apiFetch('/mood-logs', {
+        method: 'POST',
+        body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
+      })
+        .catch((err) => console.warn('[Mood] API insert failed:', err.message));
     }
 
     setTimeout(() => setMoodSaved(true), 600);

@@ -968,9 +968,7 @@ const MithraCalendar = () => {
   const {
     taskCalendarEvents,
     habitCalendarEvents,
-    googleEvents,
     syncSettings,
-    toggleSyncGoogleCalendar,
     deleteTask,
     deleteHabit
   } = useData();
@@ -984,12 +982,11 @@ const MithraCalendar = () => {
   // Persist events to localStorage
   React.useEffect(() => { saveEvents(events); }, [events]);
 
-  // Merge own events (with repeat expansion) with synced task/habit/google events
+  // Merge own events (with repeat expansion) with synced task/habit events
   const allEvents = useMemo(() => {
     const expandedEvents = expandRepeatingEvents(events);
-    const gEvents = syncSettings.syncGoogleCalendar ? googleEvents : [];
-    return [...expandedEvents, ...taskCalendarEvents, ...habitCalendarEvents, ...gEvents];
-  }, [events, taskCalendarEvents, habitCalendarEvents, googleEvents, syncSettings.syncGoogleCalendar]);
+    return [...expandedEvents, ...taskCalendarEvents, ...habitCalendarEvents];
+  }, [events, taskCalendarEvents, habitCalendarEvents]);
 
   // Navigation
   const navigateForward = () => {
@@ -1079,21 +1076,6 @@ const MithraCalendar = () => {
               {cat}
             </div>
           ))}
-
-          <div className="pt-4 mt-4">
-            <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider mb-3 opacity-40">Sync</h4>
-            <button
-              onClick={toggleSyncGoogleCalendar}
-              className="flex items-center gap-3 text-sm text-[var(--text-dim)] opacity-70 hover:opacity-100 hover:text-[var(--text-primary)] transition-all w-full text-left"
-            >
-              <div className={clsx("w-3 h-3 rounded-full border flex items-center justify-center transition-colors",
-                syncSettings.syncGoogleCalendar ? "bg-green-500 border-green-500" : "border-[var(--glass-border)]")}
-              >
-                {syncSettings.syncGoogleCalendar && <Check size={8} className="text-black" />}
-              </div>
-              Google Calendar
-            </button>
-          </div>
         </div>
       </div>
 
