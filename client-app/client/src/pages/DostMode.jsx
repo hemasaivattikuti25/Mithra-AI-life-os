@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { authService } from '../services/firebaseClient';
+import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import { format, addDays, parse } from 'date-fns';
 import axios from 'axios';
 import clsx from 'clsx';
@@ -276,6 +277,78 @@ export default function DostMode() {
     addHabit, updateHabit, deleteHabit,
   } = useData();
   const isLight = theme === 'light';
+
+  /* ── Execute NLP-detected actions silently ── */
+  const executeCasualActions = useCallback(async (actions) => {
+    if (!actions || actions.length === 0) return;
+    
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    for (const action of actions) {
+      try {
+        switch (action.type) {
+          case 'complete_habit': {
+            // Mark habit as done today (update local state + API)
+            const habit = habits.find(h => h.id === action.habit_id);
+            if (habit && !habit.todayDone) {
+              const newDates = [...(habit.completedDates || []), today];
+              const newStreak = (habit.streak || 0) + 1;
+              const updated = {
+                ...habit,
+                completedDates: newDates,
+                streak: newStreak,
+                bestStreak: Math.max(newStreak, habit.bestStreak || 0),
+                todayDone: true
+              };
+              updateHabit(updated);
+              // Sync to API
+              if (isFirebaseConfigured) {
+                apiFetch(`/habits/${action.habit_id}/complete`, { method: 'POST' })
+                  .catch(err => console.warn('[Dost] Habit sync failed:', err.message));
+              }
+            }
+            break;
+          }
+          
+          case 'log_mood': {
+            // Save mood to localStorage and API
+            const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+            const labels = { 10: 'Amazing', 9: 'Great', 7: 'Good', 5: 'Okay', 4: 'Tired', 3: 'Stressed', 2: 'Sad', 1: 'Rough' };
+            const entry = {
+              date: new Date().toISOString(),
+              mood: action.score,
+              label: labels[action.score] || 'Neutral'
+            };
+            const updated = [entry, ...moodHistory].slice(0, 30);
+            localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
+            
+            // Sync to API
+            if (isFirebaseConfigured) {
+              apiFetch('/mood-logs', {
+                method: 'POST',
+                body: JSON.stringify({ mood_value: action.score, mood_label: entry.label })
+              }).catch(err => console.warn('[Dost] Mood sync failed:', err.message));
+            }
+            break;
+          }
+          
+          case 'complete_task': {
+            // Mark task as completed
+            const task = tasks.find(t => t.id === action.task_id);
+            if (task && !task.completed) {
+              toggleTask(action.task_id);
+            }
+            break;
+          }
+          
+          default:
+            console.log('[Dost] Unknown action type:', action.type);
+        }
+      } catch (err) {
+        console.warn('[Dost] Action execution failed:', action.type, err.message);
+      }
+    }
+  }, [habits, tasks, updateHabit, toggleTask]);
 
   // Check if API server is reachable - ONLY if API is configured
   useEffect(() => {
@@ -747,6 +820,11 @@ export default function DostMode() {
                 headers: authHeaders,
               });
               addAiMsg(res.data?.reply || "That's interesting! Tell me more.");
+              
+              // Execute any NLP-detected actions silently
+              if (res.data?.actions?.length > 0) {
+                executeCasualActions(res.data.actions);
+              }
             } catch (error) {
               setApiError({ message: "Connection failed", input: userInput });
               addAiMsg("I'm having trouble connecting. Please check your internet or try again.", { isError: true });
@@ -763,7 +841,7 @@ export default function DostMode() {
     } finally {
       setIsThinking(false);
     }
-  }, [input, isOnline, tasks, habits, addTask, updateTask, deleteTask, toggleTask, addHabit, updateHabit, deleteHabit, addAiMsg]);
+  }, [input, isOnline, tasks, habits, addTask, updateTask, deleteTask, toggleTask, addHabit, updateHabit, deleteHabit, addAiMsg, executeCasualActions]);
 
   function getSmartResponse() {
     const pendingTasks = tasks.filter(t => !t.completed).length;

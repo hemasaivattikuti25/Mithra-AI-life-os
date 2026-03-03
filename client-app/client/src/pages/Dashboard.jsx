@@ -5,7 +5,7 @@ import {
   Star, Clock, ArrowRight, Zap, BookOpen,
   ChevronRight, Sparkles, Target, Flame, Dumbbell,
   Code, Brain, Heart, AlertTriangle,
-  TrendingUp, BarChart3, Inbox, FileText
+  TrendingUp, BarChart3, Inbox, FileText, Share2
 } from 'lucide-react';
 import { format, isToday as isTodayFn } from 'date-fns';
 import clsx from 'clsx';
@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
+import ShareStatsCard from '../components/ShareStatsCard';
 
 /* ───── animation config ───── */
 const luxuryEase = [0.22, 1, 0.36, 1];
@@ -180,6 +181,10 @@ export default function Dashboard() {
       return JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
     } catch { return []; }
   });
+  
+  // ── Share Stats Modal ──
+  const [showShareStats, setShowShareStats] = useState(false);
+  
   const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents } = useData();
   const { profile, user } = useAuth();
   const navigate = useNavigate();
@@ -910,7 +915,42 @@ export default function Dashboard() {
             </div>
           )}
         </GlassCard>
+
+        {/* ════════════════════════════════════
+          SHARE STATS BUTTON
+          ════════════════════════════════════ */}
+        <motion.button
+          custom={8}
+          variants={sectionReveal}
+          initial="hidden"
+          animate="visible"
+          onClick={() => setShowShareStats(true)}
+          whileTap={{ scale: 0.97 }}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm transition-all"
+          style={{
+            background: 'linear-gradient(135deg, var(--accent-glow), transparent)',
+            border: '1px solid var(--glass-border)',
+            color: 'var(--accent-color)',
+          }}
+        >
+          <Share2 size={18} />
+          Share Your Stats
+        </motion.button>
       </div>
+
+      {/* Share Stats Modal */}
+      <ShareStatsCard
+        isOpen={showShareStats}
+        onClose={() => setShowShareStats(false)}
+        stats={{
+          streakDays: bestStreak,
+          bestStreak: bestStreak,
+          habitsCompleted: habits ? habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0) : 0,
+          tasksCompleted: completedTasks,
+          daysActive: parseInt(focusSessionCount) || 0,
+        }}
+        userName={profile?.fullName?.split(' ')[0] || 'User'}
+      />
     </PullToRefresh>
   );
 }

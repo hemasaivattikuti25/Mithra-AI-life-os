@@ -586,10 +586,15 @@ export function DataProvider({ children }) {
           notificationManager.scheduleHabitReminder(h);
         });
       }
+
+      // Schedule Daily Briefing (8am summary)
+      if (notificationSettings.dailyBriefing !== false) {
+        notificationManager.scheduleDailyBriefing(tasks, habits, 8, 0);
+      }
     };
 
     syncReminders();
-  }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders]);
+  }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders, notificationSettings.dailyBriefing]);
 
   /* ── Task CRUD — API-first ── */
   const addTask = useCallback(async (task) => {

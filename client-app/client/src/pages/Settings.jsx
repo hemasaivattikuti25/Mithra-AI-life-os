@@ -268,6 +268,9 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
               <IconToggle label="Overdue Task Alerts" description="Notified about tasks past their due date" icon={AlertTriangle}
                 isActive={notificationSettings.overdueTaskAlerts !== false}
                 onToggle={() => updateNotificationSettings({ overdueTaskAlerts: !notificationSettings.overdueTaskAlerts })} />
+              <IconToggle label="Daily Briefing" description="Morning summary at 8am with your tasks and habits" icon={Sun}
+                isActive={notificationSettings.dailyBriefing !== false}
+                onToggle={() => updateNotificationSettings({ dailyBriefing: !notificationSettings.dailyBriefing })} />
             </div>
 
             {/* Info */}

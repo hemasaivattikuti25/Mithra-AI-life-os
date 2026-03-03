@@ -16,6 +16,69 @@ import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
+/* ═══════════ QUICK MOOD EMOJIS ═══════════ */
+const QUICK_MOOD_EMOJIS = [
+  { emoji: '😄', label: 'Great', value: 9 },
+  { emoji: '🙂', label: 'Good', value: 7 },
+  { emoji: '😐', label: 'Okay', value: 5 },
+  { emoji: '😔', label: 'Low', value: 3 },
+];
+
+/* ═══════════ QUICK MOOD PICKER — appears after habit completion ═══════════ */
+const QuickMoodPicker = ({ isOpen, onClose, onSelect, habitTitle }) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      >
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          className="glass-card glass-shine rounded-2xl p-6 max-w-xs w-full text-center"
+          initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+        >
+          <div className="mb-3">
+            <CheckCircle2 size={28} className="mx-auto mb-2" style={{ color: 'var(--accent-color)' }} />
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {habitTitle} ✓
+            </h3>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
+              How are you feeling?
+            </p>
+          </div>
+          <div className="flex justify-center gap-3 mt-4">
+            {QUICK_MOOD_EMOJIS.map((mood) => (
+              <motion.button
+                key={mood.value}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onSelect(mood)}
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl hover:bg-[var(--glass-bg-hover)] transition-all"
+                title={mood.label}
+              >
+                {mood.emoji}
+              </motion.button>
+            ))}
+          </div>
+          <button
+            onClick={onClose}
+            className="mt-4 text-xs underline opacity-50 hover:opacity-100"
+            style={{ color: 'var(--text-dim)' }}
+          >
+            Skip
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const CATEGORY_CONFIG = {
   Work: { icon: Code, color: '#3b82f6' },
   Health: { icon: Dumbbell, color: '#f97316' },
@@ -644,6 +707,40 @@ export default function HabitFocusHub() {
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
 
+  // ── Quick mood after habit completion ──
+  const [showQuickMood, setShowQuickMood] = useState(false);
+  const [completedHabitTitle, setCompletedHabitTitle] = useState('');
+
+  const handleHabitToggle = (habitId) => {
+    const habit = habits.find(h => h.id === habitId);
+    notificationManager.hapticLight();
+    toggleHabit(habitId);
+    
+    // Show quick mood picker only if completing (not unchecking)
+    if (habit && !habit.todayDone) {
+      setCompletedHabitTitle(habit.title);
+      setShowQuickMood(true);
+    }
+  };
+
+  const handleQuickMoodSelect = (mood) => {
+    // Save mood to localStorage and API
+    const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+    const entry = { date: new Date().toISOString(), mood: mood.value, label: mood.label };
+    const updated = [entry, ...moodHistory].slice(0, 30);
+    localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
+    
+    // Sync to API
+    if (isFirebaseConfigured && user?.id) {
+      apiFetch('/mood-logs', {
+        method: 'POST',
+        body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
+      }).catch(err => console.warn('[Mood] API sync failed:', err.message));
+    }
+    
+    setShowQuickMood(false);
+  };
+
   // ── Blend workspace habits ──
   const [blendWorkspace, setBlendWorkspace] = useState(null);
   const [blendHabits, setBlendHabits] = useState([]);
@@ -968,7 +1065,7 @@ export default function HabitFocusHub() {
                 <AnimatePresence mode="popLayout">
                   {sortedHabits.map((habit, i) => (
                     <HabitCard key={habit.id} habit={habit} index={i}
-                      onToggle={(id) => { notificationManager.hapticLight(); toggleHabit(id); }}
+                      onToggle={handleHabitToggle}
                       onDelete={deleteHabit}
                       onEdit={(h) => { setEditingHabit(h); setShowModal(true); }} />
                   ))}
@@ -1271,6 +1368,14 @@ export default function HabitFocusHub() {
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* ── Quick Mood Picker after habit completion ── */}
+      <QuickMoodPicker
+        isOpen={showQuickMood}
+        onClose={() => setShowQuickMood(false)}
+        onSelect={handleQuickMoodSelect}
+        habitTitle={completedHabitTitle}
+      />
     </div>
   );
 }

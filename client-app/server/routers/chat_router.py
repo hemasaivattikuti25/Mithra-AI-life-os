@@ -6,10 +6,114 @@ from core.config import get_model, get_db, get_embedding
 from datetime import date, datetime
 import json
 import logging
+import re
 
 logger = logging.getLogger("mithra.chat")
 
 router = APIRouter()
+
+
+def _detect_casual_actions(message: str, habits: list, tasks: list) -> list:
+    """Detect actions from casual conversation using NLP-style pattern matching.
+    Returns a list of action dicts that should be silently executed."""
+    actions = []
+    lower = message.lower().strip()
+    
+    # Habit completion patterns
+    habit_triggers = [
+        # Exercise/Gym
+        (r"\b(finished?|completed?|did|done with)\s+(my\s+)?(gym|workout|exercise|training|run|jog|yoga|meditation|meditate)\b", ["gym", "workout", "exercise", "training", "run", "jog", "yoga", "meditation"]),
+        (r"\b(just\s+)?(back from|came from|left)\s+(the\s+)?(gym|workout|run|jog)\b", ["gym", "workout", "run", "jog"]),
+        (r"\bjust\s+(ran|jogged|exercised|worked out|meditated|did yoga)\b", ["run", "jog", "exercise", "workout", "meditation", "yoga"]),
+        # Reading/Learning
+        (r"\b(finished?|completed?|done)\s+(reading|studying|learning|my\s+book|the\s+book)\b", ["reading", "study", "learning", "book"]),
+        (r"\bread\s+(\d+\s+)?(pages?|chapters?|for\s+\d+\s+min)\b", ["reading", "book"]),
+        # Morning routine
+        (r"\b(woke up|got up|morning routine|brushed|showered)\b", ["morning", "wake", "routine"]),
+        # Water/Hydration
+        (r"\b(drank|drinking|had)\s+(\d+\s+)?(glasses?|cups?|liters?)\s+(of\s+)?water\b", ["water", "hydration", "drink"]),
+        # Coding/Work
+        (r"\b(finished?|done with|completed?)\s+(coding|work|project|task)\b", ["coding", "code", "work", "project"]),
+        # Generic completion
+        (r"\bjust\s+(finished?|completed?|done with)\s+(.+)\b", None),  # Will match habit title
+    ]
+    
+    for pattern, keywords in habit_triggers:
+        if re.search(pattern, lower):
+            # Find matching habit
+            for habit in habits:
+                h_title = habit.get("title", "").lower()
+                if keywords:
+                    if any(kw in h_title for kw in keywords):
+                        today_done = habit.get("today_done", False)
+                        if not today_done:
+                            actions.append({
+                                "type": "complete_habit",
+                                "habit_id": habit.get("id"),
+                                "habit_name": habit.get("title"),
+                            })
+                            break
+                else:
+                    # Generic pattern - extract what they finished
+                    match = re.search(pattern, lower)
+                    if match and len(match.groups()) >= 2:
+                        completed_item = match.group(2)
+                        if completed_item and completed_item in h_title:
+                            today_done = habit.get("today_done", False)
+                            if not today_done:
+                                actions.append({
+                                    "type": "complete_habit",
+                                    "habit_id": habit.get("id"),
+                                    "habit_name": habit.get("title"),
+                                })
+                                break
+    
+    # Mood detection patterns
+    mood_patterns = [
+        # Positive moods (7-10)
+        (r"\b(feeling|i'?m)\s+(great|amazing|fantastic|incredible|awesome|wonderful|excited|happy|energetic)\b", 9),
+        (r"\b(feeling|i'?m)\s+(good|nice|fine|okay|better|motivated|productive|focused)\b", 7),
+        (r"\b(had a great|great day|awesome day|productive day)\b", 8),
+        # Neutral moods (4-6)
+        (r"\b(feeling|i'?m)\s+(okay|alright|so-so|meh|neutral|normal)\b", 5),
+        (r"\b(average|regular|usual)\s+day\b", 5),
+        # Negative moods (1-4)
+        (r"\b(feeling|i'?m)\s+(tired|exhausted|sleepy|drained|burnt out|burnout)\b", 4),
+        (r"\b(feeling|i'?m)\s+(stressed|anxious|worried|overwhelmed)\b", 3),
+        (r"\b(feeling|i'?m)\s+(sad|down|low|depressed|rough|bad|terrible|awful)\b", 2),
+        (r"\b(rough|hard|tough|difficult|bad)\s+day\b", 3),
+    ]
+    
+    for pattern, score in mood_patterns:
+        if re.search(pattern, lower):
+            actions.append({
+                "type": "log_mood",
+                "score": score,
+            })
+            break
+    
+    # Task completion patterns
+    task_triggers = [
+        r"\b(finished?|completed?|done with|submitted|sent)\s+(the\s+)?(.+?)\s*(report|project|assignment|task|email|presentation|document)\b",
+        r"\bjust\s+(finished?|completed?|submitted|sent)\s+(.+)\b",
+    ]
+    
+    for pattern in task_triggers:
+        match = re.search(pattern, lower)
+        if match:
+            # Try to find matching incomplete task
+            query_parts = [g for g in match.groups() if g]
+            query = " ".join(query_parts[-2:]) if len(query_parts) >= 2 else query_parts[-1] if query_parts else ""
+            for task in tasks:
+                if not task.get("completed") and query.lower() in task.get("title", "").lower():
+                    actions.append({
+                        "type": "complete_task",
+                        "task_id": task.get("id"),
+                        "task_name": task.get("title"),
+                    })
+                    break
+    
+    return actions
 
 
 async def _fetch_user_context(user_id: str) -> dict:
@@ -29,7 +133,7 @@ async def _fetch_user_context(user_id: str) -> dict:
         async with pool.acquire() as conn:
             # Pending tasks — top 10 by priority + due date
             tasks = await conn.fetch(
-                """SELECT title, priority, due_date, starred, completed
+                """SELECT id, title, priority, due_date, starred, completed
                    FROM tasks WHERE user_id = $1 AND completed = false
                    ORDER BY starred DESC, due_date ASC NULLS LAST
                    LIMIT 10""",
@@ -40,16 +144,16 @@ async def _fetch_user_context(user_id: str) -> dict:
             
             # Active habits with streak info
             habits = await conn.fetch(
-                """SELECT title, category, streak, longest_streak, completed_dates
+                """SELECT id, title, category, streak, longest_streak, consistency
                    FROM habits WHERE user_id = $1 LIMIT 15""",
                 user_id
             )
             if habits:
                 today_str = date.today().isoformat()
                 for h in habits:
-                    completed_dates = h.get("completed_dates", [])
+                    consistency = h.get("consistency", [])
                     h_dict = dict(h)
-                    h_dict["today_done"] = today_str in completed_dates if completed_dates else False
+                    h_dict["today_done"] = today_str in consistency if consistency else False
                     context["habits"].append(h_dict)
             
             # Today's journal mood
@@ -136,6 +240,7 @@ async def chat_with_dost(
             return {
                 "reply": f"I hear you, {user_name}. But I need my Gemini keys to speak fully.",
                 "action": None,
+                "actions": [],
                 "memory_used": False,
                 "usage": usage,
             }
@@ -143,6 +248,13 @@ async def chat_with_dost(
         # --- Fetch Live User Context ---
         user_ctx = await _fetch_user_context(user_id)
         context_block = _build_context_block(user_ctx)
+        
+        # --- Detect Casual Actions (NLP) ---
+        casual_actions = _detect_casual_actions(
+            user_msg, 
+            user_ctx["habits"], 
+            user_ctx["pending_tasks"]
+        )
 
         # --- RAG Memory Retrieval (vector similarity search) ---
         memory_context = ""
@@ -252,6 +364,7 @@ Dost:
         return {
             "reply": text_response,
             "action": action_data,
+            "actions": casual_actions,  # NLP-detected actions from casual text
             "memory_used": bool(memory_context),
             "context_used": bool(user_ctx["pending_tasks"] or user_ctx["habits"]),
             "usage": usage,
@@ -262,6 +375,7 @@ Dost:
         return {
             "reply": "I hit a snag processing that. Could you rephrase? 🤔",
             "action": None,
+            "actions": [],
             "memory_used": False,
             "usage": usage,
         }
