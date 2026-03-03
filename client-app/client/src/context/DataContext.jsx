@@ -596,40 +596,49 @@ export function DataProvider({ children }) {
     syncReminders();
   }, [tasks, habits, notificationSettings.enabled, notificationSettings.taskReminders, notificationSettings.habitReminders, notificationSettings.dailyBriefing]);
 
-  /* ── Task CRUD — API-first ── */
+  /* ── Task CRUD — Local-first with sync queue ── */
   const addTask = useCallback(async (task) => {
+    const taskWithId = { ...task, id: task.id || crypto.randomUUID() };
+    
+    // Step 1: ALWAYS save locally first (guaranteed immediate save)
+    setTasks(prev => {
+      const next = [taskWithId, ...prev];
+      saveToStorage('tasks', next);
+      return next;
+    });
+
+    // Step 2: Sync to API (will queue for retry if fails)
     if (user) {
       try {
         const res = await apiFetch('/tasks', {
           method: 'POST',
-          body: JSON.stringify(mapTaskToDB({ ...task, userId: user.id })),
+          body: JSON.stringify(mapTaskToDB({ ...taskWithId, userId: user.id })),
         });
-
-        if (res.task) {
-          const mapped = mapTaskFromDB(res.task);
-          setTasks(prev => {
-            const next = [mapped, ...prev];
-            saveToStorage('tasks', next);
-            return next;
-          });
-          return mapped;
+        // Update with server-returned data if different
+        if (res.task && res.task.id !== taskWithId.id) {
+          setTasks(prev => prev.map(t => t.id === taskWithId.id ? mapTaskFromDB(res.task) : t));
         }
       } catch (error) {
-        console.error('[Tasks] Add failed:', error.message);
-        // Fall through to offline mode
+        console.warn('[Tasks] Add failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'tasks',
+          action: 'upsert',
+          data: mapTaskToDB({ ...taskWithId, userId: user.id }),
+        });
       }
     }
-    // Offline fallback
-    const offlineTask = { ...task, id: task.id || crypto.randomUUID() };
-    setTasks(prev => {
-      const next = [offlineTask, ...prev];
-      saveToStorage('tasks', next);
-      return next;
-    });
-    return offlineTask;
+    return taskWithId;
   }, [user]);
 
   const updateTask = useCallback(async (updated) => {
+    // Step 1: ALWAYS save locally first
+    setTasks(prev => {
+      const next = prev.map(t => t.id === updated.id ? updated : t);
+      saveToStorage('tasks', next);
+      return next;
+    });
+
+    // Step 2: Sync to API
     if (user) {
       try {
         await apiFetch(`/tasks/${updated.id}`, {
@@ -637,33 +646,37 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapTaskToDB(updated)),
         });
       } catch (error) {
-        console.error('[Tasks] Update failed:', error.message);
-        // Continue with local update as fallback
+        console.warn('[Tasks] Update failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'tasks',
+          action: 'update',
+          data: mapTaskToDB({ ...updated, userId: user.id }),
+        });
       }
     }
-
-    setTasks(prev => {
-      const next = prev.map(t => t.id === updated.id ? updated : t);
-      saveToStorage('tasks', next);
-      return next;
-    });
   }, [user]);
 
   const deleteTask = useCallback(async (id) => {
-    if (user) {
-      try {
-        await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
-      } catch (error) {
-        console.error('[Tasks] Delete failed:', error.message);
-        // Continue with local delete as fallback
-      }
-    }
-
+    // Step 1: ALWAYS delete locally first
     setTasks(prev => {
       const next = prev.filter(t => t.id !== id);
       saveToStorage('tasks', next);
       return next;
     });
+
+    // Step 2: Sync to API
+    if (user) {
+      try {
+        await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
+      } catch (error) {
+        console.warn('[Tasks] Delete failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'tasks',
+          action: 'delete',
+          data: { id },
+        });
+      }
+    }
   }, [user]);
 
   const toggleTask = useCallback(async (id) => {
@@ -673,6 +686,14 @@ export function DataProvider({ children }) {
     const willComplete = !task.completed;
     const updated = { ...task, completed: willComplete };
 
+    // Step 1: ALWAYS save locally first
+    setTasks(prev => {
+      const next = prev.map(t => t.id === id ? updated : t);
+      saveToStorage('tasks', next);
+      return next;
+    });
+
+    // Step 2: Sync to API
     if (user) {
       try {
         await apiFetch(`/tasks/${id}`, {
@@ -680,8 +701,12 @@ export function DataProvider({ children }) {
           body: JSON.stringify({ completed: willComplete }),
         });
       } catch (error) {
-        console.error('[Tasks] Toggle failed:', error.message);
-        // Continue with local toggle as fallback
+        console.warn('[Tasks] Toggle failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'tasks',
+          action: 'update',
+          data: { id, completed: willComplete },
+        });
       }
     }
 
@@ -703,38 +728,29 @@ export function DataProvider({ children }) {
           dueDate: nextDate,
           userId: user?.id,
         };
-        // Add recurring task via API
+        // Local-first: save recurring task locally, then sync
+        setTasks(p => {
+          const next = [...p, recurringTask];
+          saveToStorage('tasks', next);
+          return next;
+        });
         if (user) {
           try {
             await apiFetch('/tasks', {
               method: 'POST',
               body: JSON.stringify(mapTaskToDB(recurringTask)),
             });
-            setTasks(p => {
-              const next = [...p, recurringTask];
-              saveToStorage('tasks', next);
-              return next;
-            });
           } catch (recurErr) {
-            console.error('[Tasks] Recurring insert failed:', recurErr.message || recurErr);
-            // Just add locally as fallback
-            setTasks(p => {
-              const next = [...p, recurringTask];
-              saveToStorage('tasks', next);
-              return next;
+            console.warn('[Tasks] Recurring insert failed, queued for retry:', recurErr.message);
+            syncEngine.enqueue({
+              table: 'tasks',
+              action: 'upsert',
+              data: mapTaskToDB(recurringTask),
             });
           }
-        } else {
-          setTasks(p => [...p, recurringTask]);
         }
       }
     }
-
-    setTasks(prev => {
-      const next = prev.map(t => t.id === id ? updated : t);
-      saveToStorage('tasks', next);
-      return next;
-    });
   }, [tasks, user]);
 
   const starTask = useCallback(async (id) => {
@@ -742,13 +758,14 @@ export function DataProvider({ children }) {
     if (!task) return;
     const newStarred = !task.starred;
 
-    // Optimistic update first
+    // Step 1: ALWAYS save locally first
     setTasks(prev => {
       const next = prev.map(t => t.id === id ? { ...t, starred: newStarred } : t);
       saveToStorage('tasks', next);
       return next;
     });
 
+    // Step 2: Sync to API
     if (user) {
       try {
         await apiFetch(`/tasks/${id}`, {
@@ -756,53 +773,61 @@ export function DataProvider({ children }) {
           body: JSON.stringify({ starred: newStarred }),
         });
       } catch (err) {
-        console.error('[Tasks] Star error:', err);
-        // Rollback on failure
-        setTasks(prev => {
-          const next = prev.map(t => t.id === id ? { ...t, starred: !newStarred } : t);
-          saveToStorage('tasks', next);
-          return next;
+        console.warn('[Tasks] Star failed, queued for retry:', err.message);
+        syncEngine.enqueue({
+          table: 'tasks',
+          action: 'update',
+          data: { id, starred: newStarred },
         });
       }
     }
   }, [tasks, user]);
 
-  /* ── Habit CRUD — API-first ── */
+  /* ── Habit CRUD — Local-first with sync queue ── */
   const addHabit = useCallback(async (habit) => {
+    const habitWithId = { ...habit, id: habit.id || crypto.randomUUID() };
+    
+    // Step 1: ALWAYS save locally first (guaranteed immediate save)
+    setHabits(prev => {
+      const next = [...prev, habitWithId];
+      saveToStorage('habits', next);
+      return next;
+    });
+
+    // Step 2: Sync to API (will queue for retry if fails)
     if (user) {
       try {
-        const dbHabit = mapHabitToDB({ ...habit });
+        const dbHabit = mapHabitToDB(habitWithId);
         dbHabit.user_id = user.id;
         const res = await apiFetch('/habits', {
           method: 'POST',
           body: JSON.stringify(dbHabit),
         });
-
-        if (res.habit) {
-          const mapped = mapHabitFromDB(res.habit);
-          setHabits(prev => {
-            const next = [...prev, mapped];
-            saveToStorage('habits', next);
-            return next;
-          });
-          return mapped;
+        // Update with server-returned data if different
+        if (res.habit && res.habit.id !== habitWithId.id) {
+          setHabits(prev => prev.map(h => h.id === habitWithId.id ? mapHabitFromDB(res.habit) : h));
         }
       } catch (error) {
-        console.error('[Habits] Add failed:', error.message);
-        // Fall through to offline mode
+        console.warn('[Habits] Add failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'habits',
+          action: 'upsert',
+          data: { ...mapHabitToDB(habitWithId), user_id: user.id },
+        });
       }
     }
-    // Offline fallback
-    const offlineHabit = { ...habit, id: habit.id || crypto.randomUUID() };
-    setHabits(prev => {
-      const next = [...prev, offlineHabit];
-      saveToStorage('habits', next);
-      return next;
-    });
-    return offlineHabit;
+    return habitWithId;
   }, [user]);
 
   const updateHabit = useCallback(async (updated) => {
+    // Step 1: ALWAYS save locally first
+    setHabits(prev => {
+      const next = prev.map(h => h.id === updated.id ? updated : h);
+      saveToStorage('habits', next);
+      return next;
+    });
+
+    // Step 2: Sync to API
     if (user) {
       try {
         await apiFetch(`/habits/${updated.id}`, {
@@ -810,33 +835,37 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapHabitToDB(updated)),
         });
       } catch (error) {
-        console.error('[Habits] Update failed:', error.message);
-        // Continue with local update as fallback
+        console.warn('[Habits] Update failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'habits',
+          action: 'update',
+          data: mapHabitToDB({ ...updated, userId: user.id }),
+        });
       }
     }
-
-    setHabits(prev => {
-      const next = prev.map(h => h.id === updated.id ? updated : h);
-      saveToStorage('habits', next);
-      return next;
-    });
   }, [user]);
 
   const deleteHabit = useCallback(async (id) => {
-    if (user) {
-      try {
-        await apiFetch(`/habits/${id}`, { method: 'DELETE' });
-      } catch (error) {
-        console.error('[Habits] Delete failed:', error.message);
-        // Continue with local delete as fallback
-      }
-    }
-
+    // Step 1: ALWAYS delete locally first
     setHabits(prev => {
       const next = prev.filter(h => h.id !== id);
       saveToStorage('habits', next);
       return next;
     });
+
+    // Step 2: Sync to API
+    if (user) {
+      try {
+        await apiFetch(`/habits/${id}`, { method: 'DELETE' });
+      } catch (error) {
+        console.warn('[Habits] Delete failed, queued for retry:', error.message);
+        syncEngine.enqueue({
+          table: 'habits',
+          action: 'delete',
+          data: { id },
+        });
+      }
+    }
   }, [user]);
 
   // Streak milestones
