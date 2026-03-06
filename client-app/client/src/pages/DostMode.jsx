@@ -10,7 +10,6 @@ import { useData, getUserScopedKey } from '../context/DataContext';
 import { authService } from '../services/firebaseClient';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import { format, addDays, parse } from 'date-fns';
-import axios from 'axios';
 import clsx from 'clsx';
 
 /* =========================================
@@ -278,6 +277,47 @@ export default function DostMode() {
   } = useData();
   const isLight = theme === 'light';
 
+  /* ── Dynamic welcome message ── */
+  const welcomePersonalized = useRef(false);
+
+  const getDynamicWelcome = useCallback(() => {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+    const incompleteTasks = tasks.filter(t => !t.completed).length;
+    const incompleteHabits = habits.filter(h => !h.todayDone).length;
+    const topStreak = habits.length > 0
+      ? habits.reduce((best, h) => h.streak > best.streak ? h : best, habits[0])
+      : null;
+
+    let statusLine = '';
+    if (incompleteTasks > 0 || incompleteHabits > 0) {
+      const parts = [];
+      if (incompleteTasks > 0) parts.push(`**${incompleteTasks}** task${incompleteTasks > 1 ? 's' : ''}`);
+      if (incompleteHabits > 0) parts.push(`**${incompleteHabits}** habit${incompleteHabits > 1 ? 's' : ''}`);
+      statusLine = `\n\nYou have ${parts.join(' and ')} to tackle today.`;
+    } else if (habits.length > 0 || tasks.length > 0) {
+      statusLine = '\n\n\u2728 All caught up! Everything is done for today.';
+    }
+
+    const streakLine = topStreak && topStreak.streak > 0
+      ? `\n\ud83d\udd25 Top streak: **${topStreak.title}** at ${topStreak.streak} days!`
+      : '';
+
+    return [{
+      id: 1, sender: 'ai', type: 'text',
+      content: `${greeting}! I'm **Dost** \u2014 your AI companion in Mithra.${statusLine}${streakLine}\n\nI can create tasks & habits, summarize your day, import files, and more. What would you like to do?`
+    }];
+  }, [tasks, habits]);
+
+  useEffect(() => {
+    if (welcomePersonalized.current) return;
+    if (messages.length === 1 && messages[0].id === 1 && messages[0].sender === 'ai' && (habits.length > 0 || tasks.length > 0)) {
+      welcomePersonalized.current = true;
+      setMessages(getDynamicWelcome());
+    }
+  }, [habits, tasks, getDynamicWelcome, messages]);
+
   /* ── Execute NLP-detected actions silently ── */
   const executeCasualActions = useCallback(async (actions) => {
     if (!actions || actions.length === 0) return;
@@ -358,8 +398,9 @@ export default function DostMode() {
     }
     const checkAPI = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/`, { timeout: 3000 });
-        setIsOnline(res.data?.status === 'online');
+        const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        setIsOnline(data?.status === 'online');
       } catch { setIsOnline(false); }
     };
     checkAPI();
@@ -803,27 +844,19 @@ export default function DostMode() {
                   parts: [m.content || ''],
                 }));
 
-              // Get Firebase auth token
-              let authHeaders = {};
-              try {
-                const token = await authService.getIdToken();
-                if (token) {
-                  authHeaders = { Authorization: `Bearer ${token}` };
-                }
-              } catch { /* offline — no token */ }
-
-              const res = await axios.post(`${API_BASE}/api/chat`, {
-                message: userInput,
-                history: history.length > 0 ? history : [],
-              }, {
-                timeout: 30000,
-                headers: authHeaders,
+              // Use apiFetch which handles auth token automatically
+              const data = await apiFetch('/chat', {
+                method: 'POST',
+                body: JSON.stringify({
+                  message: userInput,
+                  history: history.length > 0 ? history : [],
+                }),
               });
-              addAiMsg(res.data?.reply || "That's interesting! Tell me more.");
+              addAiMsg(data?.reply || "That's interesting! Tell me more.");
               
               // Execute any NLP-detected actions silently
-              if (res.data?.actions?.length > 0) {
-                executeCasualActions(res.data.actions);
+              if (data?.actions?.length > 0) {
+                executeCasualActions(data.actions);
               }
             } catch (error) {
               setApiError({ message: "Connection failed", input: userInput });
@@ -922,7 +955,7 @@ export default function DostMode() {
             <Upload size={14} />
             <span className="hidden sm:inline">Import</span>
           </button>
-          <button onClick={() => { setMessages(INITIAL_MSG); localStorage.removeItem(getUserScopedKey('chat-history')); }}
+          <button onClick={() => { setMessages(getDynamicWelcome()); welcomePersonalized.current = true; localStorage.removeItem(getUserScopedKey('chat-history')); }}
             className="flex items-center gap-1.5 text-[var(--text-dim)] hover:text-red-400 cursor-pointer transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--glass-bg-hover)] text-xs" title="Clear chat">
             <Trash2 size={14} />
             <span className="hidden sm:inline">Clear</span>

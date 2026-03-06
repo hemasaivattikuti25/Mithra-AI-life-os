@@ -166,7 +166,7 @@ export default function AuthPage({ isPasswordReset = false }) {
     return Object.keys(errs).length === 0;
   };
 
-  // Helper to convert Supabase error messages to user-friendly messages
+  // Helper to convert auth error messages to user-friendly messages
   const getReadableError = (message) => {
     const errorMap = {
       'Invalid login credentials': 'Email or password is incorrect',

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_db, get_model, validate_config, init_db_pool, close_db_pool
 from core.rate_limiter import RateLimitMiddleware
-from routers import auth_router, chat_router, tasks_router
+from routers import auth_router, chat_router, tasks_router, planner_router
 from routers import workspace_router
 from services.warmup import keep_alive
 
@@ -110,6 +110,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ─── Routers ─────────────────────────────────────────────────────
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
+app.include_router(planner_router.router, prefix="/api/plan", tags=["AI Planner"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
 app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"])
 

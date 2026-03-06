@@ -1,70 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Zap, Crown, BarChart3, AlertCircle } from 'lucide-react';
+import { apiFetch } from '../services/firebaseClient';
 
 /**
  * AIUsageDashboard — Shows daily AI usage, plan limits, and Pro upgrade prompt.
- * Fetches data from Supabase `ai_usage` table and `get_user_plan_limits` RPC.
+ * Fetches data from the backend /api/plan/usage endpoint.
  *
  * Usage: <AIUsageDashboard userId={user.id} />
  */
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function AIUsageDashboard({ supabase, userId }) {
+export default function AIUsageDashboard({ userId }) {
     const [plan, setPlan] = useState(null);
     const [weeklyData, setWeeklyData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!supabase || !userId) {
+        if (!userId) {
             setLoading(false);
             return;
         }
 
         async function fetchData() {
             try {
-                // Get plan info via RPC
-                const { data: planData } = await supabase.rpc('get_user_plan_limits', { p_user_id: userId });
+                // Get plan info from backend
+                const planData = await apiFetch('/plan/usage');
                 setPlan(planData || { plan_id: 'free', daily_ai_limit: 20, today_ai_calls: 0 });
 
-                // Get last 7 days of usage
+                // Build weekly display (we only have today's count from the API)
                 const today = new Date();
-                const weekAgo = new Date(today);
-                weekAgo.setDate(today.getDate() - 6);
-                const dateStr = weekAgo.toISOString().split('T')[0];
-
-                const { data: usageData } = await supabase
-                    .from('ai_usage')
-                    .select('date, count')
-                    .eq('user_id', userId)
-                    .gte('date', dateStr)
-                    .order('date', { ascending: true });
-
-                // Fill missing days with zeros
                 const filled = [];
                 for (let i = 6; i >= 0; i--) {
                     const d = new Date(today);
                     d.setDate(today.getDate() - i);
-                    const key = d.toISOString().split('T')[0];
-                    const found = (usageData || []).find(u => u.date === key);
                     filled.push({
                         day: DAYS[d.getDay()],
-                        date: key,
-                        calls: found?.count || 0,
+                        date: d.toISOString().split('T')[0],
+                        calls: i === 0 ? (planData?.today_ai_calls || 0) : 0,
                         tokens: 0,
                     });
                 }
                 setWeeklyData(filled);
             } catch (err) {
                 console.error('[AIUsage]', err);
+                setPlan({ plan_id: 'free', daily_ai_limit: 20, today_ai_calls: 0 });
             } finally {
                 setLoading(false);
             }
         }
 
         fetchData();
-    }, [supabase, userId]);
+    }, [userId]);
 
     if (loading) {
         return (

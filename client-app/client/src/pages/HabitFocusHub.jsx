@@ -262,7 +262,7 @@ const Heatmap = ({ habits, accentColor }) => {
 };
 
 /* ═══════════ HABIT CARD — always-visible edit & delete ═══════════ */
-const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
+const HabitCard = ({ habit, onToggle, onDelete, onEdit, index, availableFreezes = 0, onFreeze }) => {
   const catConfig = CATEGORY_CONFIG[habit.category] || CATEGORY_CONFIG.Work;
   const Icon = catConfig.icon;
   const { theme } = useData();
@@ -299,6 +299,11 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
             <span className="text-orange-400 font-semibold">{habit.streak}</span>
             <span style={{ color: 'var(--text-dim)', opacity: 0.6, fontSize: '11px' }}>day streak</span>
           </span>
+          {availableFreezes > 0 && (
+            <span className="text-xs flex items-center gap-0.5 text-cyan-400" title={`${availableFreezes} streak freeze${availableFreezes > 1 ? 's' : ''} available`}>
+              🧊 <span className="font-semibold">{availableFreezes}</span>
+            </span>
+          )}
           <span className="text-[11px] uppercase tracking-wider" style={{ color: habitColor, opacity: 0.7 }}>{habit.category}</span>
           {habit.scheduleTime && (
             <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
@@ -328,6 +333,16 @@ const HabitCard = ({ habit, onToggle, onDelete, onEdit, index }) => {
           className="p-2 rounded-lg text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete">
           <Trash2 size={16} />
         </button>
+        {!habit.todayDone && availableFreezes > 0 && onFreeze && (
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            onClick={() => onFreeze(habit.id)}
+            className="px-2 py-1.5 rounded-lg text-[11px] font-semibold text-cyan-400 border border-cyan-400/30 hover:bg-cyan-400/10 transition-all"
+            title="Use Streak Freeze — preserves your streak without doing the habit"
+          >
+            🧊 Freeze
+          </motion.button>
+        )}
         <motion.button
           whileTap={{ scale: 0.85 }}
           onClick={() => onToggle(habit.id)}
@@ -707,6 +722,46 @@ export default function HabitFocusHub() {
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
 
+  // ── Streak Freeze logic ──
+  const getAvailableFreezes = (habit) => {
+    const usedKey = getUserScopedKey(`streak-freezes-used-${habit.id}`);
+    const used = JSON.parse(localStorage.getItem(usedKey) || '[]');
+    const earned = Math.floor(habit.streak / 7);
+    return Math.max(0, earned - used.length);
+  };
+
+  const useStreakFreeze = (habitId) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit || habit.todayDone) return;
+    const avail = getAvailableFreezes(habit);
+    if (avail <= 0) return;
+
+    const usedKey = getUserScopedKey(`streak-freezes-used-${habitId}`);
+    const used = JSON.parse(localStorage.getItem(usedKey) || '[]');
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (used.includes(todayStr)) return;
+
+    used.push(todayStr);
+    localStorage.setItem(usedKey, JSON.stringify(used.slice(-60)));
+    toggleHabit(habitId);
+    notificationManager.hapticLight();
+  };
+
+  // ── Perfect Day celebration ──
+  const [showPerfectDay, setShowPerfectDay] = useState(false);
+  const allDoneToday = habits.length > 0 && habits.every(h => h.todayDone);
+
+  useEffect(() => {
+    if (!allDoneToday) return;
+    const pdKey = getUserScopedKey(`perfect-day-${format(new Date(), 'yyyy-MM-dd')}`);
+    if (localStorage.getItem(pdKey)) return;
+    localStorage.setItem(pdKey, 'true');
+    setShowPerfectDay(true);
+    notificationManager.hapticLight();
+    const timer = setTimeout(() => setShowPerfectDay(false), 4500);
+    return () => clearTimeout(timer);
+  }, [allDoneToday]);
+
   // ── Quick mood after habit completion ──
   const [showQuickMood, setShowQuickMood] = useState(false);
   const [completedHabitTitle, setCompletedHabitTitle] = useState('');
@@ -989,6 +1044,43 @@ export default function HabitFocusHub() {
 
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 max-w-[1200px] mx-auto pb-24 md:pb-8">
+      {/* PERFECT DAY CELEBRATION */}
+      <AnimatePresence>
+        {showPerfectDay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowPerfectDay(false)}
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: 10 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="text-center p-8"
+            >
+              <motion.div
+                animate={{ y: [0, -15, 0], scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="text-7xl mb-6"
+              >🔥</motion.div>
+              <h1 className="text-3xl font-black tracking-tight mb-2" style={{ color: 'var(--accent-color)' }}>
+                Perfect Day!
+              </h1>
+              <p className="text-sm mb-1" style={{ color: 'var(--text-dim)' }}>
+                All {habits.length} habit{habits.length !== 1 ? 's' : ''} completed today
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
+                You're unstoppable 🎉
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* STREAK MILESTONE CELEBRATION */}
       <AnimatePresence>
         {lastMilestone && (
@@ -1067,7 +1159,9 @@ export default function HabitFocusHub() {
                     <HabitCard key={habit.id} habit={habit} index={i}
                       onToggle={handleHabitToggle}
                       onDelete={deleteHabit}
-                      onEdit={(h) => { setEditingHabit(h); setShowModal(true); }} />
+                      onEdit={(h) => { setEditingHabit(h); setShowModal(true); }}
+                      availableFreezes={getAvailableFreezes(habit)}
+                      onFreeze={useStreakFreeze} />
                   ))}
                 </AnimatePresence>
               </div>

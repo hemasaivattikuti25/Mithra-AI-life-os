@@ -145,7 +145,10 @@ export async function apiFetch(path, options = {}) {
       ...(options.headers || {}),
     };
 
-    const res = await fetch(`${API_URL}${path}`, {
+    // Ensure /api prefix is present on all paths
+    const apiPath = path.startsWith('/api') ? path : `/api${path}`;
+
+    const res = await fetch(`${API_URL}${apiPath}`, {
       ...options,
       headers,
       signal: controller.signal,

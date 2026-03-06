@@ -382,7 +382,8 @@ export default function LandingPage() {
             <div className="w-full overflow-hidden py-5 bg-black/30 border-b border-white/[0.04]">
                 <div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-8 md:gap-12 text-gray-600 text-xs font-mono uppercase tracking-widest flex-wrap">
                     <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#61DAFB]" /> React 18</span>
-                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#3ECF8E]" /> Supabase</span>
+                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#FFCA28]" /> Firebase</span>
+                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#3ECF8E]" /> Neon DB</span>
                     <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#009688]" /> FastAPI</span>
                     <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#8E51DA]" /> Gemini AI</span>
                     <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#F7DF1E]" /> Framer Motion</span>
@@ -543,7 +544,7 @@ export default function LandingPage() {
                                 <p className="text-gray-500 font-mono text-xs mb-6">ENGINEERING STUDENT • FULL STACK DEVELOPER • AI RESEARCHER</p>
                                 <p className="text-gray-400 mb-8 leading-relaxed max-w-xl">
                                     "I built Mithra because existing tools forced me to adapt to them. I wanted a system that adapted to me.
-                                    Built from scratch with <span className="text-white font-semibold">React, FastAPI, and Supabase</span> to solve my own chaos."
+                                    Built from scratch with <span className="text-white font-semibold">React, FastAPI, and Firebase</span> to solve my own chaos."
                                 </p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 rounded-xl bg-black/40 border border-white/[0.05]">

@@ -4,7 +4,7 @@ from datetime import datetime, date
 import uuid
 import json
 
-from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate
+from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate
 from core.security import get_current_user
 from core.config import get_db, get_model, get_embedding
 
@@ -273,6 +273,57 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.put("/journal/{entry_id}")
+async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict = Depends(get_current_user)):
+    """Update a journal entry."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """UPDATE journal_entries SET content=$1, mood=$2, tags=$3, date=$4, updated_at=NOW()
+                   WHERE id=$5 AND user_id=$6""",
+                entry.content, entry.mood, entry.tags, entry.date or date.today().isoformat(),
+                entry_id, current_user["id"]
+            )
+            if result == "UPDATE 0":
+                raise HTTPException(status_code=404, detail="Journal entry not found")
+        
+        return {"entry": {
+            "id": entry_id,
+            "content": entry.content,
+            "mood": entry.mood,
+            "tags": entry.tags,
+            "date": entry.date or date.today().isoformat(),
+        }}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/journal/{entry_id}")
+async def delete_journal(entry_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a journal entry."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM journal_entries WHERE id=$1 AND user_id=$2",
+                entry_id, current_user["id"]
+            )
+            if result == "DELETE 0":
+                raise HTTPException(status_code=404, detail="Journal entry not found")
+        return {"deleted": entry_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ─── HABITS CRUD ───
 @router.get("/habits")
 async def list_habits(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
@@ -315,6 +366,208 @@ async def list_habits(workspace_id: Optional[str] = None, current_user: dict = D
                 "workspaceId": str(h["workspace_id"]) if h.get("workspace_id") else None
             })
         return {"habits": habits}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/habits")
+async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new habit."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    user_id = current_user["id"]
+    habit_id = str(uuid.uuid4())
+    
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """INSERT INTO habits (id, user_id, title, category, color, streak, longest_streak,
+                   completed_dates, repeat_days, frequency, reminder, schedule_time,
+                   streak_goal, streak_unit, focus_duration, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)""",
+                habit_id, user_id, habit.title, habit.category, habit.color,
+                habit.streak, habit.longest_streak,
+                habit.completed_dates,
+                json.dumps(habit.repeat_days),
+                habit.frequency, habit.reminder, habit.schedule_time,
+                habit.streak_goal, habit.streak_unit, habit.focus_duration,
+                habit.workspaceId
+            )
+        return {"habit": {
+            "id": habit_id,
+            "userId": user_id,
+            "title": habit.title,
+            "category": habit.category,
+            "color": habit.color,
+            "streak": habit.streak,
+            "longestStreak": habit.longest_streak,
+            "completedDates": habit.completed_dates,
+            "repeatDays": habit.repeat_days,
+            "frequency": habit.frequency,
+            "reminder": habit.reminder,
+            "scheduleTime": habit.schedule_time,
+            "streakGoal": habit.streak_goal,
+            "streakUnit": habit.streak_unit,
+            "focusDuration": habit.focus_duration,
+            "workspaceId": habit.workspaceId,
+        }}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/habits/{habit_id}")
+async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = Depends(get_current_user)):
+    """Update a habit."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """UPDATE habits SET title=$1, category=$2, color=$3, streak=$4, longest_streak=$5,
+                   completed_dates=$6, repeat_days=$7, frequency=$8, reminder=$9, schedule_time=$10,
+                   streak_goal=$11, streak_unit=$12, focus_duration=$13, workspace_id=$14, updated_at=NOW()
+                   WHERE id=$15 AND user_id=$16""",
+                habit.title, habit.category, habit.color, habit.streak, habit.longest_streak,
+                habit.completed_dates,
+                json.dumps(habit.repeat_days),
+                habit.frequency, habit.reminder, habit.schedule_time,
+                habit.streak_goal, habit.streak_unit, habit.focus_duration,
+                habit.workspaceId, habit_id, current_user["id"]
+            )
+            if result == "UPDATE 0":
+                raise HTTPException(status_code=404, detail="Habit not found or access denied")
+        return {"habit": {"id": habit_id, "title": habit.title}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/habits/{habit_id}")
+async def delete_habit(habit_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a habit."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM habits WHERE id=$1 AND user_id=$2",
+                habit_id, current_user["id"]
+            )
+            if result == "DELETE 0":
+                raise HTTPException(status_code=404, detail="Habit not found")
+        return {"deleted": habit_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/habits/{habit_id}/complete")
+async def complete_habit(habit_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark a habit as completed for today."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    today_str = date.today().isoformat()
+    
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT completed_dates, streak, longest_streak FROM habits WHERE id=$1 AND user_id=$2",
+                habit_id, current_user["id"]
+            )
+            if not row:
+                raise HTTPException(status_code=404, detail="Habit not found")
+            
+            completed = list(row.get("completed_dates") or [])
+            if today_str not in completed:
+                completed.append(today_str)
+            
+            streak = (row.get("streak") or 0) + 1
+            longest = max(row.get("longest_streak") or 0, streak)
+            
+            await conn.execute(
+                """UPDATE habits SET completed_dates=$1, streak=$2, longest_streak=$3, updated_at=NOW()
+                   WHERE id=$4 AND user_id=$5""",
+                completed, streak, longest, habit_id, current_user["id"]
+            )
+        return {"success": True, "streak": streak, "longestStreak": longest}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ─── MOOD LOGS ───
+@router.get("/mood-logs")
+async def list_mood_logs(limit: int = 30, current_user: dict = Depends(get_current_user)):
+    """Get recent mood logs."""
+    pool = get_db()
+    if not pool:
+        return {"moodLogs": []}
+    
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM mood_logs WHERE user_id = $1 ORDER BY logged_at DESC LIMIT $2",
+                current_user["id"], limit
+            )
+        
+        logs = []
+        for r in rows:
+            logs.append({
+                "id": str(r["id"]),
+                "mood_value": r["mood_value"],
+                "mood_label": r.get("mood_label"),
+                "note": r.get("note"),
+                "logged_at": r["logged_at"].isoformat() if r.get("logged_at") else None,
+            })
+        return {"moodLogs": logs}
+    except Exception:
+        return {"moodLogs": []}
+
+@router.post("/mood-logs")
+async def create_mood_log(log: MoodLogCreate, current_user: dict = Depends(get_current_user)):
+    """Log a mood entry."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    log_id = str(uuid.uuid4())
+    
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """INSERT INTO mood_logs (id, user_id, mood_value, mood_label, note)
+                   VALUES ($1, $2, $3, $4, $5)""",
+                log_id, current_user["id"], log.mood_value, log.mood_label, log.note
+            )
+        return {"moodLog": {"id": log_id, "mood_value": log.mood_value, "mood_label": log.mood_label}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ─── FOCUS SESSIONS ───
+@router.post("/focus-sessions")
+async def create_focus_session(session: FocusSessionCreate, current_user: dict = Depends(get_current_user)):
+    """Log a completed focus session."""
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    
+    session_id = str(uuid.uuid4())
+    
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """INSERT INTO focus_sessions (id, user_id, habit_id, duration_minutes, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5)""",
+                session_id, current_user["id"], session.habit_id, session.duration_minutes,
+                session.workspaceId
+            )
+        return {"session": {"id": session_id, "duration_minutes": session.duration_minutes}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

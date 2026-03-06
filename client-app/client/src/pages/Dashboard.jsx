@@ -17,6 +17,7 @@ import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 import ShareStatsCard from '../components/ShareStatsCard';
+import DailyPlanCard from '../components/DailyPlanCard';
 
 /* ───── animation config ───── */
 const luxuryEase = [0.22, 1, 0.36, 1];
@@ -342,7 +343,7 @@ export default function Dashboard() {
     });
   }, [habits]);
 
-  /* Last mood from state (Supabase-sourced after mount) */
+  /* Last mood from state (loaded after mount) */
   const lastMood = useMemo(() => {
     if (moodHistory.length === 0) return null;
     const last = moodHistory[0]; // already sorted newest-first
@@ -504,6 +505,13 @@ export default function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ════════════════════════════════════
+          AI DAILY PLAN — Plan My Day
+          ════════════════════════════════════ */}
+        <motion.div custom={0.7} variants={sectionReveal} initial="hidden" animate="visible">
+          <DailyPlanCard />
+        </motion.div>
 
         {/* ════════════════════════════════════
           EVENTS + TASKS + HABITS — three-column glass grid

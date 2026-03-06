@@ -6,7 +6,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, useToast } from './components/Toast';
 import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton } from './components/LoadingSkeleton';
-import OnboardingTour from './components/OnboardingTour';
 import SearchDialog from './components/SearchDialog';
 import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
@@ -78,7 +77,7 @@ const ProtectedRoute = ({ children }) => {
     return () => clearTimeout(timer);
   }, [loading]);
 
-  // Wait for Supabase session to be checked (OAuth callback, token refresh, etc.)
+  // Wait for Firebase session to be checked (token refresh, etc.)
   if (loading && !timedOut) {
     return (
       <div className="h-screen w-screen flex items-center justify-center" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>

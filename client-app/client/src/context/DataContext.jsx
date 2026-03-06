@@ -28,17 +28,16 @@ const mapTaskToDB = (t) => ({
 
 const mapTaskFromDB = (t) => ({
   id: t.id,
-  // userId not usually needed in frontend state unless multi-user view
   title: t.title,
   details: t.details || '',
-  listId: t.list_id || 'default',
+  listId: t.listId || t.list_id || 'default',
   priority: t.priority || 'medium',
   completed: t.completed,
   starred: t.starred,
-  dueDate: t.due_date ? new Date(t.due_date) : null,
+  dueDate: (t.dueDate || t.due_date) ? new Date(t.dueDate || t.due_date) : null,
   recurrence: t.recurrence || 'none',
   subtasks: t.subtasks || [],
-  workspaceId: t.workspace_id || null,
+  workspaceId: t.workspaceId || t.workspace_id || null,
 });
 
 const mapHabitToDB = (h) => ({
@@ -61,20 +60,20 @@ const mapHabitToDB = (h) => ({
 });
 const mapHabitFromDB = (h) => ({
   id: h.id,
-  workspaceId: h.workspace_id || null,
+  workspaceId: h.workspaceId || h.workspace_id || null,
   title: h.title,
   category: h.category || 'Personal',
   color: h.color,
   streak: h.streak || 0,
-  bestStreak: h.longest_streak || 0,
-  consistency: h.completed_dates || [],
-  repeatDays: h.repeat_days || [0, 1, 2, 3, 4, 5, 6],
+  bestStreak: h.longestStreak || h.longest_streak || 0,
+  consistency: h.completedDates || h.completed_dates || [],
+  repeatDays: h.repeatDays || h.repeat_days || [0, 1, 2, 3, 4, 5, 6],
   frequency: h.frequency || 1,
   reminder: h.reminder || false,
-  scheduleTime: h.schedule_time || '08:00',
-  streakGoal: h.streak_goal || 30,
-  streakUnit: h.streak_unit || 'Day',
-  focusDuration: h.focus_duration || 25,
+  scheduleTime: h.scheduleTime || h.schedule_time || '08:00',
+  streakGoal: h.streakGoal || h.streak_goal || 30,
+  streakUnit: h.streakUnit || h.streak_unit || 'Day',
+  focusDuration: h.focusDuration || h.focus_duration || 25,
   todayDone: false,
 });
 
@@ -387,9 +386,9 @@ const HABIT_CATEGORY_MAP = {
 export function DataProvider({ children }) {
   const { user } = useAuth();
 
-  // Tasks — start empty, Supabase is truth, localStorage is offline cache
+  // Tasks — start empty, API is truth, localStorage is offline cache
   const [tasks, setTasks] = useState(() => {
-    // Instant fallback from cache while Supabase fetch happens
+    // Instant fallback from cache while API fetch happens
     const stored = loadFromStorage('tasks', null);
     if (stored && Array.isArray(stored) && stored.length > 0) {
       return stored.map(t => ({ ...t, dueDate: t.dueDate ? new Date(t.dueDate) : null }));
@@ -399,7 +398,7 @@ export function DataProvider({ children }) {
   const [taskLists] = useState(INITIAL_LISTS);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // Habits — start empty, Supabase is truth, localStorage is offline cache
+  // Habits — start empty, API is truth, localStorage is offline cache
   const [habits, setHabits] = useState(() => {
     const stored = loadFromStorage('habits', null);
     if (stored && Array.isArray(stored) && stored.length > 0) return stored;

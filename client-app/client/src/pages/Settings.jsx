@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
+import AIUsageDashboard from '../components/AIUsageDashboard';
 
 /* ═══════ SHARED TOGGLE ═══════ */
 const Toggle = ({ label, description, isActive, onToggle }) => (
@@ -576,6 +577,9 @@ export default function Settings() {
 
         {/* ═══════ NOTIFICATIONS ═══════ */}
         <NotificationsSection isDarkMode={isDarkMode} notificationSettings={notificationSettings} updateNotificationSettings={updateNotificationSettings} requestNotificationPermission={requestNotificationPermission} />
+
+        {/* ═══════ AI USAGE ═══════ */}
+        <AIUsageDashboard userId={profile?.id} />
 
         {/* ═══════ PREFERENCES ═══════ */}
         <section className="glass-panel glass-shine rounded-2xl p-6">

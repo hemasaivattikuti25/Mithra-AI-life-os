@@ -52,3 +52,30 @@ class JournalCreate(BaseModel):
     tags: List[str] = []
     date: Optional[str] = None
     workspaceId: Optional[str] = None
+
+class HabitCreate(BaseModel):
+    title: str
+    category: str = "Personal"
+    color: Optional[str] = None
+    streak: int = 0
+    longest_streak: int = 0
+    completed_dates: List[str] = []
+    repeat_days: List[int] = [0, 1, 2, 3, 4, 5, 6]
+    frequency: int = 1
+    reminder: bool = False
+    schedule_time: str = "08:00"
+    streak_goal: int = 30
+    streak_unit: str = "Day"
+    focus_duration: int = 25
+    workspaceId: Optional[str] = None
+    user_id: Optional[str] = None
+
+class MoodLogCreate(BaseModel):
+    mood_value: int
+    mood_label: Optional[str] = None
+    note: Optional[str] = None
+
+class FocusSessionCreate(BaseModel):
+    habit_id: Optional[str] = None
+    duration_minutes: int = 25
+    workspaceId: Optional[str] = None

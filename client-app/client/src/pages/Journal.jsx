@@ -188,7 +188,7 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
    JOURNAL CARD
    ═══════════════════════════════════════════════════════════════ */
 const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
-  // Supabase returns ISO strings — always coerce to Date to prevent format() crash
+  // API returns ISO strings — always coerce to Date to prevent format() crash
   const due = entry.date instanceof Date ? entry.date : new Date(entry.date);
   const textPrimary = 'var(--text-primary)';
 
@@ -264,7 +264,7 @@ export default function MithraJournal() {
   const { theme } = useData();
   const { user } = useAuth();
   const isLight = theme === 'light';
-  // Entries: show localStorage cache instantly, then replace with Supabase data
+  // Entries: show localStorage cache instantly, then replace with API data
   const [entries, setEntries] = useState(() => {
     try {
       const saved = localStorage.getItem(getUserScopedKey('journal-entries'));
@@ -289,8 +289,8 @@ export default function MithraJournal() {
     const fetchFromAPI = async () => {
       try {
         setIsSyncing(true);
-        const res = await apiFetch('/journal-entries?limit=100');
-        const cloudEntries = res.journalEntries || res.data || [];
+        const res = await apiFetch('/journal?limit=100');
+        const cloudEntries = res.entries || res.journalEntries || res.data || [];
 
         const formatted = (cloudEntries || []).map(e => {
           // Safely coerce date: API returns a string like '2025-02-20'
@@ -331,7 +331,7 @@ export default function MithraJournal() {
     if (!isFirebaseConfigured || !user?.id) return null;
 
     if (action === 'delete') {
-      await apiFetch(`/journal-entries/${entry.id}`, { method: 'DELETE' });
+      await apiFetch(`/journal/${entry.id}`, { method: 'DELETE' });
       return null;
     }
 
@@ -345,19 +345,19 @@ export default function MithraJournal() {
     let data;
     if (entry._cloudId || (typeof entry.id === 'string' && entry.id.includes('-'))) {
       // Update existing entry
-      data = await apiFetch(`/journal-entries/${entry._cloudId || entry.id}`, {
+      data = await apiFetch(`/journal/${entry._cloudId || entry.id}`, {
         method: 'PUT',
         body: JSON.stringify(dbEntry)
       });
     } else {
       // Create new entry
-      data = await apiFetch('/journal-entries', {
+      data = await apiFetch('/journal', {
         method: 'POST',
         body: JSON.stringify(dbEntry)
       });
     }
 
-    return data.journalEntry || data; // caller uses this to update state with real DB id
+    return data.entry || data.journalEntry || data; // caller uses this to update state with real DB id
   };
 
   const handleSaveEntry = async (entry) => {
@@ -386,7 +386,7 @@ export default function MithraJournal() {
       }
     } catch (err) {
       console.error('[Journal] Save failed:', err.message);
-      // Optimistic fallback — save to state even if Supabase failed
+      // Optimistic fallback — save to state even if API call failed
       if (editingEntry) {
         setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
       } else {

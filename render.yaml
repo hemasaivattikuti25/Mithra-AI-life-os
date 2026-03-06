@@ -27,11 +27,9 @@ services:
 
     # Environment variables (set values in Render Dashboard)
     envVars:
-      - key: SUPABASE_URL
+      - key: NEON_DATABASE_URL
         sync: false
-      - key: SUPABASE_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
       - key: GEMINI_API_KEY
         sync: false
