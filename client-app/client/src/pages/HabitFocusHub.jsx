@@ -1043,7 +1043,7 @@ export default function HabitFocusHub() {
     : 'Custom';
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 max-w-[1200px] mx-auto pb-24 md:pb-8">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8 max-w-[1200px] mx-auto pb-24 md:pb-8 page-ambient" style={{ '--ambient-x': '80%', '--ambient-y': '15%', '--ambient-opacity': '0.045' }}>
       {/* PERFECT DAY CELEBRATION */}
       <AnimatePresence>
         {showPerfectDay && (

@@ -53,6 +53,28 @@ function parseIntent(input, tasks, habits) {
     return { type: 'create_task', title, dueDate, priority };
   }
 
+  // ── CREATE EVENT/MEETING ──
+  const eventMatch = input.match(/(?:add|create|schedule|set|book)\s+(?:a\s+|an\s+|me\s+(?:a\s+|an\s+)?)?(?:meeting|event|appointment|call|session)[:\s]+(.+)/i)
+    || input.match(/(?:add|create|schedule|set|book)\s+(?:a\s+|an\s+|me\s+(?:a\s+|an\s+)?)(.+?)(?:\s+(?:meeting|event|appointment|call))/i);
+  if (eventMatch) {
+    const rest = eventMatch[1].trim();
+    const timeMatch = rest.match(/(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    const dateMatch = rest.match(/(?:on\s+|)(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+    let title = rest.replace(/(?:at|@)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '').replace(/(?:on\s+)?(?:tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, '').replace(/^\s*[,\s]+|[,\s]+$/g, '').trim();
+    if (!title) title = 'Meeting';
+    let eventDate = dateMatch ? parseFuzzyDate(dateMatch[1]) : parseFuzzyDate('today');
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1]);
+      const m = parseInt(timeMatch[2] || '0');
+      const ampm = (timeMatch[3] || '').toLowerCase();
+      if (ampm === 'pm' && h < 12) h += 12;
+      if (ampm === 'am' && h === 12) h = 0;
+      if (!ampm && h < 8) h += 12; // assume PM for small numbers
+      eventDate.setHours(h, m, 0, 0);
+    }
+    return { type: 'create_event', title, eventDate, time: timeMatch ? `${timeMatch[0].replace(/^(?:at|@)\s*/i, '')}` : null };
+  }
+
   // ── CREATE HABIT ──
   const addHabitMatch = input.match(/(?:add|create|new|start)\s+(?:a\s+)?habit[:\s]+(.+)/i);
   if (addHabitMatch) {
@@ -657,6 +679,26 @@ export default function DostMode() {
           break;
         }
 
+        /* ── CREATE EVENT/MEETING ── */
+        case 'create_event': {
+          const eventTask = {
+            id: `task-${Date.now()}`,
+            title: `📅 ${intent.title}`,
+            priority: 'high',
+            dueDate: intent.eventDate,
+            completed: false,
+            starred: true,
+            subtasks: [],
+            listId: 'work',
+            details: intent.time ? `Scheduled at ${intent.time}` : '',
+          };
+          addTask(eventTask);
+
+          const timePart = intent.time ? ` at **${intent.time}**` : '';
+          addAiMsg(`📅 **Meeting scheduled!**\n\n"${intent.title}"${timePart}\n📆 ${format(intent.eventDate, 'EEEE, MMM d')}\n\nIt's been added to your tasks as a starred high-priority item so you don't miss it!`, { type: 'task_created', taskData: eventTask });
+          break;
+        }
+
         /* ── CREATE HABIT ── */
         case 'create_habit': {
           const newHabit = {
@@ -824,7 +866,7 @@ export default function DostMode() {
         case 'general':
         default: {
           // Check if the question is relevant to our app capabilities
-          const appKeywords = /task|habit|mood|journal|summar|schedule|remind|focus|pomodoro|productiv|streak|goal|timer|break|meditat|stress|motivat|wellness|wellbeing|breath|import|csv|excel/i;
+          const appKeywords = /task|habit|mood|journal|summar|schedule|remind|focus|pomodoro|productiv|streak|goal|timer|break|meditat|stress|motivat|wellness|wellbeing|breath|import|csv|excel|meeting|event|calendar|appointment/i;
           const isAppRelated = appKeywords.test(userInput);
 
           if (isAppRelated && isOnline) {
@@ -926,7 +968,7 @@ export default function DostMode() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl shadow-2xl"
+    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl shadow-2xl glass-shine"
       style={{ backgroundColor: 'var(--glass-bg)', color: 'var(--text-primary)' }}>
 
       {/* Hidden file input */}

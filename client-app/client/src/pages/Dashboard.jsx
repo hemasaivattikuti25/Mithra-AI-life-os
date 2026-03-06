@@ -374,7 +374,7 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen p-4 sm:p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto pb-24 md:pb-8">
+      <div className="min-h-screen p-4 sm:p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto pb-24 md:pb-8 page-ambient" style={{ '--ambient-x': '20%', '--ambient-y': '10%', '--ambient-opacity': '0.05' }}>
 
         {/* ════════════════════════════════════
           GREETING CARD — Hero glass panel

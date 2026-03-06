@@ -268,6 +268,9 @@ export const Layout = ({ children }) => {
                     <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-40 animate-pulse" />
                     <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-30" />
                     <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-[var(--visor-glow)] rounded-full blur-[150px] opacity-20" />
+                    {/* Secondary accent shimmer — offset for depth */}
+                    <div className="absolute top-[15%] right-[20%] w-[350px] h-[350px] rounded-full blur-[130px] opacity-15" style={{ background: 'var(--accent-soft)' }} />
+                    <div className="absolute bottom-[25%] left-[15%] w-[300px] h-[300px] rounded-full blur-[140px] opacity-10" style={{ background: 'var(--accent-secondary)' }} />
                 </div>
                 <div className="relative">
                     {children}

@@ -65,6 +65,14 @@ async def list_tasks(workspace_id: Optional[str] = None, current_user: dict = De
         
         tasks = []
         for t in rows:
+            raw_subtasks = t.get("subtasks", [])
+            if isinstance(raw_subtasks, str):
+                try:
+                    raw_subtasks = json.loads(raw_subtasks)
+                except (json.JSONDecodeError, TypeError):
+                    raw_subtasks = []
+            if not isinstance(raw_subtasks, list):
+                raw_subtasks = []
             tasks.append({
                 "id": str(t["id"]),
                 "userId": t["user_id"],
@@ -76,7 +84,7 @@ async def list_tasks(workspace_id: Optional[str] = None, current_user: dict = De
                 "starred": t.get("starred", False),
                 "dueDate": t["due_date"].isoformat() if t.get("due_date") else None,
                 "recurrence": t.get("recurrence", "none"),
-                "subtasks": t.get("subtasks", []),
+                "subtasks": raw_subtasks,
                 "workspaceId": str(t["workspace_id"]) if t.get("workspace_id") else None
             })
         return {"tasks": tasks}

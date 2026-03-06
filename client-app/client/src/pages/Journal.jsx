@@ -92,6 +92,7 @@ const ZenEditor = ({ isOpen, onClose, onSave, editingEntry, isLight }) => {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 30 }}
             className="w-full max-w-3xl h-[85vh] rounded-2xl overflow-hidden flex flex-col relative glass-heavy glass-shine"
+            style={{ background: 'var(--body-bg)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
           >
             {/* Dynamic Mood Bar */}
             <div
@@ -454,7 +455,7 @@ export default function MithraJournal() {
   });
 
   return (
-    <div className="flex gap-8 h-[calc(100vh-100px)] relative" style={{ color: 'var(--text-primary)' }}>
+    <div className="flex gap-8 h-[calc(100vh-100px)] relative page-ambient" style={{ color: 'var(--text-primary)', '--ambient-x': '50%', '--ambient-y': '30%', '--ambient-opacity': '0.04' }}>
 
       <ZenEditor isOpen={isEditorOpen} onClose={() => { setEditorOpen(false); setEditingEntry(null); }} onSave={handleSaveEntry} editingEntry={editingEntry} isLight={isLight} />
 

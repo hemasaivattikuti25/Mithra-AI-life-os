@@ -172,6 +172,9 @@ Mithra-AI-life-os/
 - [x] AI-powered journal analysis with mood trajectory mapping
 - [x] Sync engine with offline queuing and conflict resolution
 - [x] Capacitor Android build pipeline
+- [x] Dost AI natural language meeting/event creation
+- [x] Glass morphism UI system with per-page ambient shine
+- [x] Streak freeze system with earned/used tracking
 
 ### In Progress
 - [ ] **WhatsApp Bot** — Add tasks, log habits, get summaries via text message
@@ -187,6 +190,44 @@ Mithra-AI-life-os/
 - [ ] Habit AI Coach — personalized improvement suggestions from streak data
 - [ ] Multi-language support (Hindi, Telugu, Spanish, Japanese)
 - [ ] Public API for third-party integrations
+
+---
+
+## 💡 Improvement Ideas & What's Next
+
+> Real-world features that would take Mithra to the next level.
+
+### 🔥 High Impact — Should Build Next
+| Idea | Why It Matters |
+| :--- | :--- |
+| **Google Calendar 2-Way Sync** | Users already manage events in Google Calendar. Bi-directional sync means no context switching — events created in Mithra show in GCal and vice versa. |
+| **Push Notifications (Web + FCM)** | Habit reminders, task due-date alerts, and Dost nudges are useless without real push notifications. Web Push API + Firebase Cloud Messaging for mobile. |
+| **Habit Templates & Presets** | "30-Day Fitness", "Study Streak", "Mindfulness Pack" — pre-built habit bundles that users can one-tap install. Reduces onboarding friction massively. |
+| **AI Daily Planner (Auto-Schedule)** | Use task priorities, habit schedules, and calendar events to generate an optimal time-blocked daily plan every morning. The killer feature for productivity apps. |
+| **Weekly AI Productivity Report** | Every Sunday, generate a PDF/email with: tasks completed, habit streaks, focus hours, mood trends, and AI-powered suggestions for the next week. |
+| **Voice Input for Dost AI** | Web Speech API for real-time voice → text. "Hey Dost, add gym at 6am tomorrow" without typing. Critical for mobile users. |
+
+### 🚀 Medium Impact — Powerful Differentiators
+| Idea | Why It Matters |
+| :--- | :--- |
+| **Gamification Engine** | XP for completing tasks, leveling up for streaks, badges for milestones (📊 "100 Tasks", 🔥 "30-Day Streak", 🧘 "Zen Master"). Dopamine loops keep users coming back. |
+| **Focus Mode with Pomodoro** | Built-in 25/5 Pomodoro timer tied to tasks. Auto-log focus sessions, show stats. Integration with system DND on mobile via Capacitor. |
+| **Keyboard Shortcuts** | `Cmd+K` for command palette, `N` for new task, `H` for new habit, `J` for new journal entry. Power users need this. |
+| **Data Export (CSV/PDF)** | Export tasks, habits, journal entries as CSV or styled PDF. Users want to own their data. Required for serious productivity tools. |
+| **Smart Conflict Detection** | When adding a habit at 6AM but there's already a task due at 6AM, warn the user. Time-clash awareness across all modules. |
+| **Collaborative Journal in Blend** | Shared journal entries within Blend workspaces. Accountability partners can read each other's reflections. |
+
+### 🌍 Long-Term Vision
+| Idea | Why It Matters |
+| :--- | :--- |
+| **WhatsApp/Telegram Bot** | "Just text it" — the ultimate frictionless entry point. Add tasks, check habits, get summaries, all from messenger. No app open needed. |
+| **Offline-First Architecture** | IndexedDB + Service Worker caching so the app works fully offline. Sync when back online. Essential for mobile users with patchy connections. |
+| **AI Behavioral Insights** | "You're 3x more productive on Tuesdays", "You skip gym after late nights". AI finds patterns humans miss and gives actionable nudges. |
+| **Plugin/Extension System** | Let users or devs add custom widgets to the dashboard — Spotify player, weather, stock ticker, etc. Platform thinking. |
+| **Multi-Language Support** | Hindi, Telugu, Spanish, Japanese. Gemini already supports these — just needs UI localization and prompt translation. |
+| **Public REST API** | Let power users connect Mithra to Zapier, IFTTT, n8n. Automations like: "When I complete a task in Mithra → update Notion". |
+| **Desktop App (Electron/Tauri)** | Native desktop experience with system tray, global shortcuts, and menubar quick-add. Tauri for lightweight builds. |
+| **Apple Watch / Wear OS** | Glanceable habit status, quick-complete actions from the wrist. Premium feature territory. |
 
 ---
 

@@ -261,19 +261,19 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
   const addSubtask = () => {
     if (!subtaskInput.trim()) return;
     const newSub = { id: Date.now().toString(), title: subtaskInput.trim(), completed: false };
-    onUpdate({ ...task, subtasks: [...task.subtasks, newSub] });
+    onUpdate({ ...task, subtasks: [...(Array.isArray(task.subtasks) ? task.subtasks : []), newSub] });
     setSubtaskInput('');
   };
 
   const toggleSubtask = (subId) => {
     onUpdate({
       ...task,
-      subtasks: task.subtasks.map(s => s.id === subId ? { ...s, completed: !s.completed } : s)
+      subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map(s => s.id === subId ? { ...s, completed: !s.completed } : s)
     });
   };
 
   const deleteSubtask = (subId) => {
-    onUpdate({ ...task, subtasks: task.subtasks.filter(s => s.id !== subId) });
+    onUpdate({ ...task, subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).filter(s => s.id !== subId) });
   };
 
   const cyclePriority = () => {
@@ -382,7 +382,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
         <div className="space-y-3 pt-2">
           <h4 className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold opacity-60">Subtasks</h4>
           <AnimatePresence>
-            {task.subtasks.map(sub => (
+            {(Array.isArray(task.subtasks) ? task.subtasks : []).map(sub => (
               <motion.div
                 key={sub.id}
                 initial={{ opacity: 0, height: 0 }}
@@ -430,9 +430,10 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
    ═══════════════════════════════════════════════════════════════ */
 const TaskItem = ({ task, onToggle, onStar, onSelect, onDelete, isSelected }) => {
   const due = formatDueDate(task.dueDate);
-  const subtasksDone = task.subtasks.filter(s => s.completed).length;
-  const subtasksTotal = task.subtasks.length;
-  const listColor = TASK_CATEGORIES.find(c => c.id === task.listId)?.color || 'var(--accent-color)';
+  const subs = Array.isArray(task.subtasks) ? task.subtasks : [];
+  const subtasksDone = subs.filter(s => s.completed).length;
+  const subtasksTotal = subs.length;
+  const listColor = TASK_CATEGORIES.find(c => c.id === task.listId)?.color || 'var(--accent-color)';   
 
   return (
     <motion.div
@@ -721,7 +722,7 @@ export default function MithraTasks() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy"
+        className="h-[calc(100vh-100px)] flex flex-col md:flex-row rounded-2xl overflow-hidden glass-heavy glass-shine"
       >
         {/* ── MAIN TASK LIST ── */}
         <div className="flex-1 flex flex-col min-w-0">

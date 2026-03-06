@@ -26,6 +26,12 @@ const mapTaskToDB = (t) => ({
   workspace_id: t.workspaceId || null,
 });
 
+const ensureArray = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p)) return p; } catch {} }
+  return [];
+};
+
 const mapTaskFromDB = (t) => ({
   id: t.id,
   title: t.title,
@@ -36,7 +42,7 @@ const mapTaskFromDB = (t) => ({
   starred: t.starred,
   dueDate: (t.dueDate || t.due_date) ? new Date(t.dueDate || t.due_date) : null,
   recurrence: t.recurrence || 'none',
-  subtasks: t.subtasks || [],
+  subtasks: ensureArray(t.subtasks),
   workspaceId: t.workspaceId || t.workspace_id || null,
 });
 

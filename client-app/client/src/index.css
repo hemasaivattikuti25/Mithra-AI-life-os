@@ -489,6 +489,21 @@ body.keyboard-open .md\:hidden:last-child {
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--glass-border);
   border-radius: 1rem;
+  background-image: linear-gradient(
+    135deg,
+    rgba(var(--color-visor), 0.03) 0%,
+    transparent 50%,
+    rgba(var(--color-visor), 0.015) 100%
+  );
+}
+
+[data-theme="light"] .glass-card {
+  background-image: linear-gradient(
+    135deg,
+    rgba(var(--color-visor), 0.04) 0%,
+    transparent 50%,
+    rgba(var(--color-visor), 0.02) 100%
+  );
 }
 
 /* Glass Heavy – opaque modals, dialogs, dropdowns */
@@ -497,6 +512,21 @@ body.keyboard-open .md\:hidden:last-child {
   backdrop-filter: blur(var(--glass-blur-heavy)) saturate(200%);
   -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(200%);
   border: 1px solid var(--glass-border);
+  background-image: linear-gradient(
+    160deg,
+    rgba(var(--color-visor), 0.04) 0%,
+    transparent 40%,
+    rgba(var(--color-visor), 0.02) 100%
+  );
+}
+
+[data-theme="light"] .glass-heavy {
+  background-image: linear-gradient(
+    160deg,
+    rgba(var(--color-visor), 0.05) 0%,
+    transparent 40%,
+    rgba(var(--color-visor), 0.025) 100%
+  );
 }
 
 /* Glass Shine – subtle top-edge highlight */
@@ -572,6 +602,61 @@ body.keyboard-open .md\:hidden:last-child {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Page Ambient — subtle per-page accent-tinted background shine */
+.page-ambient {
+  position: relative;
+}
+.page-ambient::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 70% 50% at var(--ambient-x, 50%) var(--ambient-y, 0%),
+    rgba(var(--color-visor), var(--ambient-opacity, 0.04)) 0%,
+    transparent 70%
+  );
+}
+[data-theme="light"] .page-ambient::before {
+  --ambient-opacity: 0.06;
+}
+
+/* Micro-animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmerSlide {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.animate-fade-in-scale {
+  animation: fadeInScale 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Subtle shimmer on hover for cards */
+.glass-card-shimmer:hover {
+  background-image: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(var(--color-visor), 0.06) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSlide 1.5s ease-in-out;
 }
 
 /* ═══════════════════════════════════════
