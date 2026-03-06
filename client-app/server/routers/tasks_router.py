@@ -436,7 +436,9 @@ async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = D
                 """UPDATE habits SET title=$1, category=$2, color=$3, streak=$4, longest_streak=$5,
                    completed_dates=$6, repeat_days=$7, frequency=$8, reminder=$9, schedule_time=$10,
                    streak_goal=$11, streak_unit=$12, focus_duration=$13, workspace_id=$14, updated_at=NOW()
-                   WHERE id=$15 AND user_id=$16""",
+                   WHERE id=$15 AND (user_id=$16 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$16
+                   ))""",
                 habit.title, habit.category, habit.color, habit.streak, habit.longest_streak,
                 habit.completed_dates,
                 json.dumps(habit.repeat_days),
@@ -462,7 +464,9 @@ async def delete_habit(habit_id: str, current_user: dict = Depends(get_current_u
     try:
         async with pool.acquire() as conn:
             result = await conn.execute(
-                "DELETE FROM habits WHERE id=$1 AND user_id=$2",
+                """DELETE FROM habits WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$2
+                   ))""",
                 habit_id, current_user["id"]
             )
             if result == "DELETE 0":
@@ -485,7 +489,10 @@ async def complete_habit(habit_id: str, current_user: dict = Depends(get_current
     try:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT completed_dates, streak, longest_streak FROM habits WHERE id=$1 AND user_id=$2",
+                """SELECT completed_dates, streak, longest_streak FROM habits
+                   WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$2
+                   ))""",
                 habit_id, current_user["id"]
             )
             if not row:
@@ -500,7 +507,9 @@ async def complete_habit(habit_id: str, current_user: dict = Depends(get_current
             
             await conn.execute(
                 """UPDATE habits SET completed_dates=$1, streak=$2, longest_streak=$3, updated_at=NOW()
-                   WHERE id=$4 AND user_id=$5""",
+                   WHERE id=$4 AND (user_id=$5 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$5
+                   ))""",
                 completed, streak, longest, habit_id, current_user["id"]
             )
         return {"success": True, "streak": streak, "longestStreak": longest}

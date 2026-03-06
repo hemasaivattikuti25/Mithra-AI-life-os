@@ -99,7 +99,7 @@ const toRoman = (num) => {
 
 /* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
 /* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
-const Heatmap = ({ habits, accentColor }) => {
+const Heatmap = ({ habits, accentColor, totalFreezes = 0 }) => {
   const today = new Date();
   const [hoveredDay, setHoveredDay] = useState(null);
   const { theme } = useData();
@@ -180,6 +180,7 @@ const Heatmap = ({ habits, accentColor }) => {
           <Activity size={14} className="text-[var(--accent-color)]" /> Consistency Map — {format(today, 'yyyy')}
         </h3>
         <div className="flex items-center gap-3 text-xs text-[var(--text-dim)]">
+          {totalFreezes > 0 && <span className="flex items-center gap-1 text-cyan-400 font-semibold">🧊 {totalFreezes}</span>}
           <span>{totalActiveDays} active days</span>
           <span className="text-[var(--accent-color)] font-semibold">{Math.round((totalActiveDays / totalDaysInYear) * 100)}%</span>
         </div>
@@ -368,7 +369,7 @@ const HABIT_COLORS = ['var(--accent-color)', '#3b82f6', '#f97316', '#a855f7', '#
 const DAY_LABELS_MODAL = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
+const HabitModal = ({ isOpen, onClose, onSave, editingHabit, existingHabits = [] }) => {
   const { theme } = useData();
   const isLight = theme === 'light';
   const [title, setTitle] = useState('');
@@ -381,6 +382,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
   const [streakGoal, setStreakGoal] = useState(30);
   const [streakUnit, setStreakUnit] = useState('Day');
   const [duration, setDuration] = useState(25);
+  const [clashWarning, setClashWarning] = useState(null);
   const titleRef = useRef(null);
 
   useEffect(() => {
@@ -404,6 +406,22 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
 
   const handleSave = () => {
     if (!title.trim()) return;
+
+    // Time clash detection
+    if (scheduleTime && existingHabits.length > 0) {
+      const clashing = existingHabits.find(h => {
+        if (editingHabit && h.id === editingHabit.id) return false;
+        if (h.scheduleTime !== scheduleTime) return false;
+        const overlap = (h.repeatDays || []).some(d => repeatDays.includes(d));
+        return overlap;
+      });
+      if (clashing && !clashWarning) {
+        setClashWarning(clashing);
+        return;
+      }
+    }
+    setClashWarning(null);
+
     if (editingHabit) {
       onSave({ ...editingHabit, title: title.trim(), category, color, repeatDays, frequency, reminder, scheduleTime, streakGoal, streakUnit, focusDuration: duration });
     } else {
@@ -570,6 +588,15 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
         </div>
 
         {/* Footer */}
+        {clashWarning && (
+          <div className="px-5 py-3 mx-5 mb-2 rounded-xl text-xs flex items-start gap-2" style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24' }}>
+            <span className="text-base leading-none mt-0.5">⚠️</span>
+            <div>
+              <span className="font-semibold">{clashWarning.title}</span> is already at {scheduleTime} on overlapping days.
+              <button onClick={handleSave} className="ml-2 underline font-bold hover:text-yellow-200">Save anyway</button>
+            </div>
+          </div>
+        )}
         <div className="p-5 flex justify-end gap-3 flex-shrink-0">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors" style={{ color: 'var(--text-dim)' }}>Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
@@ -1144,7 +1171,7 @@ export default function HabitFocusHub() {
                 <span className="text-xs text-[#F2EBE3]/30">completion</span>
               </div>
             </div>
-            <Heatmap habits={habits} accentColor={accentColor} />
+            <Heatmap habits={habits} accentColor={accentColor} totalFreezes={habits.reduce((sum, h) => sum + getAvailableFreezes(h), 0)} />
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold tracking-tight">Your Habits</h2>
@@ -1430,7 +1457,7 @@ export default function HabitFocusHub() {
       <AnimatePresence>
         {showModal && (
           <HabitModal isOpen={showModal} onClose={() => { setShowModal(false); setEditingHabit(null); }}
-            onSave={(h) => { if (editingHabit) updateHabit(h); else addHabit(h); }} editingHabit={editingHabit} />
+            onSave={(h) => { if (editingHabit) updateHabit(h); else addHabit(h); }} editingHabit={editingHabit} existingHabits={habits} />
         )}
       </AnimatePresence>
       <AnimatePresence>
