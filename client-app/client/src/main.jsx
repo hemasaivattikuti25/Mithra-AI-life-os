@@ -8,6 +8,27 @@ import { initNative } from './native.js'
 initNative();
 
 /* ══════════════════════════════════════════════════════════════
+   SERVICE WORKER CACHE BUST — Force-update SW on first load
+   after migration from Supabase to Firebase. Clears old cached
+   JS bundles that still contain Supabase auth code.
+   ══════════════════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  const SW_MIGRATION = 'mithra-sw-firebase-v1';
+  if (!localStorage.getItem(SW_MIGRATION)) {
+    // Unregister all old service workers and clear all caches
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((reg) => reg.unregister());
+    });
+    caches.keys().then((names) => {
+      names.forEach((name) => caches.delete(name));
+    });
+    localStorage.setItem(SW_MIGRATION, Date.now().toString());
+    // Reload once to ensure fresh code loads
+    window.location.reload();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    DATA MIGRATION v2 — Clear stale mock data from localStorage
    Old versions shipped hardcoded demo entries (journal, calendar).
    This one-time cleanup removes them so users start fresh.

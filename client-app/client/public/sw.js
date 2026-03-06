@@ -4,7 +4,7 @@
    background sync for offline-first reliability.
    ═══════════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'mithra-v2';
+const CACHE_NAME = 'mithra-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -44,10 +44,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    // Skip non-GET and API/Supabase requests (handled by syncEngine)
+    // Skip non-GET and API requests (handled by syncEngine)
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/api') || url.hostname.includes('supabase')) return;
+    if (url.pathname.startsWith('/api')) return;
 
     event.respondWith(
         fetch(request)

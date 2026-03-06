@@ -40,8 +40,8 @@ Mithra is forged using an elite full-stack architecture built for speed and imme
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Framer Motion, TailwindCSS, Zustand |
 | **Backend** | Python, FastAPI, Uvicorn, SQLAlchemy |
-| **Database & Auth** | Supabase (PostgreSQL), Supabase Auth (PKCE flow), pgvector |
-| **AI Integration** | Google Gemini 1.5 Pro |
+| **Database & Auth** | Firebase Auth, Neon PostgreSQL, pgvector |
+| **AI Integration** | Google Gemini 1.5 Flash |
 | **Deployment** | Vercel (Frontend), Render (Backend) |
 
 ---
@@ -65,7 +65,8 @@ Follow these instructions to get a copy of the project up and running on your lo
 ### Prerequisites
 * **Node.js**: v18 or higher (`npm install -g npm@latest`)
 * **Python**: v3.10 or higher
-* **Supabase**: A free Supabase project
+* **Firebase**: A free Firebase project (for Authentication)
+* **Neon**: A free Neon PostgreSQL database
 * **Google Cloud**: A free Gemini API Key
 
 ### Backend Setup (FastAPI / Python)
@@ -112,18 +113,21 @@ The application relies on secure configuration keys. You must populate these var
 ### Server `.env` (`/client-app/server/.env`)
 | Variable | Description | Where to get it |
 | :--- | :--- | :--- |
-| `SUPABASE_URL` | Your Project URL | Supabase Dashboard > Project Settings > API |
-| `SUPABASE_KEY` | Your Service Role Secret Key | Supabase Dashboard > Project Settings > API |
-| `SUPABASE_JWT_SECRET` | Your Authentication JWT string | Supabase Dashboard > Project Settings > API |
+| `NEON_DATABASE_URL` | PostgreSQL connection string | Neon Dashboard > Connection Details |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin SDK key (full JSON) | Firebase Console > Project Settings > Service Accounts |
 | `GEMINI_API_KEY` | Google Gemini API Access key | Google AI Studio |
+| `ENVIRONMENT` | `development` or `production` | Set manually |
 
 ### Client `.env` (`/client-app/client/.env`)
 | Variable | Description | Where to get it |
 | :--- | :--- | :--- |
-| `VITE_SUPABASE_URL` | Your Project URL | Supabase Dashboard > Project Settings > API |
-| `VITE_SUPABASE_ANON_KEY` | Your Public Anon Key | Supabase Dashboard > Project Settings > API |
-| `VITE_API_URL` | URL traversing to your backend | `http://localhost:8000` (Local) / Render URL |
-| `VITE_APP_URL` | Authorized Web URL | `http://localhost:5173` (Local) / Vercel URL |
+| `VITE_FIREBASE_API_KEY` | Firebase Web API key | Firebase Console > Project Settings > Your Apps |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain | Firebase Console > Project Settings > Your Apps |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID | Firebase Console > Project Settings > Your Apps |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase Storage bucket | Firebase Console > Project Settings > Your Apps |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Messaging Sender ID | Firebase Console > Project Settings > Your Apps |
+| `VITE_FIREBASE_APP_ID` | Firebase App ID | Firebase Console > Project Settings > Your Apps |
+| `VITE_API_URL` | Backend API URL | `http://localhost:8000` (Local) / Render URL |
 
 ---
 
@@ -138,7 +142,7 @@ Mithra-AI-life-os/
 │   │   │   ├── components/      # Reusable UI widgets
 │   │   │   ├── context/         # Auth & Data State bounds
 │   │   │   ├── pages/           # Core view layouts
-│   │   │   └── services/        # Supabase API connectors
+│   │   │   └── services/        # Firebase Auth & API connectors
 │   │   ├── tailwind.config.js   # Style parameters
 │   │   └── package.json         # JS Dependencies
 │   └── server/                  # FastAPI Backend
@@ -147,7 +151,6 @@ Mithra-AI-life-os/
 │       ├── services/            # Deep execution logic (AI prompt mapping)
 │       └── main.py              # Application entrypoint
 ├── docs/                        # Promotional and static asset artifacts
-├── master_supabase.sql          # Unified Database schema setup
 └── README.md                    # Core documentation
 ```
 
