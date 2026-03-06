@@ -61,8 +61,15 @@ export default function DailyPlanCard({ className = '' }) {
       if (data?.plan) {
         setPlan(data.plan);
       }
-    } catch {
-      setError('Could not load your daily plan');
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg.includes('403') || msg.includes('limit')) {
+        setError('Daily AI limit reached — resets tomorrow');
+      } else if (msg.includes('500') || msg.includes('unavailable')) {
+        setError('AI service temporarily unavailable');
+      } else {
+        setError('Could not load your daily plan');
+      }
     } finally {
       setLoading(false);
     }

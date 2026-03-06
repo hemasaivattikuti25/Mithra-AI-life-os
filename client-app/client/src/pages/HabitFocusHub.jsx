@@ -428,7 +428,8 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit }) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
-        onClick={e => e.stopPropagation()} className="w-full max-w-md glass-heavy glass-shine rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        onClick={e => e.stopPropagation()} className="w-full max-w-md glass-heavy glass-shine rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        style={{ background: 'var(--body-bg)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
 
         {/* Header with colored accent bar */}
         <div className="relative">
@@ -608,7 +609,8 @@ const SessionModal = ({ isOpen, onClose, onSave, editingSession }) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
-        onClick={e => e.stopPropagation()} className="w-full max-w-sm glass-heavy glass-shine rounded-2xl overflow-hidden">
+        onClick={e => e.stopPropagation()} className="w-full max-w-sm glass-heavy glass-shine rounded-2xl overflow-hidden"
+        style={{ background: 'var(--body-bg)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
         <div className="flex items-center justify-between p-5">
           <h3 className="text-lg font-medium text-[var(--text-primary)]">{editingSession ? 'Edit Session' : 'Add Session'}</h3>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)]"><X size={20} /></button>

@@ -174,8 +174,7 @@ export default function MithraBlend() {
 
     useEffect(() => {
         if (!user || autoJoinAttempted) return;
-        const hashParts = window.location.hash.split('?');
-        const params = new URLSearchParams(hashParts[1] || '');
+        const params = new URLSearchParams(window.location.search);
         const hash = params.get('join') || params.get('code');
         if (!hash) return;
 
@@ -272,7 +271,7 @@ export default function MithraBlend() {
     };
 
     const copyInviteLink = (ws) => {
-        const link = `${window.location.origin}/#/blend?join=${ws.share_link_hash}`;
+        const link = `${window.location.origin}/blend?join=${ws.share_link_hash}`;
         navigator.clipboard.writeText(link).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -721,7 +720,7 @@ export default function MithraBlend() {
                                             className="text-center py-2">
                                             <span className="text-xl font-mono font-bold tracking-[0.3em]"
                                                 style={{ color: 'var(--accent-color)' }}>
-                                                {activeWorkspace.join_code}
+                                                {activeWorkspace.share_link_hash}
                                             </span>
                                         </motion.div>
                                     )}
