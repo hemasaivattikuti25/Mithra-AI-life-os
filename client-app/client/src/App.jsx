@@ -182,8 +182,8 @@ function AppRoutes() {
 }
 
 function App() {
-  // Initialize analytics + service worker on app mount
-  useEffect(() => { initAnalytics(); registerServiceWorker(); }, []);
+  // Initialize analytics on app mount (SW registration disabled during cache purge)
+  useEffect(() => { initAnalytics(); }, []);
 
   return (
     <ErrorBoundary>

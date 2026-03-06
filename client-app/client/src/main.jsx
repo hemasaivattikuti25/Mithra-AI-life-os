@@ -8,24 +8,17 @@ import { initNative } from './native.js'
 initNative();
 
 /* ══════════════════════════════════════════════════════════════
-   SERVICE WORKER CACHE BUST — Force-update SW on first load
-   after migration from Supabase to Firebase. Clears old cached
-   JS bundles that still contain Supabase auth code.
+   SERVICE WORKER CLEANUP — Kill any old cached SW that still
+   serves stale Supabase-era JS bundles. Runs on every page load
+   until no registrations remain.
    ══════════════════════════════════════════════════════════════ */
 if ('serviceWorker' in navigator) {
-  const SW_MIGRATION = 'mithra-sw-firebase-v1';
-  if (!localStorage.getItem(SW_MIGRATION)) {
-    // Unregister all old service workers and clear all caches
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((reg) => reg.unregister());
-    });
-    caches.keys().then((names) => {
-      names.forEach((name) => caches.delete(name));
-    });
-    localStorage.setItem(SW_MIGRATION, Date.now().toString());
-    // Reload once to ensure fresh code loads
-    window.location.reload();
-  }
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
+  });
+  caches.keys().then((names) => {
+    names.forEach((n) => caches.delete(n));
+  });
 }
 
 /* ══════════════════════════════════════════════════════════════
