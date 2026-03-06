@@ -38,9 +38,7 @@ class NotificationManager {
         if (this.isNative) {
             try {
                 await Haptics.impact({ style });
-            } catch (e) {
-                console.warn('Haptics not available');
-            }
+            } catch { }
         }
     }
 
@@ -58,7 +56,6 @@ class NotificationManager {
         const notifyAt = new Date(dueTime - minutesBefore * 60 * 1000);
 
         if (notifyAt < new Date()) {
-            console.info('[Notifications] Reminder time is in the past, skipping.');
             return;
         }
 
@@ -167,7 +164,6 @@ class NotificationManager {
                     }
                 ]
             });
-            console.info(`[Notifications] Daily briefing scheduled for ${hour}:${minute.toString().padStart(2, '0')}`);
         } else {
             // Web fallback - store preference and check on next load
             localStorage.setItem('mithra-daily-briefing', JSON.stringify({ hour, minute, enabled: true }));
@@ -241,9 +237,7 @@ class NotificationManager {
                     hour, minute, enabled, lastShown: today 
                 }));
             }
-        } catch (e) {
-            console.warn('[Notifications] Failed to parse daily briefing settings');
-        }
+        } catch { }
     }
 
     async cancelAll() {
@@ -257,15 +251,5 @@ class NotificationManager {
 }
 
 export const notificationManager = new NotificationManager();
-
-export const registerServiceWorker = () => {
-    if ('serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(err => {
-                console.error('ServiceWorker registration failed: ', err);
-            });
-        });
-    }
-};
 
 export default notificationManager;

@@ -43,8 +43,8 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
       link.download = `mithra-stats-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-    } catch (error) {
-      console.error('Failed to generate image:', error);
+    } catch {
+      // image generation failed
     } finally {
       setIsGenerating(false);
     }
@@ -78,8 +78,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
         }
         setIsGenerating(false);
       });
-    } catch (error) {
-      console.error('Failed to share:', error);
+    } catch {
       setIsGenerating(false);
     }
   };

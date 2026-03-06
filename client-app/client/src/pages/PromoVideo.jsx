@@ -594,11 +594,11 @@ export default function PromoVideo() {
         if (playing) {
             if (audioRef.current) {
                 audioRef.current.currentTime = 0;
-                audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+                audioRef.current.play().catch(() => {});
             }
             if (videoRef.current) {
                 videoRef.current.currentTime = 0;
-                videoRef.current.play().catch(e => console.log("Video play failed:", e));
+                videoRef.current.play().catch(() => {});
             }
         } else {
             if (audioRef.current) audioRef.current.pause();

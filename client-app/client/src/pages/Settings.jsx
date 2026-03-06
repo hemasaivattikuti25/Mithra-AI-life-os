@@ -170,7 +170,6 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
     if (!notificationSettings.enabled) {
       const granted = await requestNotificationPermission();
       if (granted) updateNotificationSettings({ enabled: true });
-      else console.warn('[Settings] Notification permission denied by user');
     } else {
       updateNotificationSettings({ enabled: false });
     }
@@ -347,8 +346,8 @@ export default function Settings() {
       setEditingProfile(false);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
-    } catch (err) {
-      console.error('[Settings] Profile save failed:', err);
+    } catch {
+      // profile save failed
     } finally {
       setProfileSaving(false);
     }

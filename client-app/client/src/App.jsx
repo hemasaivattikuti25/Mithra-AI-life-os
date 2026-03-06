@@ -11,7 +11,6 @@ import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
-import { registerServiceWorker } from './services/notifications';
 import { checkBackendHealth } from './services/firebaseClient';
 
 /* Lazy-load heavy page components for faster initial paint */

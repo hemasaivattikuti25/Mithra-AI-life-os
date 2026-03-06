@@ -285,7 +285,7 @@ export function AuthProvider({ children }) {
     } catch { }
 
     if (isFirebaseConfigured) {
-      try { await authService.signOut(); } catch (err) { console.warn('Background signout error:', err); }
+      try { await authService.signOut(); } catch { }
     }
 
     window.location.href = '/';

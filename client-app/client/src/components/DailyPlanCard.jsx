@@ -61,8 +61,7 @@ export default function DailyPlanCard({ className = '' }) {
       if (data?.plan) {
         setPlan(data.plan);
       }
-    } catch (err) {
-      console.error('Failed to fetch plan:', err);
+    } catch {
       setError('Could not load your daily plan');
     } finally {
       setLoading(false);

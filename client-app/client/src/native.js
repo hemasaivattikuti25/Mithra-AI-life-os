@@ -25,7 +25,7 @@ export const configureStatusBar = async (isDark = true) => {
     await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light });
     await StatusBar.setBackgroundColor({ color: isDark ? '#050505' : '#FFFFFF' });
     await StatusBar.setOverlaysWebView({ overlay: false });
-  } catch (e) { console.warn('StatusBar config failed:', e); }
+  } catch { }
 };
 
 /* ─── Splash Screen ─── */
@@ -82,7 +82,7 @@ export const scheduleNotification = async ({ id, title, body, at }) => {
         setTimeout(() => new Notification(title, { body, icon: '/vite.svg' }), delay);
       }
     }
-  } catch (e) { console.warn('Notification scheduling failed:', e); }
+  } catch { }
 };
 
 export const cancelAllNotifications = async () => {
@@ -185,5 +185,5 @@ export const initNative = async () => {
     setupKeyboard();
     // Hide splash after small delay to let React render
     setTimeout(() => hideSplash(), 300);
-  } catch (e) { console.warn('Native init failed:', e); }
+  } catch { }
 };

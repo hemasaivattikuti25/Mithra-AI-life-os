@@ -62,21 +62,3 @@ async def require_workspace_owner(
         )
 
     return member
-
-
-async def check_workspace_access(user_id: str, workspace_id: str) -> bool:
-    """Non-throwing check: returns True if user is a member of workspace."""
-    pool = get_db()
-    if not pool or not workspace_id:
-        return False
-
-    try:
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT workspace_id FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
-                workspace_id, user_id
-            )
-        return row is not None
-    except Exception:
-        return False
-        return False

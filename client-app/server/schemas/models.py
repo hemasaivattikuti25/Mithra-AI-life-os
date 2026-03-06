@@ -1,22 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class SignUpRequest(BaseModel):
-    email: str
-    password: str
-    fullName: str
-
-class SignInRequest(BaseModel):
-    email: str
-    password: str
-
-class ResetPasswordRequest(BaseModel):
-    email: str
-
-class ConfirmResetRequest(BaseModel):
-    email: str
-    token: str
-    newPassword: str
 
 class ChatMessage(BaseModel):
     """A single message in the conversation history (Gemini format)."""

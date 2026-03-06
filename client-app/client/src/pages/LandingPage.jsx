@@ -46,7 +46,7 @@ function AnimatedStat({ value, suffix = '', label }) {
 /* ═══════════════════════════════════════════════════════════════
    FEATURE CARD — For the bento grid
    ═══════════════════════════════════════════════════════════════ */
-function FeatureCard({ title, desc, icon: Icon, image, tags, gradient, delay = 0, colSpan = '' }) {
+function FeatureCard({ title, desc, icon: Icon, tags, gradient, delay = 0, colSpan = '' }) {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: '-80px' });
 
@@ -72,25 +72,12 @@ function FeatureCard({ title, desc, icon: Icon, image, tags, gradient, delay = 0
 
                 {/* Tags */}
                 {tags && (
-                    <div className="flex flex-wrap gap-1.5 mt-auto mb-5">
+                    <div className="flex flex-wrap gap-1.5 mt-auto">
                         {tags.map((tag, i) => (
-                            <span key={i} className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] text-gray-500 border border-white/[0.06]">
+                            <span key={i} className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] text-gray-500 border border-white/[0.06] group-hover:border-cyan-500/30 group-hover:text-cyan-400/70 transition-all">
                                 {tag}
                             </span>
                         ))}
-                    </div>
-                )}
-
-                {/* Screenshot */}
-                {image && (
-                    <div className="relative mt-auto rounded-xl overflow-hidden border border-white/[0.06] group-hover:border-cyan-500/30 transition-colors">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10" />
-                        <img
-                            src={image}
-                            alt={title}
-                            loading="lazy"
-                            className="w-full h-44 object-cover object-top opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
-                        />
                     </div>
                 )}
             </div>
@@ -128,7 +115,6 @@ export default function LandingPage() {
             desc: 'Subtasks, priorities, recurring schedules, and Kanban views. Never miss a deadline.',
             icon: Layout,
             colSpan: 'md:col-span-2',
-            image: '/assets/tasks.png',
             tags: ['Subtasks', 'Priority', 'Recurring', 'Kanban'],
             gradient: 'bg-gradient-to-br from-blue-500/10 via-transparent to-transparent',
         },
@@ -136,7 +122,6 @@ export default function LandingPage() {
             title: 'Unified Calendar',
             desc: 'Time-block your day. Syncs with Google Calendar. AI parses "Study 3pm for 2 hours" instantly.',
             icon: Calendar,
-            image: '/assets/calendar.png',
             tags: ['Google Sync', 'AI Parsing', 'Time Blocks'],
             gradient: 'bg-gradient-to-br from-green-500/10 via-transparent to-transparent',
         },
@@ -144,7 +129,6 @@ export default function LandingPage() {
             title: 'Habit Tracking',
             desc: 'GitHub-style heatmaps, streaks, and focus timers. Build consistency that lasts a lifetime.',
             icon: Zap,
-            image: '/assets/habits.png',
             tags: ['Heatmap', 'Streaks', 'Focus Timer'],
             gradient: 'bg-gradient-to-br from-orange-500/10 via-transparent to-transparent',
         },
@@ -153,7 +137,6 @@ export default function LandingPage() {
             desc: 'Not just a chatbot. A companion that remembers your journal, tasks, and moods using RAG memory.',
             icon: Brain,
             colSpan: 'md:col-span-2',
-            image: '/assets/dost-ai.png',
             tags: ['RAG Memory', 'Context Aware', 'Gemini 1.5', 'Stoic Advice'],
             gradient: 'bg-gradient-to-br from-purple-500/10 via-transparent to-transparent',
         },
@@ -161,7 +144,6 @@ export default function LandingPage() {
             title: 'Mood Journal',
             desc: 'Track your emotional patterns with mood scores, tags, and AI-powered sentiment analysis.',
             icon: BookOpen,
-            image: '/assets/journal.png',
             tags: ['Mood Tracking', 'AI Sentiment'],
             gradient: 'bg-gradient-to-br from-pink-500/10 via-transparent to-transparent',
         },
@@ -169,7 +151,6 @@ export default function LandingPage() {
             title: 'Focus Sessions',
             desc: 'Pomodoro-style deep work timer with analytics. See how productive you actually are.',
             icon: Clock,
-            image: '/assets/focus.png',
             tags: ['Pomodoro', 'Analytics', 'Deep Work'],
             gradient: 'bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent',
         },
@@ -206,9 +187,7 @@ export default function LandingPage() {
             <nav className="fixed top-0 w-full z-50 border-b border-white/[0.04] bg-[#050507]/80 backdrop-blur-2xl">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
-                        <div className="relative w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-shadow">
-                            <Sparkles className="w-4 h-4 text-white" />
-                        </div>
+                        <img src="/assets/logo.svg" alt="Mithra" className="w-8 h-8 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-shadow" />
                         <span className="font-bold text-lg tracking-tight">
                             Mithra<span className="text-cyan-400"> Life OS</span>
                         </span>
@@ -340,7 +319,7 @@ export default function LandingPage() {
                         </a>
                     </motion.div>
 
-                    {/* 3D Dashboard Preview */}
+                    {/* 3D Dashboard Preview — CSS Mockup */}
                     <motion.div
                         initial={{ opacity: 0, rotateX: 15, y: 60 }}
                         animate={{ opacity: 1, rotateX: 0, y: 0 }}
@@ -355,12 +334,62 @@ export default function LandingPage() {
                             className="relative rounded-2xl border border-white/[0.08] shadow-[0_20px_80px_rgba(0,0,0,0.6)] bg-zinc-950 overflow-hidden"
                         >
                             <div className="absolute top-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
-                            <img
-                                src="/assets/dashboard.png"
-                                alt="Mithra Dashboard"
-                                className="w-full h-auto opacity-90 group-hover:opacity-100 transition-opacity duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent opacity-50" />
+                            {/* Live CSS Dashboard Mockup */}
+                            <div className="p-6 md:p-8 space-y-4">
+                                {/* Top bar */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center">
+                                            <Sparkles className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span className="text-sm font-bold text-white/80">Dashboard</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                                    </div>
+                                </div>
+
+                                {/* Stat cards row */}
+                                <div className="grid grid-cols-4 gap-3">
+                                    {[
+                                        { label: 'Tasks Done', value: '24', color: 'from-cyan-500/20 to-blue-500/10' },
+                                        { label: 'Streak', value: '12 🔥', color: 'from-orange-500/20 to-red-500/10' },
+                                        { label: 'Focus Hrs', value: '8.5', color: 'from-purple-500/20 to-pink-500/10' },
+                                        { label: 'Mood', value: '😊', color: 'from-green-500/20 to-emerald-500/10' },
+                                    ].map((s, i) => (
+                                        <div key={i} className={`rounded-xl bg-gradient-to-br ${s.color} border border-white/[0.06] p-3`}>
+                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">{s.label}</div>
+                                            <div className="text-lg font-bold text-white mt-1">{s.value}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Chart + Tasks */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="col-span-2 rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 h-32">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Weekly Progress</div>
+                                        <div className="flex items-end gap-1.5 h-16">
+                                            {[40, 65, 55, 80, 70, 90, 60].map((h, i) => (
+                                                <div key={i} className="flex-1 bg-gradient-to-t from-cyan-500/40 to-cyan-500/10 rounded-t" style={{ height: `${h}%` }} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 h-32">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Today</div>
+                                        <div className="space-y-2">
+                                            {['Review notes', 'Gym session', 'Build feature'].map((t, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className={`w-3 h-3 rounded border ${i === 0 ? 'bg-cyan-500 border-cyan-400' : 'border-white/20'}`} />
+                                                    <span className={`text-[11px] ${i === 0 ? 'text-gray-500 line-through' : 'text-gray-400'}`}>{t}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent opacity-50 pointer-events-none" />
                         </motion.div>
                         {/* Glow */}
                         <div className="absolute -inset-12 bg-cyan-500/12 blur-[80px] opacity-25 -z-10 rounded-full" />
@@ -596,8 +625,8 @@ export default function LandingPage() {
             <footer className="py-12 px-6 border-t border-white/[0.04] bg-[#050507]">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-gradient-to-br from-cyan-500 to-blue-600" />
-                        <span className="font-semibold text-sm tracking-wide text-gray-500">Mithra Life OS © 2026</span>
+                        <img src="/assets/logo.svg" alt="Mithra" className="w-6 h-6 rounded" />
+                        <span className="font-semibold text-sm tracking-wide text-gray-500">Mithra Life OS © 2025</span>
                     </div>
                     <div className="flex gap-8 text-xs text-gray-600 font-medium">
                         <a href="#/privacy" className="hover:text-white transition-colors">Privacy</a>

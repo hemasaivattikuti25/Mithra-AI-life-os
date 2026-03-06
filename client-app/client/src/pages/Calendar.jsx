@@ -186,8 +186,8 @@ const loadEvents = () => {
 const saveEvents = (events) => {
   try {
     localStorage.setItem(getUserScopedKey('calendar-events'), JSON.stringify(events));
-  } catch (e) {
-    console.warn('Failed to save calendar events:', e.message);
+  } catch {
+    // save failed
   }
 };
 

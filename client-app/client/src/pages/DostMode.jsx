@@ -344,7 +344,7 @@ export default function DostMode() {
               // Sync to API
               if (isFirebaseConfigured) {
                 apiFetch(`/habits/${action.habit_id}/complete`, { method: 'POST' })
-                  .catch(err => console.warn('[Dost] Habit sync failed:', err.message));
+                  .catch(() => {});
               }
             }
             break;
@@ -367,7 +367,7 @@ export default function DostMode() {
               apiFetch('/mood-logs', {
                 method: 'POST',
                 body: JSON.stringify({ mood_value: action.score, mood_label: entry.label })
-              }).catch(err => console.warn('[Dost] Mood sync failed:', err.message));
+              }).catch(() => {});
             }
             break;
           }
@@ -382,10 +382,10 @@ export default function DostMode() {
           }
           
           default:
-            console.log('[Dost] Unknown action type:', action.type);
+            break;
         }
       } catch (err) {
-        console.warn('[Dost] Action execution failed:', action.type, err.message);
+        // Action execution failed silently
       }
     }
   }, [habits, tasks, updateHabit, toggleTask]);
@@ -442,8 +442,7 @@ export default function DostMode() {
         .join('');
       setInput(transcript);
     };
-    recognition.onerror = (event) => {
-      console.warn('Speech error:', event.error);
+    recognition.onerror = () => {
       setIsListening(false);
     };
     recognition.onend = () => setIsListening(false);
@@ -561,7 +560,6 @@ export default function DostMode() {
             }
           }
         } catch (xlsxErr) {
-          console.error('Excel parse error:', xlsxErr);
           addAiMsg(`📄 I had trouble reading "${file.name}". Try saving it as CSV (File → Save As → CSV) for better compatibility.`);
         }
       } else if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {

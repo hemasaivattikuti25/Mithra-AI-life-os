@@ -53,7 +53,6 @@ class SyncEngine {
     this.retryTimer = setInterval(() => {
       const queue = this._getQueue();
       if (queue.length > 0 && this.isOnline && !this.syncInProgress) {
-        console.info(`[Sync] Auto-retry: ${queue.length} pending operations`);
         this.processQueue();
       }
     }, RETRY_INTERVAL_MS);
@@ -77,7 +76,7 @@ class SyncEngine {
     } catch {}
     
     this.listeners.forEach(fn => {
-      try { fn(event, data); } catch (e) { console.error('Sync listener error:', e); }
+      try { fn(event, data); } catch (e) { }
     });
   }
 
@@ -112,15 +111,12 @@ class SyncEngine {
     // Step 1: ALWAYS save to localStorage first (guaranteed)
     try {
       localStorage.setItem(localStorageKey, JSON.stringify(data));
-      console.info(`[Sync] Saved locally: ${localStorageKey}`);
     } catch (e) {
-      console.error(`[Sync] localStorage save failed:`, e);
       // Try to make space by clearing old data
       this._cleanupLocalStorage();
       try {
         localStorage.setItem(localStorageKey, JSON.stringify(data));
       } catch {
-        console.error(`[Sync] Critical: localStorage full, data may be lost`);
       }
     }
 
@@ -202,7 +198,6 @@ class SyncEngine {
         successCount++;
         this.lastError = null;
       } catch (e) {
-        console.warn(`[Sync] Operation failed (attempt ${op.retries + 1}):`, op.table, op.action, e.message);
         this.lastError = e.message;
         op.retries += 1;
         op.lastError = e.message;
@@ -211,7 +206,6 @@ class SyncEngine {
         if (op.retries < MAX_RETRIES) {
           failed.push(op);
         } else {
-          console.error(`[Sync] Dropping operation after ${MAX_RETRIES} retries:`, op);
           this.notify('dropped', { operation: op });
         }
       }
@@ -224,10 +218,8 @@ class SyncEngine {
     this.syncInProgress = false;
     
     if (failed.length > 0) {
-      console.info(`[Sync] ${successCount} synced, ${failed.length} pending. Will retry in 1 minute.`);
       this.notify('partial', { synced: successCount, pending: failed.length });
     } else {
-      console.info(`[Sync] Fully synced: ${successCount} operations`);
       this.notify('synced', { synced: successCount });
     }
   }
@@ -235,7 +227,6 @@ class SyncEngine {
   /** Force an immediate retry (called manually or on reconnect) */
   forceRetry() {
     if (!this.syncInProgress) {
-      console.info('[Sync] Force retry triggered');
       this.processQueue();
     }
   }
@@ -281,7 +272,6 @@ class SyncEngine {
       const res = await apiFetch(`/${table}`);
       return res[table] || res.data || [];
     } catch (error) {
-      console.warn(`[SyncEngine] Pull failed for ${table}:`, error.message);
       return null;
     }
   }
@@ -301,7 +291,6 @@ class SyncEngine {
     try {
       remote = await this.pull(table, userId, opts.select || '*');
     } catch (e) {
-      console.warn(`[SyncEngine] Pull failed for ${table}:`, e.message);
       return localData; // network error — keep local cache
     }
     if (!remote) return localData;

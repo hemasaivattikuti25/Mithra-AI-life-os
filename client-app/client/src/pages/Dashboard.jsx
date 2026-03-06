@@ -308,7 +308,7 @@ export default function Dashboard() {
         method: 'POST',
         body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
       })
-        .catch((err) => console.warn('[Mood] API insert failed:', err.message));
+        .catch(() => {});
     }
 
     setTimeout(() => setMoodSaved(true), 600);

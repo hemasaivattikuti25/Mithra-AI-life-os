@@ -561,14 +561,14 @@ export default function MithraTasks() {
     if (!user) return;
     workspaceService.getWorkspaces(user.id)
       .then(ws => { if (ws.length > 0) setBlendWorkspace(ws[0]); })
-      .catch(err => console.warn('[Tasks] Workspace load failed:', err.message));
+      .catch(() => {});
   }, [user]);
 
   useEffect(() => {
     if (!blendWorkspace) return;
     workspaceService.getWorkspaceTasks(blendWorkspace.id)
       .then(setBlendTasks)
-      .catch(err => console.warn('[Tasks] Blend tasks load failed:', err.message));
+      .catch(() => {});
   }, [blendWorkspace]);
 
   const completeBlendTask = async (taskId) => {
@@ -579,7 +579,7 @@ export default function MithraTasks() {
       });
       setBlendTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (error) {
-      console.error('[Tasks] completeBlendTask failed:', error.message);
+      // completeBlendTask failed silently
     }
   };
 

@@ -497,9 +497,7 @@ export function DataProvider({ children }) {
         }
 
         hasPulledRef.current = true;
-        console.log('[Sync] API fetch complete: tasks=', tasksRes.tasks?.length || 0, 'habits=', habitsRes.habits?.length || 0);
       } catch (err) {
-        console.warn('[Sync] API fetch failed, using localStorage cache:', err.message);
         // Cache is already loaded in useState — no action needed
       } finally {
         setDataLoading(false);
@@ -618,7 +616,6 @@ export function DataProvider({ children }) {
           setTasks(prev => prev.map(t => t.id === taskWithId.id ? mapTaskFromDB(res.task) : t));
         }
       } catch (error) {
-        console.warn('[Tasks] Add failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'tasks',
           action: 'upsert',
@@ -645,7 +642,6 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapTaskToDB(updated)),
         });
       } catch (error) {
-        console.warn('[Tasks] Update failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
@@ -668,7 +664,6 @@ export function DataProvider({ children }) {
       try {
         await apiFetch(`/tasks/${id}`, { method: 'DELETE' });
       } catch (error) {
-        console.warn('[Tasks] Delete failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'tasks',
           action: 'delete',
@@ -700,7 +695,6 @@ export function DataProvider({ children }) {
           body: JSON.stringify({ completed: willComplete }),
         });
       } catch (error) {
-        console.warn('[Tasks] Toggle failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
@@ -740,7 +734,6 @@ export function DataProvider({ children }) {
               body: JSON.stringify(mapTaskToDB(recurringTask)),
             });
           } catch (recurErr) {
-            console.warn('[Tasks] Recurring insert failed, queued for retry:', recurErr.message);
             syncEngine.enqueue({
               table: 'tasks',
               action: 'upsert',
@@ -772,7 +765,6 @@ export function DataProvider({ children }) {
           body: JSON.stringify({ starred: newStarred }),
         });
       } catch (err) {
-        console.warn('[Tasks] Star failed, queued for retry:', err.message);
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
@@ -807,7 +799,6 @@ export function DataProvider({ children }) {
           setHabits(prev => prev.map(h => h.id === habitWithId.id ? mapHabitFromDB(res.habit) : h));
         }
       } catch (error) {
-        console.warn('[Habits] Add failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'habits',
           action: 'upsert',
@@ -834,7 +825,6 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapHabitToDB(updated)),
         });
       } catch (error) {
-        console.warn('[Habits] Update failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'habits',
           action: 'update',
@@ -857,7 +847,6 @@ export function DataProvider({ children }) {
       try {
         await apiFetch(`/habits/${id}`, { method: 'DELETE' });
       } catch (error) {
-        console.warn('[Habits] Delete failed, queued for retry:', error.message);
         syncEngine.enqueue({
           table: 'habits',
           action: 'delete',
@@ -921,7 +910,6 @@ export function DataProvider({ children }) {
       const cleaned = stored.filter(entry => !entry.content?.includes("Welcome to Mithra"));
       if (cleaned.length !== stored.length) {
         saveToStorage('journal', cleaned);
-        console.log('[Mithra] Cleaned up demo journal entries');
       }
     }
 
@@ -965,7 +953,6 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapHabitToDB(updated)),
         });
       } catch (error) {
-        console.error('[Habits] Toggle failed:', error.message);
         // Continue with local update as fallback
       }
     }

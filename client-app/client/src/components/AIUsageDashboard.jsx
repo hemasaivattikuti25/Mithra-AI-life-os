@@ -43,8 +43,7 @@ export default function AIUsageDashboard({ userId }) {
                     });
                 }
                 setWeeklyData(filled);
-            } catch (err) {
-                console.error('[AIUsage]', err);
+            } catch {
                 setPlan({ plan_id: 'free', daily_ai_limit: 20, today_ai_calls: 0 });
             } finally {
                 setLoading(false);

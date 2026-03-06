@@ -1,6 +1,6 @@
 """
 Mithra OS — Backend Configuration
-Firebase Auth + Neon PostgreSQL (replaces Supabase)
+Firebase Auth + Neon PostgreSQL.
 Gemini is lazy-loaded on first AI request to save memory on cold start.
 """
 import os
@@ -123,10 +123,6 @@ def get_model():
         logger.warning("⚠️  Gemini API key missing — AI features disabled")
         _model_instance = None
     return _model_instance
-
-
-# Backward compat: `model` still importable but is None until get_model() called
-model = None
 
 
 def get_embedding(text: str):

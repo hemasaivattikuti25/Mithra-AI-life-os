@@ -41,8 +41,7 @@ async def get_plan_info(current_user: dict = Depends(get_current_user)) -> dict:
             "today_ai_calls": today_calls,
             "status": "active"
         }
-    except Exception as e:
-        print(f"[PlanGate] Failed to get plan info: {e}")
+    except Exception:
         return {"plan_id": "free", "daily_ai_limit": 20, "today_ai_calls": 0}
 
 
@@ -94,6 +93,5 @@ async def require_ai_access(current_user: dict = Depends(get_current_user)) -> d
 
     except HTTPException:
         raise  # Re-raise our 429
-    except Exception as e:
-        print(f"[PlanGate] Usage check failed: {e}")
+    except Exception:
         return {"allowed": True, "current": 0, "limit": 20, "plan": "free"}

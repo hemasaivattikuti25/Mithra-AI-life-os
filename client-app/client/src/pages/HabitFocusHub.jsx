@@ -790,7 +790,7 @@ export default function HabitFocusHub() {
       apiFetch('/mood-logs', {
         method: 'POST',
         body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
-      }).catch(err => console.warn('[Mood] API sync failed:', err.message));
+      }).catch(() => {});
     }
     
     setShowQuickMood(false);
@@ -825,9 +825,7 @@ export default function HabitFocusHub() {
         body: JSON.stringify({ consistency: updated })
       });
       setBlendHabits(prev => prev.map(h => h.id === habit.id ? { ...h, consistency: updated } : h));
-    } catch (error) {
-      console.error('[Habits] toggleBlendHabit failed:', error.message);
-    }
+    } catch { }
   };
 
   // Focus state
@@ -894,7 +892,7 @@ export default function HabitFocusHub() {
           completed_at: sessionEntry.endedAt || new Date().toISOString(),
         })
       })
-        .catch((err) => console.warn('[Focus] API insert failed:', err.message));
+        .catch(() => {});
     }
   };
 

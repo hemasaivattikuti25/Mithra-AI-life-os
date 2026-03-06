@@ -13,7 +13,7 @@
 
 const DEV = import.meta.env.DEV;
 
-let _capture = DEV ? (e, p) => console.debug(`[Analytics] ${e}`, p || '') : () => { };
+let _capture = () => { };
 let _identify = () => { };
 let _reset = () => { };
 

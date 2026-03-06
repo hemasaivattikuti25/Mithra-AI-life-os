@@ -108,7 +108,6 @@ export default function MithraBlend() {
                 setActiveWsId(ws[0].id);
             }
         } catch (err) {
-            console.error('[Blend] Load failed:', err);
             // Immediately stop loading — do NOT wait for the 60s timeout
             setLoading(false);
             if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError') || err.message?.includes('Network Error')) {
@@ -145,9 +144,7 @@ export default function MithraBlend() {
                     setWorkspaceHabits(h);
                     setWorkspaceTasks(t);
                 }
-            } catch (err) {
-                if (!cancelled) console.error('[Blend] Load details error:', err);
-            }
+            } catch { }
         };
         loadDetails();
         return () => { cancelled = true; };
@@ -202,7 +199,6 @@ export default function MithraBlend() {
         const t = setTimeout(() => {
             setLoading(false);
             const timeoutMsg = 'Connection timed out. The server is waking up, please click Try Again.';
-            console.error('[Blend] Timeout reached. This usually means the Render free tier is cold-starting or the API URL is wrong.');
             setError(timeoutMsg);
         }, 60000);
         return () => clearTimeout(t);

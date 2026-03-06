@@ -311,9 +311,7 @@ export default function MithraJournal() {
         setEntries(formatted); // API is truth — replace, don't merge
         // Update localStorage cache
         localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(formatted));
-        console.log('[Journal] Loaded', formatted.length, 'entries from API');
       } catch (err) {
-        console.warn('[Journal] API fetch failed, using localStorage cache:', err.message);
         // localStorage cache already loaded in useState — no action needed
       } finally {
         setIsSyncing(false);
@@ -385,7 +383,6 @@ export default function MithraJournal() {
         });
       }
     } catch (err) {
-      console.error('[Journal] Save failed:', err.message);
       // Optimistic fallback — save to state even if API call failed
       if (editingEntry) {
         setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
@@ -410,7 +407,6 @@ export default function MithraJournal() {
     try {
       await syncToCloud(entry, 'delete'); // await the delete
     } catch (err) {
-      console.error('[Journal] Delete failed:', err.message);
       // Still remove from local state — user intent is clear
     }
     setEntries(prev => {
