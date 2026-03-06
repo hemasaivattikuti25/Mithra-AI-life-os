@@ -1,15 +1,15 @@
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/hemasaivattikuti25/Mithra-AI-life-os/main/client/public/assets/logo.png" alt="Mithra Logo" width="120" />
+  <img src="./client/public/assets/logo.png" alt="Mithra Logo" width="120" />
   <h1>Mithra — AI Life OS</h1>
   <p>
-    <strong>The stoic productivity system for high performers.</strong><br>
-    Tasks · Habits · Focus · Journaling · AI Companion
+    <strong>The AI-first productivity OS. Use the web app — or just text a bot.</strong><br>
+    Tasks · Habits · Focus · Journaling · AI Companion · WhatsApp & Telegram Bots
   </p>
 
   <p>
-    <a href="https://mithra-life-os.vercel.app">
-      <img src="https://img.shields.io/badge/Live_Demo-Visit_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    <a href="https://mithra-lifeos.com">
+      <img src="https://img.shields.io/badge/Live_App-Visit-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" />
     </a>
     <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers">
       <img src="https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&logo=github&color=yellow" alt="Stars" />
@@ -23,31 +23,42 @@
 ---
 
 ### **Overview**
-Mithra is an offline-first, AI-powered productivity OS designed to replace scattered tools. It unifies task management, habit tracking, focus timers, and journaling into a single, cohesive interface. Built with a "Midnight & Cyan" aesthetic, it prioritizes speed, privacy, and deep work.
+Mithra is an AI-powered productivity operating system that replaces your scattered tools with a single, unified interface. It combines task management, habit tracking, focus timers, AI journaling, and a context-aware AI companion — all wrapped in a midnight & cyan aesthetic built for speed and deep work.
+
+**What's next?** We're building WhatsApp and Telegram bots so you can control everything by text message — add tasks, log habits, get daily summaries — without ever opening the app.
+
+---
 
 ### **Key Features**
 
 #### 🧠 **Dost AI Companion**
-- **Context-Aware**: Understands your tasks, habits, and mood.
-- **Natural Language**: "Add a meeting tomorrow at 2 PM" or "Summarize my day."
-- **RAG Memory**: Recalls past journal entries for personalized advice.
-- **Voice Mode**: Speak to capture ideas instantly using the Web Speech API.
+- **Full Life Context**: Knows your tasks, habits, streaks, journal entries, and schedule
+- **Natural Language**: *"Add a meeting tomorrow at 2 PM"* or *"Summarize my week"*
+- **RAG Memory**: Recalls past entries for personalized, contextual advice
+- **Voice Mode**: Speak to capture ideas using the Web Speech API
 
 #### ⚡ **Tasks & Scheduling**
-- **Smart Calendar**: Bi-directional sync with Google Calendar (optional).
-- **Collision Detection**: Automatically adjusts layout for overlapping events.
-- **Recurring Tasks**: Flexible repetition rules (daily, weekly, monthly).
-- **Priority Matrix**: Visual indicators for High/Medium/Low priority items.
+- **Smart Calendar**: Bi-directional sync with Google Calendar
+- **Collision Detection**: Auto-adjusts overlapping events
+- **Recurring Tasks**: Daily, weekly, monthly repetition rules
+- **Priority Matrix**: Visual High/Medium/Low indicators
 
 #### 🔥 **Habits & Streaks**
-- **Consistency Heatmap**: GitHub-style activity graph for every habit.
-- **Streak Protection**: Smart logic prevents accidental resets.
-- **Milestone Rewards**: Celebratory notifications for hitting streak goals.
+- **Heatmap Tracking**: GitHub-style activity graph per habit
+- **Streak Freeze**: Smart protection against accidental resets
+- **Milestone Rewards**: Celebrations for hitting streak goals
+- **Blend Mode**: Share habits with friends — track together in real-time
 
 #### 🧘 **Focus & Wellness**
-- **Zen Mode**: Pomodoro timer with customizable Work/Break intervals.
-- **Mood Tracking**: Daily emotional check-ins with a 1-10 scale.
-- **Journaling**: Rich text editor with mood correlation and tagging.
+- **Pomodoro Timer**: Customizable work/break intervals
+- **Mood Tracking**: Daily 1–10 emotional check-ins
+- **Zen Journal**: Rich text editor with AI mood analysis and tagging
+
+#### 🤖 **AI Automation** *(Coming Soon)*
+- **WhatsApp Bot**: Add tasks, log habits, get summaries via text
+- **Telegram Bot**: Full Mithra control with inline commands
+- **Voice-to-Action**: Forward voice notes → AI transcribes and executes
+- **Proactive Nudges**: AI-timed reminders based on your patterns
 
 ---
 
@@ -55,12 +66,14 @@ Mithra is an offline-first, AI-powered productivity OS designed to replace scatt
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React, Vite, Tailwind CSS, Framer Motion |
-| **State** | Context API + LocalStorage (Offline First) |
-| **Backend** | Supabase (PostgreSQL + Auth + RLS) |
-| **AI Engine** | Google Gemini 1.5 Flash (via API) |
-| **Sync** | Custom bi-directional sync engine (Optimistic UI) |
-| **Build** | esbuild (Production optimized) |
+| **Frontend** | React 18, Vite 5, Tailwind CSS, Framer Motion, Capacitor |
+| **State** | Context API + Sync Engine (Optimistic UI, Offline Queue) |
+| **Backend** | Python 3.12, FastAPI, Uvicorn |
+| **Database** | Neon PostgreSQL, pgvector (AI embeddings) |
+| **Auth** | Firebase Auth (Email/Password + Google OAuth) |
+| **AI** | Google Gemini 1.5 Flash, RAG pipeline |
+| **Deployment** | Vercel (Frontend), Render (Backend) |
+| **Upcoming** | WhatsApp Business API, Telegram Bot API |
 
 ---
 
@@ -68,46 +81,66 @@ Mithra is an offline-first, AI-powered productivity OS designed to replace scatt
 
 #### **Prerequisites**
 - Node.js 18+
-- Supabase Account
+- Python 3.10+
+- Firebase project (free tier)
+- Neon PostgreSQL database (free tier)
 - Google Gemini API Key
 
-#### **Installation**
+#### **Backend**
 ```bash
-# 1. Clone the repository
-git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
-cd Mithra-AI-life-os/client
+cd client-app/server
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # Add your credentials
+uvicorn main:app --reload --port 8000
+```
 
-# 2. Install dependencies
+#### **Frontend**
+```bash
+cd client-app/client
 npm install
-
-# 3. Configure Environment
-cp .env.example .env
-# Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, and VITE_API_URL
-
-# 4. Run Locally
+cp .env.example .env   # Add your Firebase config
 npm run dev
 ```
 
+#### **Android (Capacitor)**
+```bash
+npm run android        # Build + sync + open in Android Studio
+npm run android:run    # Build + sync + run on device
+```
+
+---
+
 ### **Deployment**
-The project is optimized for deployment on **Vercel**.
-1. Push to GitHub.
-2. Import project in Vercel.
-3. Add environment variables.
-4. Deploy.
+- **Frontend**: Deployed on **Vercel** (root directory: `client-app/client`)
+- **Backend**: Deployed on **Render** (root directory: `client-app/server`)
+
+Environment variables must be set on both platforms — see the root [README](../README.md) for the full list.
+
+---
+
+### **Roadmap**
+
+- [x] Firebase Auth + Neon PostgreSQL migration
+- [x] Dost AI with RAG memory & life-context awareness
+- [x] Mithra Blend — shared habit workspaces
+- [x] Sync engine with offline queuing
+- [x] Android build via Capacitor
+- [ ] **WhatsApp bot** — text-based task/habit management
+- [ ] **Telegram bot** — full Mithra control via inline commands
+- [ ] **AI Command Engine** — NLP parsing for all operations
+- [ ] **Voice-to-Action pipeline** — voice notes → transcription → execution
+- [ ] Native iOS wrapper + App Store release
+- [ ] AI Daily Planner — auto-generated optimal schedules
+- [ ] Multi-language support
 
 ---
 
 ### **Contributing**
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
-1. Fork the repo.
-2. Create your feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add some amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+Contributions welcome! Fork → Branch → Commit → PR.
 
 ---
 
 <div align="center">
-  <sub>Built with precision by Hema Sai Vartikotti using minimal dependencies.</sub>
+  <sub>Built by <b>Hema Sai Vattikuti</b> — Backend & Applied AI Engineer</sub>
 </div>

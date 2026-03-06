@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const isCapacitor = process.env.CAPACITOR_BUILD === 'true'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // base must be relative for Capacitor Android to load assets correctly
-  base: './',
+  // Use relative paths for Capacitor Android, absolute for web (Vercel)
+  base: isCapacitor ? './' : '/',
   build: {
     outDir: 'dist',
     // Produce relative asset paths for Android WebView
