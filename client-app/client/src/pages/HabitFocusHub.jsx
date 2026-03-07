@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, CheckCircle2, Circle, Play, Pause, RotateCcw, Plus, X,
   Activity, Clock, Zap, Target, Dumbbell, BookOpen, Code, Brain,
-  Heart, Trash2, TrendingUp, Pencil, Timer, Users, Check
+  Heart, Trash2, TrendingUp, Pencil, Timer, Users, Check, Sparkles,
+  BarChart2, Loader2
 } from 'lucide-react';
-import { format, isSameDay, eachDayOfInterval, startOfYear } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, startOfYear, parseISO, getDay } from 'date-fns';
 import clsx from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { notificationManager } from '../services/notifications';
@@ -13,6 +14,7 @@ import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
+import HabitTemplates from '../components/HabitTemplates';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
@@ -99,7 +101,7 @@ const toRoman = (num) => {
 
 /* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
 /* ═══════════ HEATMAP — GitHub-style 365-day contribution graph ═══════════ */
-const Heatmap = ({ habits, accentColor, totalFreezes = 0 }) => {
+const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 }) => {
   const today = new Date();
   const [hoveredDay, setHoveredDay] = useState(null);
   const { theme } = useData();
@@ -180,7 +182,7 @@ const Heatmap = ({ habits, accentColor, totalFreezes = 0 }) => {
           <Activity size={14} className="text-[var(--accent-color)]" /> Consistency Map — {format(today, 'yyyy')}
         </h3>
         <div className="flex items-center gap-3 text-xs text-[var(--text-dim)]">
-          {totalFreezes > 0 && <span className="flex items-center gap-1 text-cyan-400 font-semibold">🧊 {totalFreezes}</span>}
+          <span className="flex items-center gap-1 text-cyan-400 font-semibold">🧊 {totalFreezes}/{FREEZES_PER_MONTH}</span>
           <span>{totalActiveDays} active days</span>
           <span className="text-[var(--accent-color)] font-semibold">{Math.round((totalActiveDays / totalDaysInYear) * 100)}%</span>
         </div>
@@ -742,6 +744,132 @@ const CircularTimer = ({ progress, timeStr, label, isActive, color = 'var(--acce
   );
 };
 
+/* ═══════════ WEEKLY INSIGHTS ═══════════ */
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function WeeklyInsightsCard({ habits }) {
+  const [aiInsight, setAiInsight] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Compute day-of-week completion rates from consistency arrays
+  const dayStats = useMemo(() => {
+    const counts = Array(7).fill(0);
+    const totals = Array(7).fill(0);
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - 28); // last 4 weeks
+
+    (habits || []).forEach((h) => {
+      (h.consistency || []).forEach((dateStr) => {
+        try {
+          const d = parseISO(dateStr);
+          if (d >= cutoff && d <= now) {
+            counts[getDay(d)]++;
+          }
+        } catch {}
+      });
+    });
+
+    // For totals: count how many habits were scheduled on each day (rough)
+    for (let i = 0; i < 7; i++) {
+      const scheduledHabits = (habits || []).filter(h =>
+        !h.repeatDays || h.repeatDays.length === 0 || h.repeatDays.includes(i)
+      );
+      totals[i] = scheduledHabits.length * 4; // 4 occurrences per day in 4-week window
+    }
+
+    return DAY_LABELS.map((label, i) => ({
+      label,
+      rate: totals[i] > 0 ? Math.round((counts[i] / totals[i]) * 100) : 0,
+      count: counts[i],
+    }));
+  }, [habits]);
+
+  const bestDay = dayStats.reduce((a, b) => (a.rate >= b.rate ? a : b), dayStats[0]);
+  const worstDay = dayStats.reduce((a, b) => (a.rate <= b.rate ? a : b), dayStats[0]);
+  const maxRate = Math.max(...dayStats.map(d => d.rate), 1);
+
+  const generateAIInsight = async () => {
+    setAiLoading(true);
+    try {
+      const summary = habits.map(h => `${h.title}: ${h.streak || 0} day streak, ${(h.consistency || []).length} total completions`).join('; ');
+      const res = await apiFetch('/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: `Analyze my habits for the past week and give me 2-3 sharp, actionable insights in 3 sentences max. Be specific. My habit data: ${summary}`,
+          history: [],
+        }),
+      });
+      setAiInsight(res.reply || null);
+    } catch {
+      setAiInsight("Couldn't generate insights right now. Try again when online.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  return (
+    <div className="glass-card rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={16} style={{ color: 'var(--accent-color)' }} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Weekly Insights</span>
+        </div>
+        <button
+          onClick={generateAIInsight}
+          disabled={aiLoading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
+          style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)' }}
+        >
+          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          {aiLoading ? 'Analyzing…' : 'AI Insight'}
+        </button>
+      </div>
+
+      {/* Day bars */}
+      <div className="flex items-end gap-1.5 h-16">
+        {dayStats.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full rounded-t-md transition-all" style={{
+              height: `${Math.max(4, (d.rate / maxRate) * 48)}px`,
+              background: d.rate === 0 ? 'var(--glass-border)' : `var(--accent-color)`,
+              opacity: d.rate > 0 ? 0.4 + (d.rate / 100) * 0.6 : 1,
+            }} />
+            <span className="text-[9px] font-medium" style={{ color: 'var(--text-dim)' }}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Best/worst callout */}
+      <div className="flex gap-3">
+        <div className="flex-1 rounded-xl p-3 text-center" style={{ background: 'rgba(34,197,94,0.06)' }}>
+          <div className="text-[10px] opacity-50 mb-0.5" style={{ color: 'var(--text-dim)' }}>Best day</div>
+          <div className="text-sm font-bold" style={{ color: '#22c55e' }}>{bestDay.label}</div>
+          <div className="text-xs opacity-60" style={{ color: 'var(--text-dim)' }}>{bestDay.rate}% done</div>
+        </div>
+        <div className="flex-1 rounded-xl p-3 text-center" style={{ background: 'rgba(239,68,68,0.06)' }}>
+          <div className="text-[10px] opacity-50 mb-0.5" style={{ color: 'var(--text-dim)' }}>Needs work</div>
+          <div className="text-sm font-bold text-red-400">{worstDay.label}</div>
+          <div className="text-xs opacity-60" style={{ color: 'var(--text-dim)' }}>{worstDay.rate}% done</div>
+        </div>
+      </div>
+
+      {/* AI insight */}
+      {aiInsight && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl p-3 text-sm leading-relaxed"
+          style={{ background: 'var(--accent-glow)', color: 'var(--text-primary)' }}
+        >
+          <Sparkles size={12} className="inline mr-1.5 opacity-60" style={{ color: 'var(--accent-color)' }} />
+          {aiInsight}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════ MAIN COMPONENT ═══════════ */
 export default function HabitFocusHub() {
   const { habits, addHabit, updateHabit, deleteHabit, toggleHabit, theme, accentColor, lastMilestone } = useData();
@@ -750,28 +878,48 @@ export default function HabitFocusHub() {
   const [activeTab, setActiveTab] = useState('tracker');
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
-  // ── Streak Freeze logic ──
-  const getAvailableFreezes = (habit) => {
-    const usedKey = getUserScopedKey(`streak-freezes-used-${habit.id}`);
-    const used = JSON.parse(localStorage.getItem(usedKey) || '[]');
-    const earned = Math.floor(habit.streak / 7);
-    return Math.max(0, earned - used.length);
+  const handleAddTemplateHabits = async (templateHabits) => {
+    for (const h of templateHabits) {
+      await addHabit(h);
+    }
+  };
+
+  // ── Streak Freeze logic (5 per month, resets each month) ──
+  const FREEZES_PER_MONTH = 5;
+  const getCurrentMonthKey = () => format(new Date(), 'yyyy-MM');
+
+  const getMonthlyUsedFreezes = () => {
+    const key = getUserScopedKey(`streak-freezes-month`);
+    const data = JSON.parse(localStorage.getItem(key) || '{}');
+    const currentMonth = getCurrentMonthKey();
+    // Auto-reset if month changed
+    if (data.month !== currentMonth) {
+      const reset = { month: currentMonth, used: 0 };
+      localStorage.setItem(key, JSON.stringify(reset));
+      return reset;
+    }
+    return data;
+  };
+
+  const getAvailableFreezes = () => {
+    const data = getMonthlyUsedFreezes();
+    return Math.max(0, FREEZES_PER_MONTH - (data.used || 0));
   };
 
   const useStreakFreeze = (habitId) => {
     const habit = habits.find(h => h.id === habitId);
     if (!habit || habit.todayDone) return;
-    const avail = getAvailableFreezes(habit);
+    const avail = getAvailableFreezes();
     if (avail <= 0) return;
 
-    const usedKey = getUserScopedKey(`streak-freezes-used-${habitId}`);
-    const used = JSON.parse(localStorage.getItem(usedKey) || '[]');
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    if (used.includes(todayStr)) return;
+    // Increment monthly used count
+    const key = getUserScopedKey(`streak-freezes-month`);
+    const data = getMonthlyUsedFreezes();
+    data.used = (data.used || 0) + 1;
+    localStorage.setItem(key, JSON.stringify(data));
 
-    used.push(todayStr);
-    localStorage.setItem(usedKey, JSON.stringify(used.slice(-60)));
     toggleHabit(habitId);
     notificationManager.hapticLight();
   };
@@ -1171,14 +1319,21 @@ export default function HabitFocusHub() {
                 <span className="text-xs text-[#F2EBE3]/30">completion</span>
               </div>
             </div>
-            <Heatmap habits={habits} accentColor={accentColor} totalFreezes={habits.reduce((sum, h) => sum + getAvailableFreezes(h), 0)} />
+            <Heatmap habits={habits} accentColor={accentColor} totalFreezes={getAvailableFreezes()} FREEZES_PER_MONTH={FREEZES_PER_MONTH} />
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold tracking-tight">Your Habits</h2>
-                <button onClick={() => { setEditingHabit(null); setShowModal(true); }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-accent-visor text-xs font-bold hover:bg-[#C2185B]/10 transition-all">
-                  <Plus size={16} /> Add Habit
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowTemplates(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card text-xs font-bold hover:bg-[var(--accent-glow)] transition-all"
+                    style={{ color: 'var(--text-dim)' }}>
+                    <Sparkles size={14} /> Templates
+                  </button>
+                  <button onClick={() => { setEditingHabit(null); setShowModal(true); }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-accent-visor text-xs font-bold hover:bg-[#C2185B]/10 transition-all">
+                    <Plus size={16} /> Add Habit
+                  </button>
+                </div>
               </div>
               <div className="space-y-2.5">
                 <AnimatePresence mode="popLayout">
@@ -1187,7 +1342,7 @@ export default function HabitFocusHub() {
                       onToggle={handleHabitToggle}
                       onDelete={deleteHabit}
                       onEdit={(h) => { setEditingHabit(h); setShowModal(true); }}
-                      availableFreezes={getAvailableFreezes(habit)}
+                      availableFreezes={getAvailableFreezes()}
                       onFreeze={useStreakFreeze} />
                   ))}
                 </AnimatePresence>
@@ -1234,6 +1389,9 @@ export default function HabitFocusHub() {
                 </div>
               </div>
             )}
+
+            {/* ─── Weekly Habit Insights ─── */}
+            {habits.length > 0 && <WeeklyInsightsCard habits={habits} />}
           </motion.div>
         )}
 
@@ -1496,6 +1654,13 @@ export default function HabitFocusHub() {
         onClose={() => setShowQuickMood(false)}
         onSelect={handleQuickMoodSelect}
         habitTitle={completedHabitTitle}
+      />
+
+      {/* ── Habit Templates Modal ── */}
+      <HabitTemplates
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onAddHabits={handleAddTemplateHabits}
       />
     </div>
   );

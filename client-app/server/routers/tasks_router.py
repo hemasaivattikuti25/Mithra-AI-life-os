@@ -4,7 +4,7 @@ from datetime import datetime, date
 import uuid
 import json
 
-from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate
+from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate, EventCreate
 from core.security import get_current_user
 from core.config import get_db, get_model, get_embedding
 
@@ -614,4 +614,117 @@ async def sync_data(current_user: dict = Depends(get_current_user)):
         }
     except Exception:
         return {"tasks": [], "journal": [], "habits": [], "notifications": {}}
- 
+
+
+# ─── CALENDAR EVENTS CRUD (with workspace support for Blend) ───
+
+async def _ensure_events_table(conn):
+    """Create calendar_events table if it doesn't exist."""
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendar_events (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            start_time TIMESTAMPTZ NOT NULL,
+            end_time TIMESTAMPTZ NOT NULL,
+            category TEXT DEFAULT 'Personal',
+            workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+
+
+@router.get("/events")
+async def list_events(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    try:
+        async with pool.acquire() as conn:
+            await _ensure_events_table(conn)
+            if workspace_id:
+                rows = await conn.fetch(
+                    "SELECT * FROM calendar_events WHERE workspace_id = $1 ORDER BY start_time ASC",
+                    workspace_id
+                )
+            else:
+                rows = await conn.fetch(
+                    """SELECT * FROM calendar_events
+                       WHERE user_id = $1 AND workspace_id IS NULL
+                       ORDER BY start_time ASC""",
+                    current_user["id"]
+                )
+            return [
+                {
+                    "id": str(r["id"]),
+                    "userId": r["user_id"],
+                    "title": r["title"],
+                    "start": r["start_time"].isoformat(),
+                    "end": r["end_time"].isoformat(),
+                    "category": r["category"],
+                    "workspaceId": str(r["workspace_id"]) if r.get("workspace_id") else None,
+                    "createdAt": r["created_at"].isoformat() if r.get("created_at") else None,
+                }
+                for r in rows
+            ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/events")
+async def create_event(event: EventCreate, current_user: dict = Depends(get_current_user)):
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    try:
+        async with pool.acquire() as conn:
+            await _ensure_events_table(conn)
+            row = await conn.fetchrow(
+                """INSERT INTO calendar_events (user_id, title, start_time, end_time, category, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5, $6)
+                   RETURNING id, created_at""",
+                current_user["id"],
+                event.title,
+                datetime.fromisoformat(event.start),
+                datetime.fromisoformat(event.end),
+                event.category,
+                event.workspaceId,
+            )
+            return {
+                "id": str(row["id"]),
+                "userId": current_user["id"],
+                "title": event.title,
+                "start": event.start,
+                "end": event.end,
+                "category": event.category,
+                "workspaceId": event.workspaceId,
+                "createdAt": row["created_at"].isoformat(),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: str, current_user: dict = Depends(get_current_user)):
+    pool = get_db()
+    if not pool:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    try:
+        async with pool.acquire() as conn:
+            await _ensure_events_table(conn)
+            result = await conn.execute(
+                """DELETE FROM calendar_events WHERE id = $1
+                   AND (user_id = $2 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id = $2
+                   ))""",
+                event_id,
+                current_user["id"],
+            )
+            if result == "DELETE 0":
+                raise HTTPException(status_code=404, detail="Event not found")
+            return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

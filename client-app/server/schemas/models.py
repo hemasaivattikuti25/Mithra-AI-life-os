@@ -63,3 +63,10 @@ class FocusSessionCreate(BaseModel):
     habit_id: Optional[str] = None
     duration_minutes: int = 25
     workspaceId: Optional[str] = None
+
+class EventCreate(BaseModel):
+    title: str
+    start: str  # ISO datetime
+    end: str    # ISO datetime
+    category: str = "Personal"
+    workspaceId: Optional[str] = None

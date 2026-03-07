@@ -47,6 +47,19 @@ export const workspaceService = {
         return data.tasks || [];
     },
 
+    async getWorkspaceJournal(workspaceId) {
+        const data = await apiFetch(`/journal?workspace_id=${workspaceId}`);
+        return data.entries || [];
+    },
+
+    async createWorkspaceJournal(workspaceId, content, mood, tags) {
+        const data = await apiFetch('/journal', {
+            method: 'POST',
+            body: JSON.stringify({ content, mood: mood || 3, tags: tags || [], workspaceId })
+        });
+        return data.entry;
+    },
+
     async leaveWorkspace(workspaceId, userId) {
         await apiFetch(`/workspaces/${workspaceId}/leave`, { method: 'DELETE' });
         return { success: true };
@@ -55,5 +68,10 @@ export const workspaceService = {
     async deleteWorkspace(workspaceId, userId) {
         await apiFetch(`/workspaces/${workspaceId}`, { method: 'DELETE' });
         return { success: true };
-    }
+    },
+
+    async getWorkspaceEvents(workspaceId) {
+        const data = await apiFetch(`/events?workspace_id=${workspaceId}`);
+        return Array.isArray(data) ? data : [];
+    },
 };

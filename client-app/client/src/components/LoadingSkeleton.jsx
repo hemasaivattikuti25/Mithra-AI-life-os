@@ -193,3 +193,44 @@ export function PageSkeleton() {
         </div>
     );
 }
+
+/* ─── Calendar ─── */
+export function CalendarSkeleton() {
+    return (
+        <div className="h-full flex flex-col gap-0 p-4 sm:p-6">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-2">
+                    <Bone className="h-8 w-8 rounded-xl" />
+                    <Bone className="h-8 w-28" />
+                    <Bone className="h-8 w-8 rounded-xl" />
+                </div>
+                <div className="flex gap-2">
+                    {[...Array(3)].map((_, i) => <Bone key={i} className="h-8 w-16 rounded-full" />)}
+                </div>
+            </div>
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+                {[...Array(7)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                        <Bone className="h-3 w-6" />
+                        <Bone className="h-8 w-8 rounded-full" />
+                    </div>
+                ))}
+            </div>
+            {/* Time grid */}
+            <GlassShell className="flex-1 space-y-3">
+                {[...Array(8)].map((_, i) => (
+                    <div key={i} className="flex gap-3 items-start">
+                        <Bone className="h-3 w-10 flex-shrink-0 mt-1" />
+                        <div className="flex-1 border-t border-white/[0.04] pt-1">
+                            {i % 3 === 0 && <Bone className="h-10 w-1/3 rounded-lg" />}
+                        </div>
+                    </div>
+                ))}
+            </GlassShell>
+        </div>
+    );
+}
+
+/* ─── Generic page ─── */

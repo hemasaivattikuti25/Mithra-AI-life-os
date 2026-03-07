@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { format, addDays, subDays, isSameDay, startOfDay, setHours, setMinutes } from 'date-fns';
+import * as XLSX from 'xlsx';
 import { notificationManager } from '../services/notifications';
 import { syncEngine } from '../services/syncEngine';
 import { apiFetch } from '../services/firebaseClient';
@@ -85,6 +86,45 @@ const mapHabitFromDB = (h) => ({
 
 const DataContext = createContext(null);
 
+/* ═══════════════════════════════════════════════════════════════
+   GAMIFICATION — XP, Levels, Badges
+   ═══════════════════════════════════════════════════════════════ */
+const XP_REWARDS = {
+  COMPLETE_TASK: 10,
+  COMPLETE_HABIT: 15,
+  STREAK_7: 50,
+  STREAK_14: 75,
+  STREAK_21: 100,
+  STREAK_30: 150,
+  STREAK_60: 250,
+  STREAK_90: 400,
+  STREAK_100: 500,
+  PERFECT_DAY: 100,
+  JOURNAL_ENTRY: 10,
+  FOCUS_SESSION: 20,
+};
+
+const XP_PER_LEVEL = 100;
+const getLevel = (xp) => Math.floor(xp / XP_PER_LEVEL) + 1;
+const getLevelProgress = (xp) => (xp % XP_PER_LEVEL) / XP_PER_LEVEL;
+
+const BADGE_DEFINITIONS = [
+  { id: 'first_task', name: 'First Step', icon: '🎯', desc: 'Complete your first task', check: (s) => s.tasksCompleted >= 1 },
+  { id: 'task_10', name: 'Task Master', icon: '✅', desc: 'Complete 10 tasks', check: (s) => s.tasksCompleted >= 10 },
+  { id: 'task_50', name: 'Productivity Pro', icon: '🏆', desc: 'Complete 50 tasks', check: (s) => s.tasksCompleted >= 50 },
+  { id: 'task_100', name: 'Centurion', icon: '💯', desc: 'Complete 100 tasks', check: (s) => s.tasksCompleted >= 100 },
+  { id: 'streak_7', name: 'Week Warrior', icon: '🔥', desc: '7-day habit streak', check: (s) => s.bestStreak >= 7 },
+  { id: 'streak_30', name: 'Monthly Master', icon: '⚡', desc: '30-day habit streak', check: (s) => s.bestStreak >= 30 },
+  { id: 'streak_100', name: 'Unstoppable', icon: '🌟', desc: '100-day habit streak', check: (s) => s.bestStreak >= 100 },
+  { id: 'habit_5', name: 'Habit Builder', icon: '🧱', desc: 'Create 5 habits', check: (s) => s.totalHabits >= 5 },
+  { id: 'journal_5', name: 'Reflector', icon: '📝', desc: 'Write 5 journal entries', check: (s) => s.journalEntries >= 5 },
+  { id: 'focus_10', name: 'Deep Focus', icon: '🧘', desc: 'Complete 10 focus sessions', check: (s) => s.focusSessions >= 10 },
+  { id: 'early_bird', name: 'Early Bird', icon: '🌅', desc: 'Complete a task before 7am', check: (s) => s.earlyBird },
+  { id: 'night_owl', name: 'Night Owl', icon: '🦉', desc: 'Complete a task after 10pm', check: (s) => s.nightOwl },
+  { id: 'perfect_week', name: 'Perfect Week', icon: '💎', desc: 'All habits done 7 days straight', check: (s) => s.perfectWeeks >= 1 },
+  { id: 'level_5', name: 'Rising Star', icon: '⭐', desc: 'Reach Level 5', check: (s) => s.level >= 5 },
+  { id: 'level_10', name: 'Legend', icon: '👑', desc: 'Reach Level 10', check: (s) => s.level >= 10 },
+];
 
 /* ═══════════════════════════════════════════════════════════════
    COLOR THEME PALETTES — Each palette defines accent colors
@@ -452,12 +492,19 @@ export function DataProvider({ children }) {
     syncFocusToTracker: true,
   }));
 
+  // Gamification state
+  const [xp, setXp] = useState(() => loadFromStorage('gamification-xp', 0));
+  const [badges, setBadges] = useState(() => loadFromStorage('gamification-badges', []));
+  const [xpPopup, setXpPopup] = useState(null); // { amount, reason } — transient
+
   // Persist settings to localStorage whenever they change
   useEffect(() => { saveToStorage('theme', theme); }, [theme]);
   useEffect(() => { saveToStorage('colorTheme', colorTheme); }, [colorTheme]);
   useEffect(() => { saveToStorage('notifications', notifications); }, [notifications]);
   useEffect(() => { saveToStorage('focusSound', focusSound); }, [focusSound]);
   useEffect(() => { saveToStorage('syncSettings', syncSettings); }, [syncSettings]);
+  useEffect(() => { saveToStorage('gamification-xp', xp); }, [xp]);
+  useEffect(() => { saveToStorage('gamification-badges', badges); }, [badges]);
   useEffect(() => { saveToStorage('notificationSettings', notificationSettings); }, [notificationSettings]);
 
   // NOTE: tasks/habits are NO LONGER auto-saved to localStorage on every change.
@@ -544,6 +591,26 @@ export function DataProvider({ children }) {
 
   const toggleNotifications = useCallback(() => setNotifications(prev => !prev), []);
   const toggleFocusSound = useCallback(() => setFocusSound(prev => !prev), []);
+
+  // Gamification helpers
+  const awardXP = useCallback((amount, reason) => {
+    setXp(prev => prev + amount);
+    setXpPopup({ amount, reason });
+    setTimeout(() => setXpPopup(null), 2500);
+  }, []);
+
+  const checkBadges = useCallback((stats) => {
+    const newBadges = [];
+    BADGE_DEFINITIONS.forEach(b => {
+      if (!badges.includes(b.id) && b.check(stats)) {
+        newBadges.push(b.id);
+      }
+    });
+    if (newBadges.length > 0) {
+      setBadges(prev => [...prev, ...newBadges]);
+    }
+    return newBadges;
+  }, [badges]);
 
   // Notification functions
   const updateNotificationSettings = useCallback((updates) => {
@@ -685,6 +752,14 @@ export function DataProvider({ children }) {
 
     const willComplete = !task.completed;
     const updated = { ...task, completed: willComplete };
+
+    // Award XP on task completion
+    if (willComplete) {
+      awardXP(XP_REWARDS.COMPLETE_TASK, 'Task completed');
+      const hour = new Date().getHours();
+      if (hour < 7) awardXP(5, 'Early bird bonus');
+      if (hour >= 22) awardXP(5, 'Night owl bonus');
+    }
 
     // Step 1: ALWAYS save locally first
     setTasks(prev => {
@@ -951,28 +1026,38 @@ export function DataProvider({ children }) {
       consistency: newConsistency,
     };
 
-    // Write to API FIRST
-    if (user) {
-      try {
-        await apiFetch(`/habits/${id}`, {
-          method: 'PUT',
-          body: JSON.stringify(mapHabitToDB(updated)),
-        });
-      } catch (error) {
-        // Continue with local update as fallback
-      }
-    }
+    // OPTIMISTIC: Update state immediately for instant UI feedback
+    setHabits(prev => {
+      const next = prev.map(h => h.id === id ? updated : h);
+      saveToStorage('habits', next);
+      return next;
+    });
 
     if (isDone && !alreadyDone && STREAK_MILESTONES.includes(newStreak)) {
       setLastMilestone({ habit: updated.title, streak: newStreak, color: updated.color });
       setTimeout(() => setLastMilestone(null), 5000);
     }
 
-    setHabits(prev => {
-      const next = prev.map(h => h.id === id ? updated : h);
-      saveToStorage('habits', next);
-      return next;
-    });
+    // Award XP for habit completion + streak bonuses
+    if (isDone && !alreadyDone) {
+      awardXP(XP_REWARDS.COMPLETE_HABIT, 'Habit done');
+      if (XP_REWARDS[`STREAK_${newStreak}`]) {
+        awardXP(XP_REWARDS[`STREAK_${newStreak}`], `${newStreak}-day streak!`);
+      }
+    }
+
+    // Then sync to API (state already updated above)
+    if (user) {
+      try {
+        await apiFetch(`/habits/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(mapHabitToDB(updated)),
+        });
+      } catch {
+        // Local state already updated; sync engine will retry
+        syncEngine.enqueue({ table: 'habits', action: 'update', data: mapHabitToDB(updated) });
+      }
+    }
   }, [habits, user]);
 
   /* ── Generate calendar events from tasks ── */
@@ -993,20 +1078,19 @@ export function DataProvider({ children }) {
       }));
   }, [tasks, syncSettings.syncTasksToCalendar]);
 
-  /* ── Generate calendar events from habits (60-day static window) ── */
+  /* ── Generate calendar events from habits (21-day window: 3 past + 18 future) ── */
   const habitCalendarEvents = useMemo(() => {
     if (!syncSettings.syncHabitsToCalendar) return [];
 
     const events = [];
-    const daysToRender = 60; // Render habits for 15 days past + 45 days future
-    // Anchor the start point to exactly 15 days ago so the grid is stable
+    const daysToRender = 21; // 3 days past + 18 days future (was 60 which caused Feb 20 bug)
     const todayStart = new Date();
-    todayStart.setDate(todayStart.getDate() - 15);
+    todayStart.setDate(todayStart.getDate() - 3);
     todayStart.setHours(0, 0, 0, 0);
 
     habits.forEach((h, index) => {
-      // Stagger start hours for different habits: 6 AM, 7 AM, etc. if no scheduleTime
-      let baseHour = 6 + index;
+      // Stagger hours across the day, cycling through 6AM-9PM to avoid overflow with many habits
+      let baseHour = 6 + (index % 16);
       let baseMin = 0;
       if (h.scheduleTime) {
         const [sh, sm] = h.scheduleTime.split(':').map(Number);
@@ -1061,14 +1145,119 @@ export function DataProvider({ children }) {
     setSyncSettings(prev => ({ ...prev, syncFocusToTracker: !prev.syncFocusToTracker }));
   }, []);
 
+  /* ── Export as Excel (.xlsx) — replaces CSV ── */
+  const exportAsExcel = useCallback(() => {
+    let journal = [], moodHistory = [], focusSessions = [];
+    try { journal = JSON.parse(localStorage.getItem(getUserScopedKey('journal')) || '[]'); } catch {}
+    try { moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]'); } catch {}
+    try { focusSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch {}
+
+    const wb = XLSX.utils.book_new();
+
+    // Tasks sheet
+    const tasksData = (tasks || []).map(t => ({
+      Title: t.title || '',
+      Status: t.completed ? 'Completed' : 'Pending',
+      Priority: t.priority || 'medium',
+      List: t.listId || '',
+      DueDate: t.dueDate ? format(new Date(t.dueDate), 'yyyy-MM-dd') : '',
+      Notes: t.details || '',
+    }));
+    if (tasksData.length > 0)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tasksData), 'Tasks');
+
+    // Habits sheet
+    const habitsData = (habits || []).map(h => ({
+      Title: h.title || '',
+      Category: h.category || '',
+      CurrentStreak: h.streak || 0,
+      BestStreak: h.bestStreak || 0,
+      Duration_min: h.focusDuration || 25,
+      ScheduledDays: (h.repeatDays || []).join(','),
+    }));
+    if (habitsData.length > 0)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(habitsData), 'Habits');
+
+    // Journal sheet
+    const journalData = (journal || []).map(j => ({
+      Date: j.date || '',
+      Mood: j.mood || '',
+      Content: (j.content || '').slice(0, 500),
+      Tags: (j.tags || []).join(';'),
+    }));
+    if (journalData.length > 0)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalData), 'Journal');
+
+    // Mood history sheet
+    if (moodHistory.length > 0)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(moodHistory), 'MoodHistory');
+
+    // Focus sessions sheet
+    if (focusSessions.length > 0)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(focusSessions), 'FocusSessions');
+
+    const wbout = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    if (blob.size > 1024 * 1024) {
+      console.warn('[Mithra] Excel export exceeds 1MB — download proceeding anyway');
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mithra-export-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [tasks, habits]);
+
   /* ── Export ALL data ── */
-  const exportData = useCallback(() => {
+  const exportData = useCallback((csvFormat = false) => {
     // Gather all user data from localStorage
     let events = [], journal = [], moodHistory = [], focusSessions = [];
     try { events = JSON.parse(localStorage.getItem(getUserScopedKey('calendar-events')) || '[]'); } catch { }
     try { journal = JSON.parse(localStorage.getItem(getUserScopedKey('journal')) || '[]'); } catch { }
     try { moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]'); } catch { }
     try { focusSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch { }
+
+    if (csvFormat) {
+      // CSV export — flatten tasks and habits into CSV
+      const escCsv = (v) => {
+        const s = String(v ?? '');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = ['Type,Title,Status,DueDate,Priority,Category,Streak,Tags'];
+
+      (tasks || []).forEach(t => {
+        lines.push([
+          'Task', escCsv(t.title), t.completed ? 'Completed' : 'Pending',
+          t.dueDate || '', t.priority || 'medium', escCsv(t.category || ''), '', ''
+        ].join(','));
+      });
+
+      (habits || []).forEach(h => {
+        lines.push([
+          'Habit', escCsv(h.title), 'Active',
+          '', '', escCsv(h.category || ''), h.streak || 0, ''
+        ].join(','));
+      });
+
+      (journal || []).forEach(j => {
+        lines.push([
+          'Journal', escCsv(j.content?.slice(0, 100) || ''), '',
+          j.date || '', '', '', '', escCsv((j.tags || []).join(';'))
+        ].join(','));
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mithra-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
 
     const data = {
       version: '1.0',
@@ -1110,16 +1299,20 @@ export function DataProvider({ children }) {
     // Settings
     syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus,
     // Export
-    exportData,
+    exportData, exportAsExcel,
+    // Gamification
+    xp, level: getLevel(xp), levelProgress: getLevelProgress(xp), badges, awardXP, checkBadges, xpPopup,
+    BADGE_DEFINITIONS, XP_REWARDS,
     // Loading state
     dataLoading,
   }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings,
     theme, colorTheme, accentColor, notifications, focusSound, notificationSettings,
+    xp, badges, xpPopup, awardXP, checkBadges,
     addTask, updateTask, deleteTask, toggleTask, starTask,
     addHabit, updateHabit, deleteHabit, toggleHabit,
     toggleTheme, changeColorTheme, toggleNotifications, toggleFocusSound,
     updateNotificationSettings, requestNotificationPermission,
-    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, exportData, dataLoading]);
+    toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, exportData, exportAsExcel, dataLoading]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

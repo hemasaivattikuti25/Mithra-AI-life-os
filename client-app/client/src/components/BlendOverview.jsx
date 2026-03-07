@@ -1,6 +1,7 @@
-import React from 'react';
-import { Users, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Check, Sparkles, Loader2, TrendingUp, Zap, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { apiFetch } from '../services/firebaseClient';
 
 function statusBadge(pct) {
     if (pct === 100) return { label: 'Perfect Day', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
@@ -19,9 +20,9 @@ export function BlendOverview({ workspaceId, members = [], habits = [] }) {
 
     // Calculate stats per member
     const memberStats = members.map(m => {
-        const memberHabits = habits.filter(h => h.user_id === m.userId);
+        const memberHabits = habits.filter(h => h.userId === m.userId);
         const completedToday = memberHabits.filter(h =>
-            Array.isArray(h.consistency) && h.consistency.includes(todayStr)
+            Array.isArray(h.completedDates) && h.completedDates.includes(todayStr)
         ).length;
         const total = memberHabits.length;
         const pct = total > 0 ? Math.round((completedToday / total) * 100) : 0;
@@ -207,6 +208,120 @@ export function BlendOverview({ workspaceId, members = [], habits = [] }) {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* ── BLEND AI COACH ── */}
+            <BlendAICoach memberA={memberA} memberB={memberB} habits={habits} />
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BLEND AI COACH — Shared accountability coaching
+   ═══════════════════════════════════════════════════════════════ */
+function BlendAICoach({ memberA, memberB, habits }) {
+    const [coaching, setCoaching] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const generate = async () => {
+        setLoading(true);
+        try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const summaryA = `${memberA.fullName}: ${memberA.pct}% today, ${memberA.maxStreak}-day max streak`;
+            const summaryB = `${memberB.fullName}: ${memberB.pct}% today, ${memberB.maxStreak}-day max streak`;
+            const sharedCount = habits.filter(h =>
+                habits.some(h2 => h2.userId !== h.userId && h2.title.toLowerCase() === h.title.toLowerCase())
+            ).length;
+
+            const prompt = `You are a warm, motivating habit accountability coach for a pair called "Blend". Give a short (2-3 sentences MAX), highly personalized message that:
+1. Celebrates whoever is doing better today
+2. Encourages the other person with specific action
+3. Mentions their shared habits if applicable (${sharedCount} shared habits)
+
+Data: ${summaryA}. ${summaryB}. Today: ${todayStr}.
+Be specific, warm, and use their first names. No bullet points.`;
+
+            const res = await apiFetch('/chat', {
+                method: 'POST',
+                body: JSON.stringify({ message: prompt, history: [] }),
+            });
+            setCoaching(res.reply || null);
+        } catch {
+            setCoaching("Keep pushing together! Every habit done today is a win for your Blend. 💪");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const aheadMember = memberA.pct >= memberB.pct ? memberA : memberB;
+    const behindMember = memberA.pct >= memberB.pct ? memberB : memberA;
+    const gap = Math.abs(memberA.pct - memberB.pct);
+
+    return (
+        <div className="rounded-2xl p-4 space-y-3"
+            style={{
+                background: 'linear-gradient(135deg, var(--glass-bg) 0%, rgba(var(--color-accent-rgb, 194,24,91),0.05) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid var(--glass-border)',
+            }}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                        style={{ background: 'var(--accent-glow)' }}>
+                        <Sparkles size={14} style={{ color: 'var(--accent-color)' }} />
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
+                            AI Coach
+                        </p>
+                        <p className="text-[10px] opacity-40" style={{ color: 'var(--text-dim)' }}>Your Blend accountability partner</p>
+                    </div>
+                </div>
+                <button
+                    onClick={generate}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 hover:scale-105 active:scale-95"
+                    style={{ background: 'var(--accent-color)', color: 'white' }}
+                >
+                    {loading ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
+                    {loading ? 'Coaching…' : 'Coach me'}
+                </button>
+            </div>
+
+            {/* Quick stats strip */}
+            {gap > 0 && (
+                <div className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs"
+                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                    <TrendingUp size={12} style={{ color: 'var(--accent-color)' }} />
+                    <span style={{ color: 'var(--text-dim)' }}>
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            {aheadMember.fullName?.split(' ')[0]}
+                        </span>
+                        {' '}is ahead by{' '}
+                        <span className="font-semibold" style={{ color: 'var(--accent-color)' }}>{gap}%</span>
+                        {' '}today
+                        {behindMember.pct === 0 && ` — ${behindMember.fullName?.split(' ')[0]} hasn't started yet`}
+                    </span>
+                    <Star size={11} className="ml-auto" style={{ color: 'var(--accent-color)', opacity: 0.6 }} />
+                </div>
+            )}
+
+            {/* AI message */}
+            {coaching ? (
+                <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl p-3 text-sm leading-relaxed"
+                    style={{ background: 'var(--accent-glow)', color: 'var(--text-primary)' }}
+                >
+                    <Sparkles size={11} className="inline mr-1.5 opacity-50" style={{ color: 'var(--accent-color)' }} />
+                    {coaching}
+                </motion.div>
+            ) : (
+                <p className="text-xs text-center py-2 opacity-40" style={{ color: 'var(--text-dim)' }}>
+                    Tap "Coach me" for personalized accountability
+                </p>
             )}
         </div>
     );

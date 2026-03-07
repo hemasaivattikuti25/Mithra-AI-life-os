@@ -1,10 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Moon, Sun, Database, LogOut, Calendar, Bell, BellOff, Download,
   ChevronDown, Clock, User, Mail, Phone, MapPin, Globe, Camera,
   Edit3, Check, X, Lock, Shield, AlertCircle, Loader2, Pencil,
-  CheckSquare, Activity, Flame, AlertTriangle, Info, Star, ExternalLink, Heart, Linkedin, Instagram
+  CheckSquare, Activity, Flame, AlertTriangle, Info, Star, ExternalLink, Heart, Linkedin, Instagram,
+  FileSpreadsheet, Image
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -297,7 +298,7 @@ export default function Settings() {
     focusSound, toggleFocusSound,
     notificationSettings, updateNotificationSettings, requestNotificationPermission,
     syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus,
-    exportData,
+    exportData, exportAsExcel,
   } = useData();
 
   const { profile, updateProfile, updatePassword, signOut } = useAuth();
@@ -666,18 +667,63 @@ export default function Settings() {
         {/* ═══════ DATA ZONE ═══════ */}
         <section className="glass-panel glass-shine rounded-2xl p-6">
           <h2 className="text-red-500 uppercase text-xs font-bold tracking-widest mb-4">Data Zone</h2>
-          <button onClick={exportData}
+          <button onClick={() => exportData(false)}
             className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
             onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <div className="flex items-center gap-3">
               <Database size={20} style={{ color: 'var(--text-dim)' }} />
               <div>
-                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>Export My Data</div>
-                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Download JSON of all journals & tasks</div>
+                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>Export as JSON</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Full backup of all data</div>
               </div>
             </div>
             <Download size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
+          </button>
+          <button onClick={exportAsExcel}
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet size={20} style={{ color: 'var(--text-dim)' }} />
+              <div>
+                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>Export as Excel</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Tasks, habits &amp; journal in .xlsx</div>
+              </div>
+            </div>
+            <Download size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const html2canvas = (await import('html2canvas')).default;
+                const canvas = await html2canvas(document.body, { backgroundColor: null, scale: 1.5 });
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                if (blob.size > 1024 * 1024) {
+                  alert('Screenshot exceeds 1 MB — try a smaller window.');
+                  return;
+                }
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `mithra-screenshot-${new Date().toISOString().slice(0,10)}.jpg`;
+                a.click();
+              } catch (e) {
+                console.error('Screenshot failed', e);
+              }
+            }}
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div className="flex items-center gap-3">
+              <Image size={20} style={{ color: 'var(--text-dim)' }} />
+              <div>
+                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>Save as JPG</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Screenshot of current view (&lt;1 MB)</div>
+              </div>
+            </div>
+            <Camera size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
           </button>
           <button onClick={signOut}
             className="w-full flex items-center justify-between p-4 mt-2 rounded-lg transition-colors text-left group"

@@ -5,7 +5,7 @@ import {
   Star, Clock, ArrowRight, Zap, BookOpen,
   ChevronRight, Sparkles, Target, Flame, Dumbbell,
   Code, Brain, Heart, AlertTriangle,
-  TrendingUp, BarChart3, Inbox, FileText, Share2
+  TrendingUp, BarChart3, Inbox, FileText, Share2, Award, Trophy
 } from 'lucide-react';
 import { format, isToday as isTodayFn } from 'date-fns';
 import clsx from 'clsx';
@@ -18,6 +18,7 @@ import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 import ShareStatsCard from '../components/ShareStatsCard';
 import DailyPlanCard from '../components/DailyPlanCard';
+import WeeklyReport from '../components/WeeklyReport';
 
 /* ───── animation config ───── */
 const luxuryEase = [0.22, 1, 0.36, 1];
@@ -186,7 +187,7 @@ export default function Dashboard() {
   // ── Share Stats Modal ──
   const [showShareStats, setShowShareStats] = useState(false);
   
-  const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents } = useData();
+  const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents, xp, level, levelProgress, badges, BADGE_DEFINITIONS, xpPopup, checkBadges } = useData();
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const isLight = theme === 'light';
@@ -349,6 +350,25 @@ export default function Dashboard() {
     const last = moodHistory[0]; // already sorted newest-first
     return MOOD_EMOJIS.find(m => m.value === last.mood) || null;
   }, [moodHistory, selectedMood]);
+
+  /* Check badges whenever stats change */
+  useEffect(() => {
+    if (!checkBadges) return;
+    const hour = new Date().getHours();
+    const journalCount = (() => { try { return JSON.parse(localStorage.getItem(getUserScopedKey('journal-entries')) || '[]').length; } catch { return 0; } })();
+    const focusSessCount = parseInt(focusSessionCount) || 0;
+    checkBadges({
+      tasksCompleted: completedTasks,
+      bestStreak: bestStreak,
+      totalHabits: totalHabits,
+      journalEntries: journalCount,
+      focusSessions: focusSessCount,
+      earlyBird: hour < 7,
+      nightOwl: hour >= 22,
+      perfectWeeks: 0,
+      level: level,
+    });
+  }, [completedTasks, bestStreak, totalHabits, level]);
 
   /* Overdue tasks (past due, not completed) */
   const overdueTasks = useMemo(() => {
@@ -825,6 +845,90 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ════════════════════════════════════
+          XP & LEVEL — Gamification card
+          ════════════════════════════════════ */}
+        <GlassCard custom={5.5} className="p-6 md:p-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <Trophy className="w-[18px] h-[18px] text-[var(--accent-color)]" />
+              <h2 className="text-[var(--text-primary)] text-lg font-semibold tracking-tight">
+                Level {level}
+              </h2>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)' }}>
+              {xp} XP
+            </span>
+          </div>
+
+          {/* XP Progress Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-[10px] mb-1">
+              <span style={{ color: 'var(--text-dim)' }}>Level {level}</span>
+              <span style={{ color: 'var(--text-dim)' }}>Level {level + 1}</span>
+            </div>
+            <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--glass-border)' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${levelProgress * 100}%` }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full rounded-full"
+                style={{ background: 'linear-gradient(90deg, var(--accent-color), var(--accent-secondary))' }}
+              />
+            </div>
+            <p className="text-[10px] mt-1 text-right" style={{ color: 'var(--text-dim)' }}>
+              {Math.round(levelProgress * 100)}% to next level
+            </p>
+          </div>
+
+          {/* Badges */}
+          {badges && badges.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Award size={12} className="inline mr-1" style={{ color: 'var(--accent-color)' }} />
+                Badges ({badges.length}/{BADGE_DEFINITIONS.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {BADGE_DEFINITIONS.filter(b => badges.includes(b.id)).map(badge => (
+                  <motion.div
+                    key={badge.id}
+                    initial={{ scale: 0, rotate: -15 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs"
+                    style={{ background: 'var(--accent-glow)', border: '1px solid var(--glass-border)' }}
+                    title={badge.desc}
+                  >
+                    <span className="text-base">{badge.icon}</span>
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{badge.name}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(!badges || badges.length === 0) && (
+            <p className="text-xs text-center py-2" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>
+              Complete tasks and habits to earn badges!
+            </p>
+          )}
+        </GlassCard>
+
+        {/* XP Popup */}
+        <AnimatePresence>
+          {xpPopup && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.6 }}
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-2xl"
+              style={{ background: 'var(--accent-color)', color: '#fff' }}
+            >
+              <Zap size={16} className="text-yellow-300" />
+              <span className="font-bold text-sm">+{xpPopup.amount} XP</span>
+              <span className="text-xs opacity-80">{xpPopup.reason}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ════════════════════════════════════
           WEEKLY ANALYTICS GRAPH 
           ════════════════════════════════════ */}
         <GlassCard custom={6} className="p-6 md:p-8">
@@ -848,6 +952,13 @@ export default function Dashboard() {
           </div>
           <WeeklyAnalyticsChart tasks={realTasks || []} habits={habits || []} isLight={isLight} />
         </GlassCard>
+
+        {/* ════════════════════════════════════
+          WEEKLY AI PRODUCTIVITY REPORT
+          ════════════════════════════════════ */}
+        <motion.div variants={sectionReveal} custom={6.5}>
+          <WeeklyReport />
+        </motion.div>
 
         {/* ════════════════════════════════════
           JOURNAL ENTRIES — recent entries
