@@ -6,6 +6,7 @@ import {
   Upload, AlertTriangle, Clock, BarChart3, Sparkles,
   X, FileSpreadsheet, Image as ImageIcon
 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useData, getUserScopedKey } from '../context/DataContext';
 import { authService } from '../services/firebaseClient';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
@@ -25,7 +26,7 @@ const isAPIConfigured = !!API_BASE;
 const INITIAL_MSG = [
   {
     id: 1, sender: 'ai', type: 'text',
-    content: "Hey! I'm Dost — your AI companion in Mithra. Here's what I can do:\n\n🗂 **Create tasks/habits** — \"Add task: Finish report by tomorrow\"\n✏️ **Edit/Delete** — \"Delete task Finish report\" or \"Edit habit Reading to 45 min\"\n📊 **Summarize** — \"Summarize my day\" or \"How are my habits?\"\n🎤 **Voice** — Tap the mic to speak\n📎 **Import files** — Upload CSV, Excel, or images\n⚠️ **Conflicts** — I'll warn you about scheduling overlaps\n\nWhat would you like to do?"
+    content: "Hey! I'm Dost — your AI companion. Here's what I can do:\n\n� **Tasks** — \"Call amma at 3pm\" or \"Add task: report by Friday\"\n🔥 **Habits** — \"I want to go gym for next 20 days\"\n📅 **Events** — \"Class from 2-7pm\" or \"Schedule meeting at 10am\"\n✨ **Smart Schedule** — \"Plan my day\" for an optimized AI day plan\n📊 **Summary** — \"Summarize my day\" or \"How are my habits?\"\n🎤 **Voice** — Tap the mic to speak\n\nWhat would you like to do?"
   },
 ];
 
@@ -35,7 +36,22 @@ const INITIAL_MSG = [
 function parseIntent(input, tasks, habits) {
   const lower = input.toLowerCase().trim();
 
-  // ── CREATE TASK ──
+  // ── SMART SCHEDULE ──
+  if (/smart\s*schedule|plan\s+my\s+day|organize\s+my\s+day|create\s+(?:a\s+)?schedule|make\s+(?:a\s+)?schedule|schedule\s+my\s+day|productive\s+day/i.test(lower)) {
+    return { type: 'smart_schedule' };
+  }
+
+  // ── SCHEDULE CONFIRMATION ──
+  if (/^(?:yes|yeah|yep|sure|ok|okay|apply|go\s+ahead|do\s+it|change|update|confirm|sounds\s+good|let'?s\s+do\s+it)[\s!.]*$/i.test(lower)) {
+    return { type: 'schedule_apply_yes' };
+  }
+
+  // ── SCHEDULE UNDO ──
+  if (/undo\s*schedule|revert\s*(?:schedule)?|restore\s*(?:plan)?|go\s+back\s+(?:to\s+)?(?:original|my)\s*(?:plan)?|bring\s+back(?:\s+my\s+plan)?/i.test(lower)) {
+    return { type: 'schedule_undo' };
+  }
+
+  // ── CREATE TASK (standard) ──
   const addTaskMatch = input.match(/(?:add|create|new|make)\s+(?:a\s+)?(?:task|todo)[:\s]+(.+)/i) ||
     input.match(/(?:remind me to|i need to|i have to)\s+(.+)/i);
 
@@ -43,17 +59,49 @@ function parseIntent(input, tasks, habits) {
     const rest = addTaskMatch[1].trim();
     const byMatch = rest.match(/(.+?)\s+by\s+(tomorrow|today|next\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/i);
     let title = rest, dueDate = new Date();
-    if (byMatch) {
-      title = byMatch[1].trim();
-      dueDate = parseFuzzyDate(byMatch[2]);
+    if (byMatch) { title = byMatch[1].trim(); dueDate = parseFuzzyDate(byMatch[2]); }
+    const timeMatch = rest.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+    let hasTime = false;
+    if (timeMatch) {
+      const pt = parseClockTime(timeMatch[1]);
+      if (pt) { dueDate = new Date(); dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
     }
     let priority = 'medium';
     if (/urgent|asap|critical|important|high/i.test(rest)) priority = 'high';
     if (/low\s*priority|whenever|eventually/i.test(rest)) priority = 'low';
-    return { type: 'create_task', title, dueDate, priority };
+    return { type: 'create_task', title, dueDate, priority, hasTime, listId: 'dost' };
   }
 
-  // ── CREATE EVENT/MEETING ──
+  // ── PERSON-BASED TASK (call/meet/text someone) ──
+  const personTaskMatch = input.match(/^(?:call|ring|phone|message|text|meet|ping|talk\s+to)\s+([\w\s]+?)(?:\s+(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+(?:today|tomorrow|on\s+\w+))?[\s.,!]*$/i);
+  if (personTaskMatch) {
+    const person = personTaskMatch[1].trim();
+    const timeStr = personTaskMatch[2];
+    let dueDate = new Date(); let hasTime = false;
+    if (timeStr) {
+      const pt = parseClockTime(timeStr);
+      if (pt) { dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
+    }
+    const verb = input.match(/^(call|ring|phone|message|text|meet|ping|talk\s+to)/i)?.[1] || 'Call';
+    const verbTitle = verb.charAt(0).toUpperCase() + verb.slice(1).replace(/\s+to$/i, '');
+    return { type: 'create_task', title: `${verbTitle} ${person}`, dueDate, priority: 'medium', hasTime, listId: 'dost' };
+  }
+
+  // ── CREATE EVENT (time-range block: class from 2-7, yoga 6-7am) ──
+  const timeRangeBlockMatch = input.match(/(?:class|lecture|study\s*(?:session)?|training|workshop|session|appointment|yoga|gym\s*class|spinning|dance|tuition|college|school)\s+(?:from\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+  if (timeRangeBlockMatch) {
+    const titleMatch = input.match(/^([\w\s]+?)(?:\s+from|\s+\d)/i);
+    const title = (titleMatch?.[1]?.trim() || 'Event').replace(/^\s*(a|an|the)\s+/i, '');
+    const start = parseClockTime(timeRangeBlockMatch[1]);
+    const end = parseClockTime(timeRangeBlockMatch[2]);
+    const eventDate = new Date();
+    const endDate = new Date();
+    if (start) eventDate.setHours(start.hour, start.minute, 0, 0);
+    if (end) endDate.setHours(end.hour, end.minute, 0, 0);
+    return { type: 'create_event', title, eventDate, endDate, time: `${timeRangeBlockMatch[1]} – ${timeRangeBlockMatch[2]}`, isBlock: true };
+  }
+
+  // ── CREATE EVENT/MEETING (standard) ──
   const eventMatch = input.match(/(?:add|create|schedule|set|book)\s+(?:a\s+|an\s+|me\s+(?:a\s+|an\s+)?)?(?:meeting|event|appointment|call|session)[:\s]+(.+)/i)
     || input.match(/(?:add|create|schedule|set|book)\s+(?:a\s+|an\s+|me\s+(?:a\s+|an\s+)?)(.+?)(?:\s+(?:meeting|event|appointment|call))/i);
   if (eventMatch) {
@@ -69,21 +117,43 @@ function parseIntent(input, tasks, habits) {
       const ampm = (timeMatch[3] || '').toLowerCase();
       if (ampm === 'pm' && h < 12) h += 12;
       if (ampm === 'am' && h === 12) h = 0;
-      if (!ampm && h < 8) h += 12; // assume PM for small numbers
+      if (!ampm && h < 8) h += 12;
       eventDate.setHours(h, m, 0, 0);
     }
     return { type: 'create_event', title, eventDate, time: timeMatch ? `${timeMatch[0].replace(/^(?:at|@)\s*/i, '')}` : null };
   }
 
-  // ── CREATE HABIT ──
+  // ── CREATE HABIT (standard: add habit: ...) ──
   const addHabitMatch = input.match(/(?:add|create|new|start)\s+(?:a\s+)?habit[:\s]+(.+)/i);
   if (addHabitMatch) {
     const rest = addHabitMatch[1].trim();
     const durMatch = rest.match(/(.+?)\s+(?:for\s+)?(\d+)\s*(?:min|minutes?)/i);
     let title = rest, duration = 30;
     if (durMatch) { title = durMatch[1].trim(); duration = parseInt(durMatch[2]); }
+    const goalDays = parseDurationDays(rest);
+    const cleanTitle = title.replace(/\s+for\s+(?:next\s+)?\d+\s*(?:days?|weeks?|months?)/i, '').trim();
+    let scheduleTime = '07:00';
+    if (/evening|night/i.test(rest)) scheduleTime = '18:00';
+    if (/afternoon/i.test(rest)) scheduleTime = '15:00';
+    const category = detectCategory(cleanTitle);
+    return { type: 'create_habit', title: cleanTitle, duration, category, streakGoal: goalDays || 30, scheduleTime };
+  }
+
+  // ── NATURAL HABIT (I want to go gym for 20 days) ──
+  const wantHabitMatch = input.match(/(?:i\s+want\s+to|i\s+(?:will|plan\s+to|gonna|going\s+to)|let\s+me|starting|i\s+should)\s+(?:go\s+(?:to\s+(?:the?\s+)?)?|do\s+|start\s+|practice\s+)?(?:gym|meditat|yoga|run|exercise|workout|jog|swim|read|study|walk|stretch)/i)
+    || input.match(/(?:gym|meditation|yoga|running|jogging|swimming|reading|workout|walking|stretching)\s+(?:every\s+(?:day|morning|evening)|for\s+(?:next\s+)?\d+\s*(?:days?|weeks?|months?))/i);
+  if (wantHabitMatch) {
+    const actMatch = input.match(/(?:gym|meditat(?:ion|e)?|yoga|run(?:ning)?|exercis(?:e|ing)?|workout|jog(?:ging)?|swim(?:ming)?|read(?:ing)?|study(?:ing)?|walk(?:ing)?|stretch(?:ing)?)/i);
+    const rawAct = actMatch?.[0] || 'Exercise';
+    const title = rawAct.charAt(0).toUpperCase() + rawAct.slice(1).toLowerCase()
+      .replace(/ning$/, '').replace(/ing$/, '').replace(/ion$/, '').replace(/e$/, '');
+    const goalDays = parseDurationDays(input);
+    let scheduleTime = '07:00';
+    if (/evening|pm\b|night/i.test(input)) scheduleTime = '18:00';
+    if (/morning|early/i.test(input)) scheduleTime = '07:00';
+    if (/afternoon/i.test(input)) scheduleTime = '15:00';
     const category = detectCategory(title);
-    return { type: 'create_habit', title, duration, category };
+    return { type: 'create_habit', title, duration: 30, category, streakGoal: goalDays || 30, scheduleTime };
   }
 
   // ── DELETE OPERATIONS ──
@@ -106,7 +176,6 @@ function parseIntent(input, tasks, habits) {
     const type = editMatch[1].toLowerCase();
     const query = editMatch[2].trim().toLowerCase();
     const newValue = editMatch[3]?.trim();
-
     if (type === 'task') {
       const found = tasks.find(t => t.title.toLowerCase().includes(query));
       return { type: 'edit_task', query, newValue, found };
@@ -123,27 +192,10 @@ function parseIntent(input, tasks, habits) {
     return { type: 'complete_task', query, found };
   }
 
-  // ── HABIT STATUS ── 
-  if (/how.*(?:are|is).*(?:my\s+)?habits?|habit.*status|my\s+habits?|habits?\s+status|show.*habits?|habits?\??$/i.test(lower)) {
-    return { type: 'habit_status' };
-  }
-
-  // ── STREAK CHECK ──
-  if (/(?:my\s+)?streak|(?:\d+)\s*days?\s*(?:of\s+)?streak|show.*streak|streak.*status/i.test(lower)) {
-    return { type: 'habit_status' };
-  }
-
-  // ── MOOD CHECK ──
-  if (/mood|how.*feel|emotion|feeling|how\s+am\s+i/i.test(lower)) {
-    return { type: 'mood_check' };
-  }
-
-  // ── SUMMARIZE ── 
-  if (/summar|overview|daily.*report|weekly.*report|recap|my\s+day|today.*glance/i.test(lower)) {
-    return { type: 'summarize' };
-  }
-
-  // ── SMART RESPONSES ──
+  if (/how.*(?:are|is).*(?:my\s+)?habits?|habit.*status|my\s+habits?|habits?\s+status|show.*habits?|habits?\??$/i.test(lower)) return { type: 'habit_status' };
+  if (/(?:my\s+)?streak|(?:\d+)\s*days?\s*(?:of\s+)?streak|show.*streak|streak.*status/i.test(lower)) return { type: 'habit_status' };
+  if (/mood|how.*feel|emotion|feeling|how\s+am\s+i/i.test(lower)) return { type: 'mood_check' };
+  if (/summar|overview|daily.*report|weekly.*report|recap|my\s+day|today.*glance/i.test(lower)) return { type: 'summarize' };
   if (/hello|hi|hey|what's up|howdy|good\s*(?:morning|afternoon|evening)/i.test(lower)) return { type: 'greeting' };
   if (/stress|overwhelm|anxious|worried|tired|exhausted/i.test(lower)) return { type: 'wellbeing' };
   if (/motivat|lazy|procrastinat|can't start|stuck/i.test(lower)) return { type: 'motivation' };
@@ -173,6 +225,31 @@ function parseFuzzyDate(text) {
   return today;
 }
 
+/* ── Parse a clock time string → { hour, minute } ── */
+function parseClockTime(text) {
+  if (!text) return null;
+  const m = text.trim().match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!m) return null;
+  let hour = parseInt(m[1]);
+  const minute = parseInt(m[2] || '0');
+  const ampm = (m[3] || '').toLowerCase();
+  if (ampm === 'pm' && hour < 12) hour += 12;
+  if (ampm === 'am' && hour === 12) hour = 0;
+  if (!ampm && hour < 7) hour += 12; // assume PM for ambiguous small numbers
+  return { hour, minute };
+}
+
+/* ── Parse duration like "next 20 days", "3 weeks" → number of days ── */
+function parseDurationDays(text) {
+  const m = text.match(/for\s+(?:next\s+)?(\d+)\s*(days?|weeks?|months?)/i);
+  if (!m) return null;
+  const n = parseInt(m[1]);
+  const unit = m[2].toLowerCase();
+  if (unit.startsWith('week')) return n * 7;
+  if (unit.startsWith('month')) return n * 30;
+  return n;
+}
+
 /* ── Detect category from title ── */
 function detectCategory(title) {
   const l = title.toLowerCase();
@@ -180,7 +257,7 @@ function detectCategory(title) {
   if (/read|book|study|learn|course|class/i.test(l)) return 'Learning';
   if (/meditat|breath|mindful|calm|relax/i.test(l)) return 'Mindfulness';
   if (/code|work|meeting|email|project|document/i.test(l)) return 'Work';
-  return 'Personal';
+  return 'Dost';
 }
 
 /* ── Build daily summary from real data ── */
@@ -240,6 +317,63 @@ function checkConflicts(tasks, newTaskDate) {
   });
 }
 
+/* ── Build optimal Smart Schedule from today's tasks + habits ── */
+function buildSmartSchedule(tasks, habits) {
+  const now = new Date();
+  const startHour = Math.max(now.getHours() + 1, 7);
+  const blocks = [];
+  let slot = startHour;
+
+  const addBlock = (id, title, type, emoji, color, durationH, sourceId) => {
+    const sh = Math.floor(slot); const sm = slot % 1 >= 0.5 ? 30 : 0;
+    const eh = Math.floor(slot + durationH); const em = (slot + durationH) % 1 >= 0.5 ? 30 : 0;
+    blocks.push({
+      id, title, type, emoji, color, sourceId,
+      startTime: `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`,
+      endTime: `${String(Math.min(eh, 22)).padStart(2, '0')}:${String(em).padStart(2, '0')}`
+    });
+    slot += durationH + 0.25; // 15-min gap between blocks
+  };
+
+  const pending = tasks.filter(t => !t.completed);
+  const todayHabits = habits.filter(h => !h.todayDone);
+  const highTasks = pending.filter(t => (t.priority || '').toLowerCase() === 'high');
+  const medTasks = pending.filter(t => ['medium', 'med'].includes((t.priority || '').toLowerCase()));
+  const lowTasks = pending.filter(t => (t.priority || '').toLowerCase() === 'low');
+
+  if (slot <= 8) addBlock('morning', 'Morning Routine & Hydration', 'break', '🌅', '#f97316', 0.5);
+
+  todayHabits.slice(0, 2).forEach((h, i) =>
+    addBlock(`habit-${h.id}`, h.title, 'habit', '🔥', '#f97316', Math.max((h.focusDuration || 25) / 60, 0.5), h.id));
+
+  highTasks.slice(0, 2).forEach((t, i) =>
+    addBlock(`high-${t.id}`, t.title, 'task', '🔴', '#ef4444', 1, t.id));
+
+  if (slot > 12 && slot < 14) { addBlock('lunch', 'Lunch Break', 'break', '🍱', '#84cc16', 1); }
+
+  medTasks.slice(0, 2).forEach((t) =>
+    addBlock(`med-${t.id}`, t.title, 'task', '🟡', '#f59e0b', 0.75, t.id));
+
+  if (slot < 17) addBlock('focus', 'Deep Focus Session', 'focus', '🎯', '#8b5cf6', 1);
+
+  lowTasks.slice(0, 1).forEach((t) =>
+    addBlock(`low-${t.id}`, t.title, 'task', '🟢', '#22c55e', 0.5, t.id));
+
+  if (slot < 21) addBlock('reflect', 'Evening Reflection', 'habit', '📔', '#6366f1', 0.5);
+
+  return blocks.filter(b => parseInt(b.endTime) <= 22);
+}
+
+/* ── Save event to calendar localStorage ── */
+function saveCalendarEvent(event) {
+  try {
+    const key = getUserScopedKey('calendar-events');
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.push(event);
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch { }
+}
+
 /* ── Parse CSV text into tasks ── */
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -291,6 +425,10 @@ export default function DostMode() {
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const [pendingSchedule, setPendingSchedule] = useState(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const {
     theme, tasks, habits,
@@ -298,6 +436,15 @@ export default function DostMode() {
     addHabit, updateHabit, deleteHabit,
   } = useData();
   const isLight = theme === 'light';
+
+  /* ── Auto-send prefill from navigation state (e.g., Dashboard CTA) ── */
+  useEffect(() => {
+    if (location.state?.prefill) {
+      setInput(location.state.prefill);
+      // Clear state so back-navigation doesn't re-trigger
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
 
   /* ── Dynamic welcome message ── */
   const welcomePersonalized = useRef(false);
@@ -343,9 +490,9 @@ export default function DostMode() {
   /* ── Execute NLP-detected actions silently ── */
   const executeCasualActions = useCallback(async (actions) => {
     if (!actions || actions.length === 0) return;
-    
+
     const today = format(new Date(), 'yyyy-MM-dd');
-    
+
     for (const action of actions) {
       try {
         switch (action.type) {
@@ -366,12 +513,12 @@ export default function DostMode() {
               // Sync to API
               if (isFirebaseConfigured) {
                 apiFetch(`/habits/${action.habit_id}/complete`, { method: 'POST' })
-                  .catch(() => {});
+                  .catch(() => { });
               }
             }
             break;
           }
-          
+
           case 'log_mood': {
             // Save mood to localStorage and API
             const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
@@ -383,17 +530,17 @@ export default function DostMode() {
             };
             const updated = [entry, ...moodHistory].slice(0, 30);
             localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
-            
+
             // Sync to API
             if (isFirebaseConfigured) {
               apiFetch('/mood-logs', {
                 method: 'POST',
                 body: JSON.stringify({ mood_value: action.score, mood_label: entry.label })
-              }).catch(() => {});
+              }).catch(() => { });
             }
             break;
           }
-          
+
           case 'complete_task': {
             // Mark task as completed
             const task = tasks.find(t => t.id === action.task_id);
@@ -402,7 +549,7 @@ export default function DostMode() {
             }
             break;
           }
-          
+
           default:
             break;
         }
@@ -650,7 +797,7 @@ export default function DostMode() {
         /* ── CREATE TASK ── */
         case 'create_task': {
           if (!intent.title || !intent.title.trim()) {
-            addAiMsg(`I couldn't figure out the task title. Try saying something like "Add task: review the report by Friday".`);
+            addAiMsg(`I couldn't figure out the task title. Try: "Add task: review report by Friday"`);
             break;
           }
           const conflicts = checkConflicts(tasks, intent.dueDate);
@@ -662,25 +809,34 @@ export default function DostMode() {
             completed: false,
             starred: intent.priority === 'high',
             subtasks: [],
-            listId: intent.priority === 'high' ? 'work' : 'default',
-            details: '',
+            listId: intent.listId || 'default',
+            details: intent.hasTime ? `Scheduled at ${format(intent.dueDate, 'h:mm a')}` : '',
+            source: 'dost',
           };
           addTask(newTask);
-
-          let msg = `✅ **Task created!**\n\n📋 "${intent.title}"\n📅 Due: ${format(intent.dueDate, 'EEEE, MMM d')}\n🎯 Priority: ${intent.priority.toUpperCase()}`;
-
+          const timeLine = intent.hasTime ? `\n⏰ Time: ${format(intent.dueDate, 'h:mm a')}` : `\n📅 Due: ${format(intent.dueDate, 'EEEE, MMM d')}`;
+          let msg = `✅ **Task created!**\n\n📋 "${intent.title}"${timeLine}\n🎯 Priority: ${intent.priority.toUpperCase()}`;
           if (conflicts.length > 0) {
-            msg += `\n\n⚠️ **Heads up** — you already have ${conflicts.length} task${conflicts.length > 1 ? 's' : ''} on that day:`;
+            msg += `\n\n⚠️ **Heads up** — you already have ${conflicts.length} task${conflicts.length > 1 ? 's' : ''} that day!`;
             conflicts.slice(0, 3).forEach(c => { msg += `\n  • ${c.title}`; });
-            msg += `\n\nMake sure you have enough bandwidth!`;
           }
-
           addAiMsg(msg, { type: 'task_created', taskData: newTask });
           break;
         }
 
         /* ── CREATE EVENT/MEETING ── */
         case 'create_event': {
+          const evId = `evt-${Date.now()}`;
+          const calEvent = {
+            id: evId,
+            title: intent.title,
+            start: intent.eventDate.toISOString(),
+            end: (intent.endDate || new Date(intent.eventDate.getTime() + 3600000)).toISOString(),
+            category: 'Dost',
+            color: '#22d3ee',
+            source: 'dost',
+          };
+          saveCalendarEvent(calEvent);
           const eventTask = {
             id: `task-${Date.now()}`,
             title: `📅 ${intent.title}`,
@@ -689,30 +845,36 @@ export default function DostMode() {
             completed: false,
             starred: true,
             subtasks: [],
-            listId: 'work',
-            details: intent.time ? `Scheduled at ${intent.time}` : '',
+            listId: 'dost',
+            details: intent.time ? `Scheduled: ${intent.time}` : '',
+            source: 'dost',
           };
           addTask(eventTask);
-
-          const timePart = intent.time ? ` at **${intent.time}**` : '';
-          addAiMsg(`📅 **Meeting scheduled!**\n\n"${intent.title}"${timePart}\n📆 ${format(intent.eventDate, 'EEEE, MMM d')}\n\nIt's been added to your tasks as a starred high-priority item so you don't miss it!`, { type: 'task_created', taskData: eventTask });
+          const timePart = intent.time ? ` from **${intent.time}**` : '';
+          const isBlock = intent.isBlock;
+          addAiMsg(`📅 **${isBlock ? 'Event' : 'Meeting'} scheduled!**\n\n"${intent.title}"${timePart}\n📆 ${format(intent.eventDate, 'EEEE, MMM d')}\n\n✅ Saved to your **Calendar** and added as a starred task!`, { type: 'task_created', taskData: eventTask });
           break;
         }
 
         /* ── CREATE HABIT ── */
         case 'create_habit': {
+          const goalDays = intent.streakGoal || 30;
           const newHabit = {
             id: `h-${Date.now()}`,
             title: intent.title,
-            category: intent.category,
+            category: intent.category || 'Dost',
             streak: 0,
             bestStreak: 0,
             consistency: [],
             todayDone: false,
-            focusDuration: intent.duration,
+            focusDuration: intent.duration || 30,
+            streakGoal: goalDays,
+            scheduleTime: intent.scheduleTime || '07:00',
+            source: 'dost',
           };
           addHabit(newHabit);
-          addAiMsg(`🔥 **Habit created!**\n\n"${intent.title}"\n⏱ ${intent.duration} min/day\n🏷 Category: ${intent.category}\n\nLet's build that streak! 💪`, {
+          const habitGoalLine = goalDays !== 30 ? `\n🎯 Goal: **${goalDays} days**` : '';
+          addAiMsg(`🔥 **Habit created!**\n\n"${intent.title}"\n⏱ ${intent.duration || 30} min/day\n🏷 Category: ${intent.category}${habitGoalLine}\n\nLet's build that streak! 💪`, {
             type: 'habit_created', habitData: newHabit,
           });
           break;
@@ -862,6 +1024,88 @@ export default function DostMode() {
           addAiMsg("You're welcome! 😊 That's what I'm here for. Anything else you need?");
           break;
 
+        /* ── SMART SCHEDULE ── */
+        case 'smart_schedule': {
+          const scheduleKey = getUserScopedKey(`smart-schedule-${format(new Date(), 'yyyy-MM-dd')}`);
+          let usage = {};
+          try { usage = JSON.parse(localStorage.getItem(scheduleKey) || '{}'); } catch { }
+          const usesLeft = 2 - (usage.uses || 0);
+          if (usesLeft <= 0) {
+            addAiMsg('⏳ You\'ve used your **Smart Schedule** limit for today (2/2). Come back tomorrow for a fresh plan! 🌅');
+            break;
+          }
+          const schedule = buildSmartSchedule(tasks, habits);
+          if (schedule.length === 0) {
+            addAiMsg('📋 You have no pending tasks or habits to schedule! Add some tasks first, then I can build you an optimized day.');
+            break;
+          }
+          setPendingSchedule(schedule);
+          let preview = `✨ **Smart Schedule Ready!**\n\nHere's your optimized day plan with proper breaks:\n`;
+          schedule.slice(0, 3).forEach(b => { preview += `\n**${b.startTime}** — ${b.emoji} ${b.title}`; });
+          if (schedule.length > 3) preview += `\n...and ${schedule.length - 3} more blocks`;
+          preview += `\n\n💡 **${usesLeft} use${usesLeft > 1 ? 's' : ''} remaining today.** Should I **update your day plan** according to this schedule?`;
+          addAiMsg(preview, { type: 'schedule_card', schedule });
+          break;
+        }
+
+        /* ── SCHEDULE APPLY YES ── */
+        case 'schedule_apply_yes': {
+          if (!pendingSchedule) {
+            addAiMsg('No pending schedule to apply! Say **"plan my day"** first to generate one. 😊');
+            break;
+          }
+          const schedKey = getUserScopedKey(`smart-schedule-${format(new Date(), 'yyyy-MM-dd')}`);
+          let usage2 = {};
+          try { usage2 = JSON.parse(localStorage.getItem(schedKey) || '{}'); } catch { }
+          const usesLeft2 = 2 - (usage2.uses || 0);
+          if (usesLeft2 <= 0) {
+            addAiMsg('⏳ Smart Schedule limit reached for today. Come back tomorrow!');
+            break;
+          }
+          // Backup current tasks
+          const todayTasks = tasks.filter(t => !t.completed && (!t.dueDate || new Date(t.dueDate).toDateString() === new Date().toDateString()));
+          const backup = { tasks: todayTasks, uses: (usage2.uses || 0) + 1 };
+          localStorage.setItem(schedKey, JSON.stringify(backup));
+          // Remove today's pending tasks and add schedule as tasks
+          todayTasks.forEach(t => deleteTask(t.id));
+          pendingSchedule.filter(b => b.type === 'task' || b.type === 'habit').forEach(block => {
+            const t = {
+              id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              title: block.title,
+              priority: block.type === 'task' ? 'medium' : 'low',
+              dueDate: (() => { const d = new Date(); const [h, m] = block.startTime.split(':'); d.setHours(parseInt(h), parseInt(m), 0, 0); return d; })(),
+              completed: false, starred: false, subtasks: [],
+              listId: 'dost',
+              details: `Smart Schedule: ${block.startTime} – ${block.endTime}`,
+              source: 'smart-schedule',
+            };
+            addTask(t);
+          });
+          setPendingSchedule(null);
+          const left = usesLeft2 - 1;
+          addAiMsg(`✅ **Day plan updated!** Your Smart Schedule is now active.\n\n🔄 Need to undo? Say **"undo schedule"** to restore your original plan.\n📊 **${left} use${left !== 1 ? 's' : ''} remaining** for today.`, { type: 'action' });
+          break;
+        }
+
+        /* ── SCHEDULE UNDO ── */
+        case 'schedule_undo': {
+          const schedKey2 = getUserScopedKey(`smart-schedule-${format(new Date(), 'yyyy-MM-dd')}`);
+          let backup2 = {};
+          try { backup2 = JSON.parse(localStorage.getItem(schedKey2) || '{}'); } catch { }
+          if (!backup2.tasks || backup2.tasks.length === 0) {
+            addAiMsg('No schedule backup found for today — nothing to restore. 😊');
+            break;
+          }
+          // Remove smart-schedule tasks
+          tasks.filter(t => t.source === 'smart-schedule').forEach(t => deleteTask(t.id));
+          // Restore backup tasks
+          backup2.tasks.forEach(t => addTask(t));
+          // Clear backup but keep uses count
+          localStorage.setItem(schedKey2, JSON.stringify({ uses: backup2.uses, tasks: [] }));
+          addAiMsg(`↩️ **Original plan restored!**\n\n⚠️ **Note:** This counted as one of your 2 daily Smart Schedule uses. You have ${2 - (backup2.uses || 2)} use${2 - (backup2.uses || 2) !== 1 ? 's' : ''} remaining today.`);
+          break;
+        }
+
         /* ── GENERAL / SCOPED RESPONSE ── */
         case 'general':
         default: {
@@ -893,7 +1137,7 @@ export default function DostMode() {
                 }),
               });
               addAiMsg(data?.reply || "That's interesting! Tell me more.");
-              
+
               // Execute any NLP-detected actions silently
               if (data?.actions?.length > 0) {
                 executeCasualActions(data.actions);
@@ -1126,6 +1370,24 @@ export default function DostMode() {
                 {formatMsgTime(msg.id)}
               </div>
 
+              {/* WIDGET: Smart Schedule card */}
+              {msg.type === 'schedule_card' && msg.schedule && (
+                <div className="mt-4 space-y-1.5 max-h-60 overflow-y-auto scrollbar-hide">
+                  {msg.schedule.map((block) => (
+                    <div key={block.id} className="flex items-center gap-3 p-2.5 rounded-xl"
+                      style={{ background: `${block.color}12`, borderLeft: `3px solid ${block.color}50` }}>
+                      <span className="text-base flex-shrink-0">{block.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{block.title}</p>
+                        <p className="text-[10px] opacity-60">{block.startTime} – {block.endTime}</p>
+                      </div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full capitalize flex-shrink-0 font-medium"
+                        style={{ background: `${block.color}20`, color: block.color }}>{block.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* WIDGET: Task Created */}
               {msg.type === 'task_created' && msg.taskData && (
                 <div className="mt-4 p-3.5 rounded-xl border border-white/10 bg-black/5 flex items-center gap-3">
@@ -1190,6 +1452,7 @@ export default function DostMode() {
           { label: '📊 Summary', cmd: 'Summarize my day' },
           { label: '🔥 Habits', cmd: 'How are my habits?' },
           { label: '😊 Mood', cmd: 'How is my mood?' },
+          { label: '✨ Smart Schedule', cmd: 'plan my day' },
           { label: '📋 Add Task', cmd: 'Add task: ' },
           { label: '📎 Import', cmd: '__import_modal__' },
         ].map(q => (

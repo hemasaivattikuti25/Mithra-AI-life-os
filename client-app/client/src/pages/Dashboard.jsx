@@ -183,10 +183,10 @@ export default function Dashboard() {
       return JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
     } catch { return []; }
   });
-  
+
   // ── Share Stats Modal ──
   const [showShareStats, setShowShareStats] = useState(false);
-  
+
   const { theme, accentColor, tasks: realTasks, toggleTask: ctxToggleTask, habits, toggleHabit, taskCalendarEvents, habitCalendarEvents, xp, level, levelProgress, badges, BADGE_DEFINITIONS, xpPopup, checkBadges } = useData();
   const { profile, user } = useAuth();
   const navigate = useNavigate();
@@ -309,7 +309,7 @@ export default function Dashboard() {
         method: 'POST',
         body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
       })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     setTimeout(() => setMoodSaved(true), 600);
@@ -610,15 +610,6 @@ export default function Dashboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: luxuryEase }}
                     className="group flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--glass-bg-hover)] transition-all duration-300 border border-transparent hover:border-[var(--glass-border)]"
-                    style={{
-                      background: task.priority === 'HIGH'
-                        ? 'rgba(239,68,68,0.08)'
-                        : task.priority === 'MED'
-                          ? 'rgba(245,158,11,0.07)'
-                          : task.priority === 'LOW'
-                            ? 'rgba(34,197,94,0.06)'
-                            : 'transparent',
-                    }}
                   >
                     <button
                       onClick={() => toggleTask(task.id)}
@@ -643,13 +634,6 @@ export default function Dashboard() {
                     {task.starred && (
                       <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(251,191,36,0.3)]" />
                     )}
-
-                    <span className={clsx(
-                      'text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 uppercase tracking-wider',
-                      task.priority === 'HIGH' ? 'text-red-400 bg-red-500/10' : 'text-amber-400 bg-amber-500/10'
-                    )}>
-                      {task.priority}
-                    </span>
                   </motion.div>
                 ))
               ) : (
@@ -800,6 +784,56 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
         </GlassCard>
+
+        {/* ════════════════════════════════════
+          SMART SCHEDULE — teaser/active card
+          ════════════════════════════════════ */}
+        {(() => {
+          const schedKey = (() => { try { const a = JSON.parse(localStorage.getItem('mithra-auth') || 'null'); return a?.id ? `mithra-${a.id}-smart-schedule-${new Date().toISOString().slice(0, 10)}` : `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } catch { return `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } })();
+          let schedData = null;
+          try { schedData = JSON.parse(localStorage.getItem(schedKey) || '{}'); } catch { }
+          const usesLeft = 2 - (schedData?.uses || 0);
+          const isActive = schedData?.tasks?.length > 0;
+          return (
+            <GlassCard custom={4.5} className="p-5 md:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">✨</span>
+                  <div>
+                    <h2 className="text-[var(--text-primary)] text-base font-semibold tracking-tight">Smart Schedule</h2>
+                    <p className="text-[var(--text-dim)] text-xs opacity-60 mt-0.5">
+                      {isActive ? 'Active plan restored from Dost' : `AI builds your perfect day${usesLeft > 0 ? ` · ${usesLeft} use${usesLeft !== 1 ? 's' : ''} left today` : ' · Limit reached today'}`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/dost', { state: { prefill: 'plan my day' } })}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-all hover:scale-[1.03] active:scale-95"
+                  style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)', border: '1px solid var(--glass-border)' }}
+                >
+                  {isActive ? '🔄 Regenerate' : '✨ Create'}
+                </button>
+              </div>
+              {isActive && schedData.tasks && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {schedData.tasks.slice(0, 4).map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--glass-bg)' }}>
+                      <span className="text-[10px] font-bold tabular-nums opacity-60" style={{ color: 'var(--accent-color)' }}>
+                        {t.dueDate ? new Date(t.dueDate).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}
+                      </span>
+                      <span className="text-xs text-[var(--text-primary)] truncate opacity-80">{t.title}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!isActive && usesLeft > 0 && (
+                <p className="text-xs text-[var(--text-dim)] opacity-50 mt-3">
+                  Say <span className="font-medium" style={{ color: 'var(--accent-color)' }}>"plan my day"</span> to Dost and get an optimized schedule with proper gaps and breaks.
+                </p>
+              )}
+            </GlassCard>
+          );
+        })()}
 
         {/* ════════════════════════════════════
           STATS ROW — live computed stat cards
