@@ -67,7 +67,7 @@ export default function MithraBlend() {
     const [info, setInfo] = useState('');
     const [showCreate, setShowCreate] = useState(false);
     const [showJoin, setShowJoin] = useState(false);
-    const [innerTab, setInnerTab] = useState('overview');
+    const [innerTab, setInnerTab] = useState('habits');
 
     // Create form
     const [newName, setNewName] = useState('');
@@ -172,10 +172,10 @@ export default function MithraBlend() {
         if (!activeWsId) return;
 
         const refreshData = () => {
-            workspaceService.getMembers(activeWsId).then(setMembers).catch(() => {});
-            workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => {});
-            workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => {});
-            workspaceService.getWorkspaceEvents(activeWsId).then(setWorkspaceEvents).catch(() => {});
+            workspaceService.getMembers(activeWsId).then(setMembers).catch(() => { });
+            workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => { });
+            workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => { });
+            workspaceService.getWorkspaceEvents(activeWsId).then(setWorkspaceEvents).catch(() => { });
         };
 
         // Initial load
@@ -610,7 +610,7 @@ export default function MithraBlend() {
                         {workspaces.map(ws => (
                             <button
                                 key={ws.id}
-                                onClick={() => { setActiveWsId(ws.id); setInnerTab('overview'); }}
+                                onClick={() => { setActiveWsId(ws.id); setInnerTab('habits'); }}
                                 className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${ws.id === activeWsId ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
                                     }`}
                                 style={{
@@ -633,7 +633,7 @@ export default function MithraBlend() {
                         <div>
                             {/* Inner tabs */}
                             <div className="flex gap-1 mb-4 p-1 rounded-xl" style={{ background: 'var(--glass-bg)' }}>
-                                {['overview', 'habits', 'tasks', 'events', 'journal'].map(tab => (
+                                {['habits', 'tasks', 'events', 'journal'].map(tab => (
                                     <button key={tab} onClick={() => setInnerTab(tab)}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all capitalize ${innerTab === tab ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
                                             }`}
@@ -642,15 +642,6 @@ export default function MithraBlend() {
                                     </button>
                                 ))}
                             </div>
-
-                            {/* ── OVERVIEW TAB ── */}
-                            {innerTab === 'overview' && (
-                                <BlendOverview
-                                    workspaceId={activeWorkspace.id}
-                                    members={members}
-                                    habits={workspaceHabits}
-                                />
-                            )}
 
                             {/* ── HABITS TAB ── */}
                             {innerTab === 'habits' && (

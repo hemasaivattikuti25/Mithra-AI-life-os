@@ -766,7 +766,7 @@ function WeeklyInsightsCard({ habits }) {
           if (d >= cutoff && d <= now) {
             counts[getDay(d)]++;
           }
-        } catch {}
+        } catch { }
       });
     });
 
@@ -789,23 +789,52 @@ function WeeklyInsightsCard({ habits }) {
   const worstDay = dayStats.reduce((a, b) => (a.rate <= b.rate ? a : b), dayStats[0]);
   const maxRate = Math.max(...dayStats.map(d => d.rate), 1);
 
-  const generateAIInsight = async () => {
+  const generateAIInsight = () => {
     setAiLoading(true);
-    try {
-      const summary = habits.map(h => `${h.title}: ${h.streak || 0} day streak, ${(h.consistency || []).length} total completions`).join('; ');
-      const res = await apiFetch('/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          message: `Analyze my habits for the past week and give me 2-3 sharp, actionable insights in 3 sentences max. Be specific. My habit data: ${summary}`,
-          history: [],
-        }),
-      });
-      setAiInsight(res.reply || null);
-    } catch {
-      setAiInsight("Couldn't generate insights right now. Try again when online.");
-    } finally {
-      setAiLoading(false);
-    }
+    setTimeout(() => {
+      try {
+        const now = new Date();
+        const sortedByStreak = [...habits].sort((a, b) => (b.streak || 0) - (a.streak || 0));
+        const topHabit = sortedByStreak[0];
+        const worstHabit = [...habits].sort((a, b) => (a.streak || 0) - (b.streak || 0))[0];
+        const doneToday = habits.filter(h => h.todayDone).length;
+        const totalHabits = habits.length;
+        const pct = totalHabits > 0 ? Math.round((doneToday / totalHabits) * 100) : 0;
+
+        const insights = [];
+
+        if (topHabit && (topHabit.streak || 0) >= 3) {
+          insights.push(`🔥 **${topHabit.title}** is on a ${topHabit.streak}-day streak — your strongest habit right now. Keep protecting that momentum!`);
+        }
+
+        if (bestDay.rate > 0) {
+          insights.push(`📅 You perform best on **${bestDay.label}s** (${bestDay.rate}% completion). Consider scheduling your hardest habits on this day.`);
+        }
+
+        if (worstDay.rate < 40 && totalHabits > 0) {
+          insights.push(`⚡ **${worstDay.label}s** need attention — only ${worstDay.rate}% completion rate. Try reducing your habit load that day or setting an earlier reminder.`);
+        }
+
+        if (pct === 100) {
+          insights.push(`🌟 Perfect day! All ${totalHabits} habits completed today. This is what building a great life looks like.`);
+        } else if (pct >= 50) {
+          insights.push(`💪 ${doneToday}/${totalHabits} habits done today (${pct}%). You're on track — finish strong!`);
+        } else if (totalHabits > 0) {
+          insights.push(`📌 Only ${doneToday}/${totalHabits} habits done so far today. Tackle the easiest one next to build momentum.`);
+        }
+
+        if (habits.filter(h => (h.streak || 0) === 0 && (h.bestStreak || 0) >= 5).length > 0) {
+          const dropped = habits.filter(h => (h.streak || 0) === 0 && (h.bestStreak || 0) >= 5);
+          insights.push(`⚠️ **${dropped[0].title}** had a ${dropped[0].bestStreak}-day best streak but is now at 0. One day at a time to rebuild it.`);
+        }
+
+        setAiInsight(insights.slice(0, 2).join('\n\n') || 'Keep going! Consistency beats perfection every time. 💪');
+      } catch {
+        setAiInsight('Keep going! Consistency beats perfection every time. 💪');
+      } finally {
+        setAiLoading(false);
+      }
+    }, 600);
   };
 
   return (
@@ -947,7 +976,7 @@ export default function HabitFocusHub() {
     const habit = habits.find(h => h.id === habitId);
     notificationManager.hapticLight();
     toggleHabit(habitId);
-    
+
     // Show quick mood picker only if completing (not unchecking)
     if (habit && !habit.todayDone) {
       setCompletedHabitTitle(habit.title);
@@ -961,15 +990,15 @@ export default function HabitFocusHub() {
     const entry = { date: new Date().toISOString(), mood: mood.value, label: mood.label };
     const updated = [entry, ...moodHistory].slice(0, 30);
     localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
-    
+
     // Sync to API
     if (isFirebaseConfigured && user?.id) {
       apiFetch('/mood-logs', {
         method: 'POST',
         body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
-      }).catch(() => {});
+      }).catch(() => { });
     }
-    
+
     setShowQuickMood(false);
   };
 
@@ -1069,7 +1098,7 @@ export default function HabitFocusHub() {
           completed_at: sessionEntry.endedAt || new Date().toISOString(),
         })
       })
-        .catch(() => {});
+        .catch(() => { });
     }
   };
 

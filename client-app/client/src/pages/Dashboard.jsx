@@ -17,7 +17,6 @@ import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 import ShareStatsCard from '../components/ShareStatsCard';
-import DailyPlanCard from '../components/DailyPlanCard';
 import WeeklyReport from '../components/WeeklyReport';
 
 /* ───── animation config ───── */
@@ -526,12 +525,6 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* ════════════════════════════════════
-          AI DAILY PLAN — Plan My Day
-          ════════════════════════════════════ */}
-        <motion.div custom={0.7} variants={sectionReveal} initial="hidden" animate="visible">
-          <DailyPlanCard />
-        </motion.div>
 
         {/* ════════════════════════════════════
           EVENTS + TASKS + HABITS — three-column glass grid

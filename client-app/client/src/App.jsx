@@ -8,7 +8,7 @@ import { ToastProvider, useToast } from './components/Toast';
 import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton, CalendarSkeleton } from './components/LoadingSkeleton';
 import SearchDialog from './components/SearchDialog';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
-import NLCreate from './components/NLCreate';
+
 import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
@@ -152,7 +152,6 @@ function AppRoutes() {
       <BackButtonHandler />
       <GlobalSearch />
       <KeyboardShortcuts />
-      <NLCreate />
       <Routes>
         {/* Public Landing Page */}
         <Route path="/" element={<OAuthCallbackGuard><Suspense fallback={<PageLoader />}><LandingPage /></Suspense></OAuthCallbackGuard>} />
