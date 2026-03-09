@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Link2, Plus, Copy, Check, AlertCircle, LogIn, X,
     Hash, Trash2, LogOut, RefreshCcw, Loader2, Eye, EyeOff, BookOpen, Send, CalendarDays,
+    Pencil, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { workspaceService } from '../services/workspaceService';
@@ -374,8 +375,16 @@ export default function MithraBlend() {
             setError(err.message);
         }
     };
+    const deleteBlendTask = async (taskId) => {
+        try {
+            await apiFetch(`/tasks/${taskId}`, { method: 'DELETE' });
+            const t = await workspaceService.getWorkspaceTasks(activeWorkspace.id);
+            setWorkspaceTasks(t);
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
-    // Helper: get member name by user_id
     const getMemberName = (userId) => {
         const m = members.find(m => m.userId === userId);
         return m?.fullName || 'Unknown';
@@ -742,19 +751,56 @@ export default function MithraBlend() {
                                         </GlassCard>
                                     ) : (
                                         workspaceTasks.map(t => (
-                                            <GlassCard key={t.id} className="flex items-center gap-3">
-                                                <button onClick={() => completeTask(t.id)}
-                                                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
-                                                    style={{ border: '2px solid var(--glass-border)' }}>
-                                                </button>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-[var(--text-primary)]">{t.title}</p>
-                                                    <p className="text-[10px] text-[var(--text-dim)] opacity-50">
-                                                        by {getMemberName(t.userId)} · {t.priority || 'medium'}
-                                                    </p>
-                                                </div>
-                                                <Users size={10} style={{ color: 'var(--text-dim)', opacity: 0.3 }} />
-                                            </GlassCard>
+                                            <motion.div
+                                                key={t.id}
+                                                layout
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: t.completed ? 0.5 : 1, y: 0 }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                            >
+                                                <GlassCard className="flex items-start gap-3">
+                                                    {/* Complete button */}
+                                                    <button
+                                                        onClick={() => completeTask(t.id)}
+                                                        className="shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all"
+                                                        style={{
+                                                            border: t.completed ? 'none' : '2px solid var(--accent-color)',
+                                                            background: t.completed ? 'var(--accent-color)' : 'transparent',
+                                                        }}
+                                                        title="Mark complete"
+                                                    >
+                                                        {t.completed && <Check size={12} className="text-white" />}
+                                                    </button>
+                                                    {/* Task info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium ${t.completed ? 'line-through opacity-50' : 'text-[var(--text-primary)]'}`}>
+                                                            {t.title}
+                                                        </p>
+                                                        <p className="text-[10px] text-[var(--text-dim)] opacity-50 mt-0.5">
+                                                            by {getMemberName(t.userId)} · {t.priority || 'medium'}{t.completed ? ' · Done ✓' : ''}
+                                                        </p>
+                                                    </div>
+                                                    {/* Action buttons */}
+                                                    {!t.completed && (
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <button
+                                                                onClick={() => { setNewTaskTitle(t.title); setAddingTask(true); }}
+                                                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all"
+                                                                title="Edit"
+                                                            >
+                                                                <Pencil size={12} style={{ color: 'var(--text-dim)' }} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deleteBlendTask(t.id)}
+                                                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500/15 transition-all"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={12} className="text-red-400 opacity-60 hover:opacity-100" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </GlassCard>
+                                            </motion.div>
                                         ))
                                     )}
                                 </div>

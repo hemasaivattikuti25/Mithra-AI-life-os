@@ -142,7 +142,8 @@ function parseIntent(input, tasks, habits) {
     || input.match(/(?:add|create|schedule|set|book)\s+(?:a\s+|an\s+|me\s+(?:a\s+|an\s+)?)(.+?)(?:\s+(?:meeting|event|appointment|call))/i);
   if (eventMatch) {
     const rest = eventMatch[1].trim();
-    const timeMatch = rest.match(/(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    // Use a wider time regex to capture AM/PM reliably
+    const timeStr = rest.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i)?.[1];
     const dateMatch = rest.match(/(?:on\s+|)(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
     const durMatch = rest.match(/(?:for)\s+(\d+(?:\.\d+)?)\s*(hour|hr|minute|min)/i);
     let title = rest
@@ -151,15 +152,13 @@ function parseIntent(input, tasks, habits) {
       .replace(/(?:on\s+)?(?:tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, '')
       .replace(/^\s*[,\s]+|[,\s]+$/g, '').trim();
     if (!title) title = 'Meeting';
-    let eventDate = dateMatch ? parseFuzzyDate(dateMatch[1]) : new Date();
-    if (timeMatch) {
-      let h = parseInt(timeMatch[1]);
-      const m = parseInt(timeMatch[2] || '0');
-      const ampm = (timeMatch[3] || '').toLowerCase();
-      if (ampm === 'pm' && h < 12) h += 12;
-      if (ampm === 'am' && h === 12) h = 0;
-      if (!ampm && h < 8) h += 12;
-      eventDate.setHours(h, m, 0, 0);
+    // Start from a clean date (midnight) so setHours is precise
+    const baseDateSrc = dateMatch ? parseFuzzyDate(dateMatch[1]) : new Date();
+    const eventDate = new Date(baseDateSrc);
+    eventDate.setSeconds(0, 0);
+    if (timeStr) {
+      const pt = parseClockTime(timeStr); // uses the fixed parseClockTime, no inline AM/PM hack
+      if (pt) eventDate.setHours(pt.hour, pt.minute, 0, 0);
     }
     let endDate = null;
     if (durMatch) {
@@ -167,7 +166,7 @@ function parseIntent(input, tasks, habits) {
         ? Math.round(parseFloat(durMatch[1]) * 60) : Math.round(parseFloat(durMatch[1]));
       endDate = new Date(eventDate.getTime() + dMins * 60 * 1000);
     }
-    return { type: 'create_event', title, eventDate, endDate, time: timeMatch ? timeMatch[0].replace(/^(?:at|@)\s*/i, '') : null };
+    return { type: 'create_event', title, eventDate, endDate, time: timeStr || null };
   }
 
   // ── NATURAL HABIT with time, duration and date extraction ──
@@ -507,6 +506,24 @@ function saveCalendarEvent(event) {
   } catch { }
 }
 
+/* ── Check for calendar conflicts at a given time slot ── */
+function getCalendarConflicts(eventDate, endDate) {
+  try {
+    const key = getUserScopedKey('calendar-events');
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    const newStart = new Date(eventDate).getTime();
+    const newEnd = endDate ? new Date(endDate).getTime() : newStart + 3600000;
+    return existing.filter(e => {
+      const eStart = new Date(e.start).getTime();
+      const eEnd = new Date(e.end).getTime();
+      // Overlap: new starts before existing ends AND new ends after existing starts
+      return newStart < eEnd && newEnd > eStart;
+    });
+  } catch {
+    return [];
+  }
+}
+
 /* ── Parse CSV text into tasks ── */
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -558,6 +575,8 @@ export default function DostMode() {
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const pendingEventRef = useRef(null); // stores a conflict-pending event awaiting user confirmation
+
   const [pendingSchedule, setPendingSchedule] = useState(null);
 
   const location = useLocation();
@@ -993,14 +1012,29 @@ export default function DostMode() {
         case 'create_event': {
           const evId = `evt-${Date.now()}`;
           const durMins = intent.durationMins;
-          const endIso = intent.endDate
-            ? intent.endDate.toISOString()
-            : new Date(intent.eventDate.getTime() + 3600000).toISOString();
+          const endDateForEvent = intent.endDate
+            ? intent.endDate
+            : new Date(intent.eventDate.getTime() + 3600000);
+
+          // \u2500\u2500 Conflict detection: check if any existing event overlaps this slot \u2500\u2500
+          const conflicts = getCalendarConflicts(intent.eventDate, endDateForEvent);
+          if (conflicts.length > 0) {
+            // Store pending intent so user can confirm later
+            const pending = { ...intent, endDate: endDateForEvent, _evId: evId, _durMins: durMins };
+            pendingEventRef.current = pending;
+            const conflictList = conflicts.slice(0, 3).map(c => `• **${c.title}** (${format(new Date(c.start), 'h:mm a')} \u2013 ${format(new Date(c.end), 'h:mm a')})`).join('\n');
+            addAiMsg(
+              `\u26a0\ufe0f **Time slot already booked!**\n\n${conflictList}\n\n📅 You still want to add **"${intent.title}"** at **${format(intent.eventDate, 'h:mm a, MMM d')}**?\n\nReply **"yes"** to keep it or **"no"** to cancel.`,
+              { type: 'conflict_prompt' }
+            );
+            break;
+          }
+
           const calEvent = {
             id: evId,
             title: intent.title,
             start: intent.eventDate.toISOString(),
-            end: endIso,
+            end: endDateForEvent.toISOString(),
             category: 'Dost',
             color: '#22d3ee',
             source: 'dost',
@@ -1028,6 +1062,7 @@ export default function DostMode() {
           );
           break;
         }
+
 
         /* ── CREATE HABIT ── */
         case 'create_habit': {
@@ -1224,7 +1259,42 @@ export default function DostMode() {
 
         /* ── SCHEDULE APPLY YES ── */
         case 'schedule_apply_yes': {
+          // \u2500\u2500 If a conflicting event is pending confirmation, handle it here first \u2500\u2500
+          if (pendingEventRef.current) {
+            const p = pendingEventRef.current;
+            pendingEventRef.current = null;
+            const evId2 = p._evId || `evt-${Date.now()}`;
+            const calEvtConfirmed = {
+              id: evId2,
+              title: p.title,
+              start: new Date(p.eventDate).toISOString(),
+              end: new Date(p.endDate || new Date(p.eventDate).getTime() + 3600000).toISOString(),
+              category: 'Dost',
+              color: '#22d3ee',
+              source: 'dost',
+            };
+            saveCalendarEvent(calEvtConfirmed);
+            const evTask = {
+              id: `task-${Date.now()}`,
+              title: `📅 ${p.title}`,
+              priority: 'high',
+              dueDate: new Date(p.eventDate),
+              completed: false,
+              starred: true,
+              subtasks: [],
+              listId: 'dost',
+              details: p.time ? `Scheduled: ${p.time}` : '',
+              source: 'dost',
+            };
+            addTask(evTask);
+            addAiMsg(
+              `✅ **Got it! Event added despite conflict.**\n\n"📅 ${p.title}" — ${format(new Date(p.eventDate), 'h:mm a, MMM d')}\n\nSaved to Calendar and task list!`,
+              { type: 'task_created', taskData: evTask }
+            );
+            break;
+          }
           if (!pendingSchedule) {
+
             addAiMsg('No pending schedule to apply! Say **"plan my day"** first to generate one. 😊');
             break;
           }
@@ -1627,8 +1697,10 @@ export default function DostMode() {
           { label: '🔥 Habits', cmd: 'How are my habits?' },
           { label: '😊 Mood', cmd: 'How is my mood?' },
           { label: '📅 Add Event', cmd: 'Add event: ' },
+          { label: '🔁 Add Habit', cmd: 'Add habit: ' },
           { label: '📋 Add Task', cmd: 'Add task: ' },
           { label: '📎 Import', cmd: '__import_modal__' },
+
         ].map(q => (
           <button
             key={q.label}

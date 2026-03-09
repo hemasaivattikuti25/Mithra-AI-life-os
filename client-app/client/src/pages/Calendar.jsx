@@ -270,9 +270,8 @@ const INITIAL_EVENTS = [];
 /* ═══════════════════════════════════════════════════════════════
    HOUR LABELS (6AM - 11PM)
    ═══════════════════════════════════════════════════════════════ */
-const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6..23
-const HOUR_HEIGHT = 64; // px per hour — matches Google Calendar density
-const HALF_HOURS = Array.from({ length: 18 * 2 }, (_, i) => i); // for half-hour lines
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0..23 — full day midnight to midnight
+const HOUR_HEIGHT = 56; // px per hour
 
 /* ═══════════════════════════════════════════════════════════════
    MINI CALENDAR (Sidebar)
@@ -654,7 +653,7 @@ const EventModal = ({ isOpen, onClose, onSave, onDelete, event, selectedDate }) 
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   WEEK VIEW — Google Calendar / Apple Calendar Style
+   WEEK VIEW — Clean Professional Style (like Apple Calendar)
    ═══════════════════════════════════════════════════════════════ */
 const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -668,32 +667,34 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
     return () => clearInterval(t);
   }, []);
 
-  // Scroll to current time (or 8AM if before 8AM) on mount
+  // Scroll to current time (or 8AM if it's early morning) on mount
   useEffect(() => {
     if (gridRef.current) {
       const now = new Date();
       const curHour = now.getHours();
-      const scrollHour = Math.max(curHour - 1, 6); // show 1hr before current
-      gridRef.current.scrollTop = (scrollHour - 6) * HOUR_HEIGHT;
+      const scrollHour = Math.max(curHour - 1, 7); // 1hr before current, min 7AM
+      gridRef.current.scrollTop = scrollHour * HOUR_HEIGHT;
     }
   }, []);
 
   const getEventsForDay = (day) => events.filter(e => isSameDay(e.start, day));
 
   const getEventStyle = (event) => {
+    // Offset from midnight (hour 0) — no subtraction needed
     const startMin = getHours(event.start) * 60 + getMinutes(event.start);
     const endMin = getHours(event.end) * 60 + getMinutes(event.end);
-    const top = ((startMin - 360) / 60) * HOUR_HEIGHT;
+    const top = (startMin / 60) * HOUR_HEIGHT;
     const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 22);
     return { top: `${top}px`, height: `${height}px` };
   };
 
+  // nowTop: position from top of the 24-hour grid (midnight = 0)
   const nowTop = useMemo(() => {
     const mins = getHours(currentTime) * 60 + getMinutes(currentTime);
-    return ((mins - 360) / 60) * HOUR_HEIGHT;
+    return (mins / 60) * HOUR_HEIGHT;
   }, [currentTime]);
 
-  // Format time label — 9 AM, 12 PM, 2 AM style (Google Calendar)
+  // Format time label — 12 AM, 1 AM, ... 12 PM, 1 PM, ...
   const formatHourLabel = (hour) => {
     if (hour === 0) return '12 AM';
     if (hour === 12) return '12 PM';
@@ -701,15 +702,15 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
     return `${hour - 12} PM`;
   };
 
-  // Handle click on empty slot
+  // Handle click on empty slot — full 24hr range
   const handleGridClick = (e, day) => {
     if (e.target !== e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
+    const y = e.clientY - rect.top + gridRef.current.scrollTop;
     const totalMins = (y / HOUR_HEIGHT) * 60;
-    const hour = Math.floor(totalMins / 60) + 6;
-    const minute = Math.round((totalMins % 60) / 30) * 30; // snap to 30min
-    const snappedHour = Math.min(Math.max(hour, 6), 23);
+    const hour = Math.floor(totalMins / 60);
+    const minute = Math.round((totalMins % 60) / 30) * 30;
+    const snappedHour = Math.min(Math.max(hour, 0), 23);
     const slotDate = new Date(day);
     slotDate.setHours(snappedHour, minute, 0, 0);
     onSlotClick(slotDate, snappedHour);
@@ -717,57 +718,64 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Day Headers — Google Calendar circular style ── */}
-      <div className="flex border-b border-white/[0.06] flex-shrink-0 bg-[var(--glass-bg)]/30">
+      {/* ── Day Headers — clean flat style, NO circles ── */}
+      <div className="flex border-b border-white/[0.08] flex-shrink-0">
+        {/* Gutter for hour labels */}
         <div className="w-14 sm:w-16 flex-shrink-0" />
         {weekDays.map((day, i) => {
           const today = isToday(day);
-          const selected = isSameDay(day, currentDate);
           return (
-            <div key={i} className="flex-1 flex flex-col items-center py-2 sm:py-3 border-l border-white/[0.04]">
-              {/* Day abbrev */}
-              <span className={clsx(
-                'text-[10px] sm:text-[11px] font-medium uppercase tracking-widest mb-1',
-                today ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)] opacity-50'
+            <div key={i} className="flex-1 text-center py-2.5 border-l border-white/[0.05]">
+              {/* Day name — MON TUE etc */}
+              <div className={clsx(
+                'text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest',
+                today ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)] opacity-40'
               )}>
                 {format(day, 'EEE')}
-              </span>
-              {/* Day number — circular highlight for today */}
+              </div>
+              {/* Day number — underline accent for today, plain for others */}
               <div className={clsx(
-                'w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full text-base sm:text-lg font-medium transition-all',
-                today
-                  ? 'text-white font-bold'
-                  : selected
-                    ? 'text-[var(--accent-color)] ring-1 ring-[var(--accent-color)]/40'
-                    : 'text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]'
-              )} style={today ? { backgroundColor: 'var(--accent-color)', boxShadow: '0 0 12px var(--accent-color)66' } : {}}>
+                'text-base sm:text-xl font-light mt-0.5',
+                today ? 'text-[var(--accent-color)] font-semibold' : 'text-[var(--text-primary)] opacity-80'
+              )}>
                 {format(day, 'd')}
               </div>
+              {/* Today underline indicator */}
+              {today && (
+                <div className="mx-auto mt-0.5 rounded-full" style={{ width: 20, height: 2, backgroundColor: 'var(--accent-color)' }} />
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* ── Time Grid ── */}
-      <div ref={gridRef} className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--glass-border) transparent' }}>
+      {/* ── Time Grid — full 24 hours ── */}
+      <div
+        ref={gridRef}
+        className="flex-1 overflow-y-auto"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--glass-border) transparent' }}
+      >
         <div className="flex relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
 
-          {/* Hour Labels column */}
+          {/* Hour label column */}
           <div className="w-14 sm:w-16 flex-shrink-0 relative select-none">
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="absolute w-full flex items-center justify-end pr-3"
-                style={{ top: `${(hour - 6) * HOUR_HEIGHT - 8}px` }}
+                className="absolute w-full flex items-center justify-end pr-2 sm:pr-3"
+                style={{ top: `${hour * HOUR_HEIGHT - 8}px` }}
               >
-                <span className="text-[10px] sm:text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-dim)', opacity: 0.45 }}>
+                <span
+                  className="text-[9px] sm:text-[10px] font-medium tabular-nums"
+                  style={{ color: 'var(--text-dim)', opacity: hour === 0 ? 0 : 0.4 }}
+                >
                   {formatHourLabel(hour)}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Day Columns */}
+          {/* Day columns */}
           {weekDays.map((day, col) => {
             const dayEvents = getEventsForDay(day);
             const layoutEvents = computeEventColumns(dayEvents);
@@ -775,25 +783,25 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
             return (
               <div
                 key={col}
-                className={clsx('flex-1 relative border-l border-white/[0.05]', isToday(day) && 'bg-[var(--accent-color)]/[0.015]')}
+                className={clsx(
+                  'flex-1 relative border-l border-white/[0.05]',
+                  isToday(day) && 'bg-[var(--accent-color)]/[0.015]'
+                )}
                 onClick={(e) => handleGridClick(e, day)}
               >
-                {/* Full-hour grid lines */}
+                {/* Hour grid lines */}
                 {HOURS.map((hour) => (
                   <div
                     key={hour}
                     className="absolute w-full"
-                    style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
+                    style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                   >
-                    {/* Full-hour line — solid, more visible */}
+                    {/* Full-hour solid line */}
                     <div className="w-full border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
-                    {/* Half-hour line — dashed, subtle */}
+                    {/* Half-hour dashed line */}
                     <div
                       className="w-full absolute"
-                      style={{
-                        top: `${HOUR_HEIGHT / 2}px`,
-                        borderTop: '1px dashed rgba(255,255,255,0.03)',
-                      }}
+                      style={{ top: `${HOUR_HEIGHT / 2}px`, borderTop: '1px dashed rgba(255,255,255,0.025)' }}
                     />
                   </div>
                 ))}
@@ -804,63 +812,65 @@ const WeekView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                   const dc = getEventDisplayColor(evt);
                   const colWidth = 100 / evt._totalCols;
                   const colLeft = evt._col * colWidth;
-                  const isShort = (getHours(evt.end) * 60 + getMinutes(evt.end)) - (getHours(evt.start) * 60 + getMinutes(evt.start)) <= 30;
+                  const durationMins = (getHours(evt.end) * 60 + getMinutes(evt.end)) - (getHours(evt.start) * 60 + getMinutes(evt.start));
+                  const isShort = durationMins <= 30;
                   return (
                     <motion.div
                       key={evt.id}
                       layoutId={evt.id}
                       onClick={(e) => { e.stopPropagation(); onEventClick(evt); }}
                       className={clsx(
-                        'absolute rounded-lg overflow-hidden cursor-pointer border-l-[3px] group transition-all',
+                        'absolute rounded-md overflow-hidden cursor-pointer border-l-[3px] transition-all group',
                         !dc.isCustom && dc.bg,
                         !dc.isCustom && dc.border,
-                        'hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] hover:z-20 hover:brightness-110'
+                        'hover:shadow-[0_2px_12px_rgba(0,0,0,0.3)] hover:z-20 hover:brightness-110'
                       )}
                       style={{
                         ...style,
                         left: `calc(${colLeft}% + 2px)`,
                         width: `calc(${colWidth}% - 4px)`,
                         ...(dc.isCustom ? { backgroundColor: dc.bg, borderLeftColor: dc.border } : {}),
-                        padding: isShort ? '2px 6px' : '4px 8px',
+                        padding: isShort ? '2px 5px' : '3px 6px',
                       }}
-                      whileHover={{ scale: 1.015 }}
+                      whileHover={{ scale: 1.01 }}
                       transition={{ duration: 0.1 }}
                     >
                       <div
-                        className={clsx('text-[11px] sm:text-xs font-semibold leading-snug', isShort ? 'truncate' : '')}
+                        className={clsx('text-[11px] font-semibold leading-tight truncate', !dc.isCustom && dc.text)}
                         style={dc.isCustom ? { color: dc.text } : {}}
                       >
-                        <span className={clsx(!dc.isCustom && dc.text)}>{evt.title}</span>
+                        {evt.title}
                         {isShort && (
-                          <span className="ml-1 font-normal opacity-60 text-[10px]">
-                            {format(evt.start, 'h:mm')}
-                          </span>
+                          <span className="ml-1 font-normal opacity-60">{format(evt.start, 'h:mm a')}</span>
                         )}
                       </div>
                       {!isShort && (
-                        <div className="text-[10px] mt-0.5 opacity-70" style={{ color: dc.isCustom ? dc.text : undefined }}>
-                          <span className={clsx(!dc.isCustom && dc.text)}>
-                            {format(evt.start, 'h:mm')} – {format(evt.end, 'h:mm a')}
-                          </span>
-                        </div>
-                      )}
-                      {!isShort && evt.location && (
-                        <div className={clsx('text-[10px] truncate opacity-50 mt-0.5', !dc.isCustom && dc.text)} style={dc.isCustom ? { color: dc.text } : {}}>
-                          📍 {evt.location}
+                        <div
+                          className={clsx('text-[10px] opacity-60 mt-0.5 truncate', !dc.isCustom && dc.text)}
+                          style={dc.isCustom ? { color: dc.text } : {}}
+                        >
+                          {format(evt.start, 'h:mm a')} – {format(evt.end, 'h:mm a')}
                         </div>
                       )}
                     </motion.div>
                   );
                 })}
 
-                {/* Current time indicator — Google Calendar style red line with dot */}
-                {showNowLine && nowTop > 0 && nowTop < HOURS.length * HOUR_HEIGHT && (
-                  <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${nowTop}px` }}>
+                {/* Current time line — accent line + dot */}
+                {showNowLine && nowTop >= 0 && nowTop < HOURS.length * HOUR_HEIGHT && (
+                  <div
+                    className="absolute left-0 right-0 z-30 pointer-events-none"
+                    style={{ top: `${nowTop}px` }}
+                  >
                     <div className="flex items-center">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 -ml-1.5"
-                        style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 6px var(--accent-color)' }} />
-                      <div className="flex-1 h-[1.5px]"
-                        style={{ backgroundColor: 'var(--accent-color)', opacity: 0.8 }} />
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0 -ml-1"
+                        style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 5px var(--accent-color)' }}
+                      />
+                      <div
+                        className="flex-1 h-px"
+                        style={{ backgroundColor: 'var(--accent-color)', opacity: 0.7 }}
+                      />
                     </div>
                   </div>
                 )}
