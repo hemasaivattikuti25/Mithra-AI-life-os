@@ -51,6 +51,34 @@ function parseIntent(input, tasks, habits) {
     return { type: 'schedule_undo' };
   }
 
+  // ── DURATION-BASED TIMED EVENT ("work out for 1 hour at 8 AM", "meditate for 30 min at 7am") ──
+  // Must come BEFORE task/habit detection
+  const durationEventMatch = input.match(
+    /(?:i\s+(?:want\s+to|will|need\s+to)|let\s+me|schedule|do|plan)?\s*(.+?)\s+for\s+(\d+(?:\.\d+)?)\s*(hour|hr|hrs|minute|min|mins)s?\s*(?:(?:at|@|starting)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+(?:on\s+)?(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
+  );
+  if (durationEventMatch) {
+    const activityRaw = durationEventMatch[1].trim();
+    const amount = parseFloat(durationEventMatch[2]);
+    const unit = durationEventMatch[3].toLowerCase();
+    const timeStr = durationEventMatch[4];
+    const dateStr = durationEventMatch[5];
+    const durationMins = unit.startsWith('hour') || unit.startsWith('hr') ? Math.round(amount * 60) : Math.round(amount);
+
+    // Only treat as event if it has a time anchor OR it sounds like an activity (not generic)
+    const isActivity = /work\s*out|workout|exercise|gym|run|jog|swim|yoga|meditat|study|read|code|practice|call|meet|class|session|team/i.test(activityRaw);
+    if (timeStr || isActivity) {
+      const title = activityRaw.replace(/^(?:i\s+(?:want\s+to|will)|let\s+me|schedule|do|plan)\s*/i, '').trim();
+      const eventDate = dateStr ? parseFuzzyDate(dateStr) : new Date();
+      if (timeStr) {
+        const pt = parseClockTime(timeStr);
+        if (pt) eventDate.setHours(pt.hour, pt.minute, 0, 0);
+      }
+      const endDate = new Date(eventDate.getTime() + durationMins * 60 * 1000);
+      const timeLabel = timeStr || `${durationMins}min`;
+      return { type: 'create_event', title, eventDate, endDate, durationMins, time: timeLabel, isBlock: true };
+    }
+  }
+
   // ── CREATE TASK (standard) ──
   const addTaskMatch = input.match(/(?:add|create|new|make)\s+(?:a\s+)?(?:task|todo)[:\s]+(.+)/i) ||
     input.match(/(?:remind me to|i need to|i have to)\s+(.+)/i);
@@ -64,7 +92,7 @@ function parseIntent(input, tasks, habits) {
     let hasTime = false;
     if (timeMatch) {
       const pt = parseClockTime(timeMatch[1]);
-      if (pt) { dueDate = new Date(); dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
+      if (pt) { dueDate = new Date(dueDate); dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
     }
     let priority = 'medium';
     if (/urgent|asap|critical|important|high/i.test(rest)) priority = 'high';
@@ -72,19 +100,27 @@ function parseIntent(input, tasks, habits) {
     return { type: 'create_task', title, dueDate, priority, hasTime, listId: 'dost' };
   }
 
-  // ── PERSON-BASED TASK (call/meet/text someone) ──
-  const personTaskMatch = input.match(/^(?:call|ring|phone|message|text|meet|ping|talk\s+to)\s+([\w\s]+?)(?:\s+(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+(?:today|tomorrow|on\s+\w+))?[\s.,!]*$/i);
+  // ── PERSON-BASED TASK (call/meet/text someone) — detects time and saves as event if time given ──
+  const personTaskMatch = input.match(/^(?:call|ring|phone|message|text|meet|ping|talk\s+to)\s+([\w\s]+?)(?:\s+(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+(?:on\s+)?(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday))?[\s.,!]*$/i);
   if (personTaskMatch) {
     const person = personTaskMatch[1].trim();
     const timeStr = personTaskMatch[2];
-    let dueDate = new Date(); let hasTime = false;
+    const dateStr = personTaskMatch[3];
+    let dueDate = dateStr ? parseFuzzyDate(dateStr) : new Date();
+    let hasTime = false;
     if (timeStr) {
       const pt = parseClockTime(timeStr);
       if (pt) { dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
     }
     const verb = input.match(/^(call|ring|phone|message|text|meet|ping|talk\s+to)/i)?.[1] || 'Call';
     const verbTitle = verb.charAt(0).toUpperCase() + verb.slice(1).replace(/\s+to$/i, '');
-    return { type: 'create_task', title: `${verbTitle} ${person}`, dueDate, priority: 'medium', hasTime, listId: 'dost' };
+    const title = `${verbTitle} ${person}`;
+    // If a time is specified, create both a task AND a calendar event
+    if (hasTime) {
+      const endDate = new Date(dueDate.getTime() + 30 * 60 * 1000); // 30min default
+      return { type: 'create_task_and_event', title, dueDate, endDate, priority: 'medium', hasTime, listId: 'dost', time: timeStr };
+    }
+    return { type: 'create_task', title, dueDate, priority: 'medium', hasTime, listId: 'dost' };
   }
 
   // ── CREATE EVENT (time-range block: class from 2-7, yoga 6-7am) ──
@@ -108,9 +144,14 @@ function parseIntent(input, tasks, habits) {
     const rest = eventMatch[1].trim();
     const timeMatch = rest.match(/(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
     const dateMatch = rest.match(/(?:on\s+|)(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
-    let title = rest.replace(/(?:at|@)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '').replace(/(?:on\s+)?(?:tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, '').replace(/^\s*[,\s]+|[,\s]+$/g, '').trim();
+    const durMatch = rest.match(/(?:for)\s+(\d+(?:\.\d+)?)\s*(hour|hr|minute|min)/i);
+    let title = rest
+      .replace(/(?:at|@)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '')
+      .replace(/(?:for)\s+\d+(?:\.\d+)?\s*(?:hour|hr|minute|min)s?/i, '')
+      .replace(/(?:on\s+)?(?:tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, '')
+      .replace(/^\s*[,\s]+|[,\s]+$/g, '').trim();
     if (!title) title = 'Meeting';
-    let eventDate = dateMatch ? parseFuzzyDate(dateMatch[1]) : parseFuzzyDate('today');
+    let eventDate = dateMatch ? parseFuzzyDate(dateMatch[1]) : new Date();
     if (timeMatch) {
       let h = parseInt(timeMatch[1]);
       const m = parseInt(timeMatch[2] || '0');
@@ -120,26 +161,102 @@ function parseIntent(input, tasks, habits) {
       if (!ampm && h < 8) h += 12;
       eventDate.setHours(h, m, 0, 0);
     }
-    return { type: 'create_event', title, eventDate, time: timeMatch ? `${timeMatch[0].replace(/^(?:at|@)\s*/i, '')}` : null };
+    let endDate = null;
+    if (durMatch) {
+      const dMins = durMatch[2].startsWith('hour') || durMatch[2].startsWith('hr')
+        ? Math.round(parseFloat(durMatch[1]) * 60) : Math.round(parseFloat(durMatch[1]));
+      endDate = new Date(eventDate.getTime() + dMins * 60 * 1000);
+    }
+    return { type: 'create_event', title, eventDate, endDate, time: timeMatch ? timeMatch[0].replace(/^(?:at|@)\s*/i, '') : null };
+  }
+
+  // ── NATURAL HABIT with time, duration and date extraction ──
+  // Extended to catch ANY activity, not just a fixed list
+  const habitTimeMatch = input.match(
+    /(?:i\s+(?:want\s+to|will|would\s+like\s+to|plan\s+to)|let\s+me|starting|i\s+should)\s+(.+?)(?:\s+(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+for\s+(\d+)\s*(days?|weeks?|months?))?(?:\s+for\s+(\d+(?:\.\d+)?)\s*(hour|hr|minute|min)s?)?[\s.,!]*$/i
+  );
+  if (habitTimeMatch) {
+    const activityRaw = habitTimeMatch[1].trim();
+    const timeStr = habitTimeMatch[2];
+    const durationDaysAmt = habitTimeMatch[3];
+    const durationDaysUnit = habitTimeMatch[4];
+    const durationMinsAmt = habitTimeMatch[5];
+    const durationMinsUnit = habitTimeMatch[6];
+
+    // Only treat this as a habit if it contains habit-like language
+    const HABIT_TRIGGERS = /gym|meditat|yoga|run|exercise|workout|jog|swim|read|study|walk|stretch|practice|journa|code|write|draw|paint|cook|diet|fast|wake|sleep|breath|gratitude|reflect/i;
+    if (HABIT_TRIGGERS.test(activityRaw)) {
+      // Extract activity title
+      const cleanActivity = activityRaw
+        .replace(/^(?:go\s+(?:to\s+(?:the?\s+)?)?|do\s+|start\s+|practice\s+)/i, '')
+        .trim();
+      const title = cleanActivity.charAt(0).toUpperCase() + cleanActivity.slice(1);
+
+      // Schedule time
+      let scheduleTime = '07:00';
+      if (timeStr) {
+        const pt = parseClockTime(timeStr);
+        if (pt) scheduleTime = `${String(pt.hour).padStart(2, '0')}:${String(pt.minute).padStart(2, '0')}`;
+      } else if (/evening|night/i.test(input)) {
+        scheduleTime = '18:00';
+      } else if (/afternoon/i.test(input)) {
+        scheduleTime = '15:00';
+      }
+
+      // Streak goal from days/weeks/months
+      let streakGoal = 30;
+      if (durationDaysAmt && durationDaysUnit) {
+        const n = parseInt(durationDaysAmt);
+        if (durationDaysUnit.startsWith('week')) streakGoal = n * 7;
+        else if (durationDaysUnit.startsWith('month')) streakGoal = n * 30;
+        else streakGoal = n;
+      } else {
+        // Try parseDurationDays fallback
+        const fd = parseDurationDays(input);
+        if (fd) streakGoal = fd;
+      }
+
+      // Focus duration in minutes
+      let focusDuration = 30;
+      if (durationMinsAmt && durationMinsUnit) {
+        const n = parseFloat(durationMinsAmt);
+        focusDuration = durationMinsUnit.startsWith('hour') || durationMinsUnit.startsWith('hr')
+          ? Math.round(n * 60) : Math.round(n);
+      }
+
+      const category = detectCategory(title);
+      return { type: 'create_habit', title, duration: focusDuration, category, streakGoal, scheduleTime };
+    }
   }
 
   // ── CREATE HABIT (standard: add habit: ...) ──
   const addHabitMatch = input.match(/(?:add|create|new|start)\s+(?:a\s+)?habit[:\s]+(.+)/i);
   if (addHabitMatch) {
     const rest = addHabitMatch[1].trim();
-    const durMatch = rest.match(/(.+?)\s+(?:for\s+)?(\d+)\s*(?:min|minutes?)/i);
+    const durMinsMatch = rest.match(/(?:for\s+)?(\d+)\s*(?:min|minutes?)/i);
+    const timeStr = rest.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i)?.[1];
     let title = rest, duration = 30;
-    if (durMatch) { title = durMatch[1].trim(); duration = parseInt(durMatch[2]); }
+    if (durMinsMatch) { title = rest.replace(durMinsMatch[0], '').trim(); duration = parseInt(durMinsMatch[1]); }
     const goalDays = parseDurationDays(rest);
-    const cleanTitle = title.replace(/\s+for\s+(?:next\s+)?\d+\s*(?:days?|weeks?|months?)/i, '').trim();
+    const cleanTitle = title
+      .replace(/\s+for\s+(?:next\s+)?\d+\s*(?:days?|weeks?|months?)/i, '')
+      .replace(/\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '')
+      .trim();
+
     let scheduleTime = '07:00';
-    if (/evening|night/i.test(rest)) scheduleTime = '18:00';
-    if (/afternoon/i.test(rest)) scheduleTime = '15:00';
+    if (timeStr) {
+      const pt = parseClockTime(timeStr);
+      if (pt) scheduleTime = `${String(pt.hour).padStart(2, '0')}:${String(pt.minute).padStart(2, '0')}`;
+    } else if (/evening|night/i.test(rest)) {
+      scheduleTime = '18:00';
+    } else if (/afternoon/i.test(rest)) {
+      scheduleTime = '15:00';
+    }
     const category = detectCategory(cleanTitle);
     return { type: 'create_habit', title: cleanTitle, duration, category, streakGoal: goalDays || 30, scheduleTime };
   }
 
-  // ── NATURAL HABIT (I want to go gym for 20 days) ──
+  // ── NATURAL HABIT (I want to go gym for 20 days) — simple fallback ──
   const wantHabitMatch = input.match(/(?:i\s+want\s+to|i\s+(?:will|plan\s+to|gonna|going\s+to)|let\s+me|starting|i\s+should)\s+(?:go\s+(?:to\s+(?:the?\s+)?)?|do\s+|start\s+|practice\s+)?(?:gym|meditat|yoga|run|exercise|workout|jog|swim|read|study|walk|stretch)/i)
     || input.match(/(?:gym|meditation|yoga|running|jogging|swimming|reading|workout|walking|stretching)\s+(?:every\s+(?:day|morning|evening)|for\s+(?:next\s+)?\d+\s*(?:days?|weeks?|months?))/i);
   if (wantHabitMatch) {
@@ -152,8 +269,21 @@ function parseIntent(input, tasks, habits) {
     if (/evening|pm\b|night/i.test(input)) scheduleTime = '18:00';
     if (/morning|early/i.test(input)) scheduleTime = '07:00';
     if (/afternoon/i.test(input)) scheduleTime = '15:00';
+    // Check for explicit time
+    const tStr = input.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i)?.[1];
+    if (tStr) {
+      const pt = parseClockTime(tStr);
+      if (pt) scheduleTime = `${String(pt.hour).padStart(2, '0')}:${String(pt.minute).padStart(2, '0')}`;
+    }
+    const durationMinsMatch = input.match(/for\s+(\d+(?:\.\d+)?)\s*(hour|hr|minute|min)/i);
+    let focusDuration = 30;
+    if (durationMinsMatch) {
+      const n = parseFloat(durationMinsMatch[1]);
+      focusDuration = durationMinsMatch[2].startsWith('hour') || durationMinsMatch[2].startsWith('hr')
+        ? Math.round(n * 60) : Math.round(n);
+    }
     const category = detectCategory(title);
-    return { type: 'create_habit', title, duration: 30, category, streakGoal: goalDays || 30, scheduleTime };
+    return { type: 'create_habit', title, duration: focusDuration, category, streakGoal: goalDays || 30, scheduleTime };
   }
 
   // ── DELETE OPERATIONS ──
@@ -235,7 +365,10 @@ function parseClockTime(text) {
   const ampm = (m[3] || '').toLowerCase();
   if (ampm === 'pm' && hour < 12) hour += 12;
   if (ampm === 'am' && hour === 12) hour = 0;
-  if (!ampm && hour < 7) hour += 12; // assume PM for ambiguous small numbers
+  // Only assume PM for small numbers WITHOUT explicit am/pm and that feel like daytime
+  // e.g. "3" → 15:00, but "2 am" stays 02:00, "11" stays 11 (not 23)
+  if (!ampm && hour >= 1 && hour <= 6) hour += 12; // 1–6 with no AMPM → PM (1pm–6pm)
+  // hour 7–11 without ampm = stay as-is (morning)
   return { hour, minute };
 }
 
@@ -824,14 +957,50 @@ export default function DostMode() {
           break;
         }
 
+        /* ── CREATE TASK + CALENDAR EVENT (person call/meet with specific time) ── */
+        case 'create_task_and_event': {
+          const newTask2 = {
+            id: `task-${Date.now()}`,
+            title: intent.title,
+            priority: intent.priority || 'medium',
+            dueDate: intent.dueDate,
+            completed: false,
+            starred: true,
+            subtasks: [],
+            listId: intent.listId || 'dost',
+            details: `Scheduled at ${format(intent.dueDate, 'h:mm a')}`,
+            source: 'dost',
+          };
+          addTask(newTask2);
+          const calEvt2 = {
+            id: `evt-${Date.now()}`,
+            title: intent.title,
+            start: intent.dueDate.toISOString(),
+            end: (intent.endDate || new Date(intent.dueDate.getTime() + 1800000)).toISOString(),
+            category: 'Dost',
+            color: '#22d3ee',
+            source: 'dost',
+          };
+          saveCalendarEvent(calEvt2);
+          addAiMsg(
+            `✅ **Task + Event created!**\n\n"${intent.title}"\n⏰ Time: **${format(intent.dueDate, 'h:mm a')}**\n📆 ${format(intent.dueDate, 'EEEE, MMM d')}\n\n✅ Saved to your **Calendar** and task list!`,
+            { type: 'task_created', taskData: newTask2 }
+          );
+          break;
+        }
+
         /* ── CREATE EVENT/MEETING ── */
         case 'create_event': {
           const evId = `evt-${Date.now()}`;
+          const durMins = intent.durationMins;
+          const endIso = intent.endDate
+            ? intent.endDate.toISOString()
+            : new Date(intent.eventDate.getTime() + 3600000).toISOString();
           const calEvent = {
             id: evId,
             title: intent.title,
             start: intent.eventDate.toISOString(),
-            end: (intent.endDate || new Date(intent.eventDate.getTime() + 3600000)).toISOString(),
+            end: endIso,
             category: 'Dost',
             color: '#22d3ee',
             source: 'dost',
@@ -846,13 +1015,17 @@ export default function DostMode() {
             starred: true,
             subtasks: [],
             listId: 'dost',
-            details: intent.time ? `Scheduled: ${intent.time}` : '',
+            details: intent.time ? `Scheduled: ${intent.time}${durMins ? ` (${durMins} min)` : ''}` : '',
             source: 'dost',
           };
           addTask(eventTask);
-          const timePart = intent.time ? ` from **${intent.time}**` : '';
+          const timePart = intent.time ? ` at **${intent.time}**` : '';
+          const durPart = durMins ? ` for **${durMins >= 60 ? `${(Math.round(durMins / 60 * 10) / 10)}hr` : `${durMins}min`}**` : '';
           const isBlock = intent.isBlock;
-          addAiMsg(`📅 **${isBlock ? 'Event' : 'Meeting'} scheduled!**\n\n"${intent.title}"${timePart}\n📆 ${format(intent.eventDate, 'EEEE, MMM d')}\n\n✅ Saved to your **Calendar** and added as a starred task!`, { type: 'task_created', taskData: eventTask });
+          addAiMsg(
+            `📅 **${isBlock ? 'Event' : 'Meeting'} scheduled!**\n\n"✨ ${intent.title}"${timePart}${durPart}\n📆 ${format(intent.eventDate, 'EEEE, MMM d, h:mm a')}\n\n✅ Saved to your **Calendar** and added as a task!`,
+            { type: 'task_created', taskData: eventTask }
+          );
           break;
         }
 
@@ -874,7 +1047,8 @@ export default function DostMode() {
           };
           addHabit(newHabit);
           const habitGoalLine = goalDays !== 30 ? `\n🎯 Goal: **${goalDays} days**` : '';
-          addAiMsg(`🔥 **Habit created!**\n\n"${intent.title}"\n⏱ ${intent.duration || 30} min/day\n🏷 Category: ${intent.category}${habitGoalLine}\n\nLet's build that streak! 💪`, {
+          const schedTimeFmt = (() => { const [h, mm] = (intent.scheduleTime || '07:00').split(':').map(Number); return `${h % 12 || 12}:${String(mm).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; })();
+          addAiMsg(`🔥 **Habit created!**\n\n"${intent.title}"\n⏱ ${intent.duration || 30} min/day\n⏰ Scheduled: **${schedTimeFmt}**\n🏷 Category: ${intent.category}${habitGoalLine}\n\nLet's build that streak! 💪`, {
             type: 'habit_created', habitData: newHabit,
           });
           break;
@@ -1452,7 +1626,7 @@ export default function DostMode() {
           { label: '📊 Summary', cmd: 'Summarize my day' },
           { label: '🔥 Habits', cmd: 'How are my habits?' },
           { label: '😊 Mood', cmd: 'How is my mood?' },
-          { label: '✨ Smart Schedule', cmd: 'plan my day' },
+          { label: '📅 Add Event', cmd: 'Add event: ' },
           { label: '📋 Add Task', cmd: 'Add task: ' },
           { label: '📎 Import', cmd: '__import_modal__' },
         ].map(q => (

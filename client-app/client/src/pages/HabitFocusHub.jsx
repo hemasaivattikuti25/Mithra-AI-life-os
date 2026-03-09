@@ -939,7 +939,7 @@ export default function HabitFocusHub() {
 
   const useStreakFreeze = (habitId) => {
     const habit = habits.find(h => h.id === habitId);
-    if (!habit || habit.todayDone) return;
+    if (!habit) return;
     const avail = getAvailableFreezes();
     if (avail <= 0) return;
 
@@ -1364,6 +1364,50 @@ export default function HabitFocusHub() {
                   </button>
                 </div>
               </div>
+              {/* ── Broken-streak freeze alert banner ── */}
+              {(() => {
+                const brokenStreakHabits = habits.filter(h => !h.todayDone && (h.bestStreak || 0) > 2 && (h.streak || 0) === 0);
+                const avail = getAvailableFreezes();
+                if (brokenStreakHabits.length === 0 || avail <= 0) return null;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 p-4 rounded-xl flex items-start gap-3"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(6,182,212,0.12), rgba(6,182,212,0.06))',
+                      border: '1px solid rgba(6,182,212,0.3)',
+                    }}
+                  >
+                    <span className="text-2xl flex-shrink-0">🧊</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-cyan-400">
+                        Streak{brokenStreakHabits.length > 1 ? 's' : ''} at risk — use a Freeze!
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)', opacity: 0.7 }}>
+                        {brokenStreakHabits.slice(0, 2).map(h => h.title).join(', ')}{brokenStreakHabits.length > 2 ? ` +${brokenStreakHabits.length - 2} more` : ''}
+                        {' '}— {avail} freeze{avail > 1 ? 's' : ''} remaining this month
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {brokenStreakHabits.slice(0, 3).map(h => (
+                          <button
+                            key={h.id}
+                            onClick={() => useStreakFreeze(h.id)}
+                            className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-all"
+                            style={{
+                              background: 'rgba(6,182,212,0.15)',
+                              color: '#22d3ee',
+                              border: '1px solid rgba(6,182,212,0.3)',
+                            }}
+                          >
+                            🧊 Freeze "{h.title}"
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })()}
               <div className="space-y-2.5">
                 <AnimatePresence mode="popLayout">
                   {sortedHabits.map((habit, i) => (
