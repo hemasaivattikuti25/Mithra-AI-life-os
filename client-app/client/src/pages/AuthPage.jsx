@@ -269,14 +269,14 @@ export default function AuthPage({ isPasswordReset = false }) {
 
         {/* Hero content */}
         <div className="relative z-10 max-w-lg text-center">
-          <motion.div className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-8 relative"
+          <motion.div className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-8 relative overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
               boxShadow: '0 20px 60px rgba(34,211,238,0.3)'
             }}
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
-            <Sparkles className="w-11 h-11 text-white" />
+            <img src="/assets/logo.svg" alt="Mithra" className="w-24 h-24 object-cover" />
             <div className="absolute inset-0 rounded-3xl border border-white/10" />
             <motion.div className="absolute -inset-1 rounded-[28px]"
               style={{ border: '1px solid rgba(34,211,238,0.5)' }}
@@ -319,12 +319,12 @@ export default function AuthPage({ isPasswordReset = false }) {
 
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <motion.div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 relative"
+            <motion.div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 relative overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #06b6d4, #2563eb)',
                 boxShadow: '0 8px 32px rgba(34,211,238,0.3)'
               }}>
-              <Sparkles className="w-7 h-7 text-white" />
+              <img src="/assets/logo.svg" alt="Mithra" className="w-16 h-16 object-cover" />
             </motion.div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Mithra</h1>
             <p className="text-xs text-white/30 mt-1">AI Life Operating System</p>

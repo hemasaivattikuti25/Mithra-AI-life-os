@@ -192,9 +192,11 @@ function Scene2({ elapsed }) {
                 width: 100, height: 100, borderRadius: 28,
                 background: "linear-gradient(135deg, #06b6d4, #0891b2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 48, boxShadow: "0 0 60px rgba(6,182,212,0.5)",
+                overflow: "hidden", boxShadow: "0 0 60px rgba(6,182,212,0.5)",
                 animation: "popIn 0.6s ease both",
-            }}>⚡</div>
+            }}>
+                <img src="/assets/logo.svg" alt="Mithra" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
             <div style={{
                 fontSize: 52, fontWeight: 900, letterSpacing: "-2px",
                 background: "linear-gradient(135deg, #ffffff 0%, #06b6d4 100%)",
@@ -517,9 +519,11 @@ function Scene8({ elapsed }) {
                 width: 80, height: 80, borderRadius: 22,
                 background: "linear-gradient(135deg, #06b6d4, #0891b2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 36, animation: "pulse 1.5s infinite ease-in-out",
+                overflow: "hidden", animation: "pulse 1.5s infinite ease-in-out",
                 boxShadow: "0 0 40px rgba(6,182,212,0.5)",
-            }}>⚡</div>
+            }}>
+                <img src="/assets/logo.svg" alt="Mithra" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
 
             <div style={{ textAlign: "center" }}>
                 <div style={{
@@ -594,11 +598,11 @@ export default function PromoVideo() {
         if (playing) {
             if (audioRef.current) {
                 audioRef.current.currentTime = 0;
-                audioRef.current.play().catch(() => {});
+                audioRef.current.play().catch(() => { });
             }
             if (videoRef.current) {
                 videoRef.current.currentTime = 0;
-                videoRef.current.play().catch(() => {});
+                videoRef.current.play().catch(() => { });
             }
         } else {
             if (audioRef.current) audioRef.current.pause();
@@ -753,8 +757,10 @@ export default function PromoVideo() {
                                     width: 90, height: 90, borderRadius: 24,
                                     background: "linear-gradient(135deg, #06b6d4, #0891b2)",
                                     display: "flex", alignItems: "center", justifyContent: "center",
-                                    fontSize: 40, boxShadow: "0 0 40px rgba(6,182,212,0.4)",
-                                }}>⚡</div>
+                                    overflow: "hidden", boxShadow: "0 0 40px rgba(6,182,212,0.4)",
+                                }}>
+                                    <img src="/assets/logo.svg" alt="Mithra" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
                                 <div style={{
                                     fontSize: 28, fontWeight: 900, color: "#fff",
                                     letterSpacing: "-1px", textAlign: "center",

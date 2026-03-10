@@ -7,7 +7,7 @@ const luxuryEase = [0.22, 1, 0.36, 1];
 /* ═══════════ ONBOARDING SLIDES — Clean & Minimal ═══════════ */
 const SLIDES = [
   {
-    icon: Bot,
+    icon: '/assets/logo.svg',
     title: 'Welcome to Mithra',
     subtitle: 'Your intelligent Life OS',
     description: 'Organize tasks, build habits, focus deeply, and reflect — all in one beautiful app.',
@@ -86,13 +86,17 @@ export default function Onboarding({ onComplete }) {
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.15, duration: 0.6, ease: luxuryEase }}
-            className="w-24 h-24 rounded-3xl mx-auto flex items-center justify-center"
+            className="w-24 h-24 rounded-3xl mx-auto flex items-center justify-center overflow-hidden"
             style={{
               background: slide.color.startsWith('var') ? `color-mix(in srgb, ${slide.color}, transparent 90%)` : `${slide.color}15`,
               border: `1px solid ${slide.color.startsWith('var') ? `color-mix(in srgb, ${slide.color}, transparent 70%)` : `${slide.color}30`}`
             }}
           >
-            <Icon size={40} style={{ color: getSlideColor(slide.color) }} />
+            {typeof slide.icon === 'string' ? (
+              <img src={slide.icon} alt="" className="w-24 h-24 object-cover" />
+            ) : (
+              <Icon size={40} style={{ color: getSlideColor(slide.color) }} />
+            )}
           </motion.div>
 
           {/* Text */}
