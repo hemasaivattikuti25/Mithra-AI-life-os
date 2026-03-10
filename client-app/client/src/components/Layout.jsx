@@ -82,9 +82,8 @@ const DesktopSidebar = () => {
                 borderRight: 'none'
             }}>
             <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7">
-                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)] shadow-[0_0_15px_var(--accent-glow)]">
-                    <Bot className="w-5 h-5 text-[var(--accent-color)]" />
-                    <div className="absolute inset-0 rounded-xl border border-[var(--accent-glow)] animate-pulse opacity-50" />
+                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-[0_0_15px_var(--accent-glow)]">
+                    <img src="/assets/logo.svg" alt="Mithra" className="w-10 h-10 rounded-xl" />
                 </div>
                 <div className="hidden lg:block ml-3">
                     <h1 className="font-sans font-bold text-lg tracking-wide text-[var(--text-primary)]">Mithra</h1>
@@ -150,8 +149,8 @@ const MobileTopBar = () => {
                     borderBottom: 'none'
                 }}>
                 <div className="flex items-center gap-3">
-                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--accent-glow)] border border-[var(--accent-glow)]">
-                        <Bot className="w-4 h-4 text-[var(--accent-color)]" />
+                    <div className="relative w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src="/assets/logo.svg" alt="Mithra" className="w-8 h-8 rounded-lg" />
                     </div>
                     <h1 className="font-bold text-sm tracking-wide text-[var(--text-primary)]">{currentPage}</h1>
                 </div>

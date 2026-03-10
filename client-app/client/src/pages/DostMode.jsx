@@ -1520,23 +1520,6 @@ export default function DostMode() {
                 <p className="text-sm mb-4" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
                   Choose a file type to import tasks or data:
                 </p>
-                {/* CSV Option */}
-                <button
-                  onClick={() => { fileInputRef.current?.setAttribute('accept', '.csv,.txt'); fileInputRef.current?.click(); setShowImportModal(false); }}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
-                  style={{
-                    background: isLight ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.1)',
-                    border: 'none',
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-500/20">
-                    <FileSpreadsheet size={20} className="text-green-500" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <span className="font-medium block" style={{ color: 'var(--text-primary)' }}>CSV File</span>
-                    <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>Import tasks from .csv or .txt</span>
-                  </div>
-                </button>
                 {/* Excel Option */}
                 <button
                   onClick={() => { fileInputRef.current?.setAttribute('accept', '.xlsx,.xls'); fileInputRef.current?.click(); setShowImportModal(false); }}

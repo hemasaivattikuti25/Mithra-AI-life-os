@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Link2, Plus, Copy, Check, AlertCircle, LogIn, X,
-    Hash, Trash2, LogOut, RefreshCcw, Loader2, Eye, EyeOff, BookOpen, Send, CalendarDays,
+    Hash, Trash2, LogOut, RefreshCcw, Loader2, Eye, EyeOff, CalendarDays,
     Pencil, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -95,10 +95,7 @@ export default function MithraBlend() {
     const [addingTask, setAddingTask] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
 
-    // Journal
-    const [workspaceJournal, setWorkspaceJournal] = useState([]);
-    const [journalContent, setJournalContent] = useState('');
-    const [postingJournal, setPostingJournal] = useState(false);
+    // Journal state removed - Blend Journal tab removed
 
     // Events form
     const [addingEvent, setAddingEvent] = useState(false);
@@ -147,18 +144,16 @@ export default function MithraBlend() {
 
         const loadDetails = async () => {
             try {
-                const [m, h, t, j, ev] = await Promise.all([
+                const [m, h, t, ev] = await Promise.all([
                     workspaceService.getMembers(activeWsId),
                     workspaceService.getWorkspaceHabits(activeWsId),
                     workspaceService.getWorkspaceTasks(activeWsId),
-                    workspaceService.getWorkspaceJournal(activeWsId),
                     workspaceService.getWorkspaceEvents(activeWsId),
                 ]);
                 if (!cancelled) {
                     setMembers(m);
                     setWorkspaceHabits(h);
                     setWorkspaceTasks(t);
-                    setWorkspaceJournal(j);
                     setWorkspaceEvents(ev);
                 }
             } catch { }
@@ -390,21 +385,6 @@ export default function MithraBlend() {
         return m?.fullName || 'Unknown';
     };
 
-    // Post a journal entry to the workspace
-    const handlePostJournal = async () => {
-        if (!journalContent.trim() || !activeWorkspace || postingJournal) return;
-        setPostingJournal(true);
-        try {
-            await workspaceService.createWorkspaceJournal(activeWorkspace.id, journalContent.trim(), 3, []);
-            setJournalContent('');
-            const j = await workspaceService.getWorkspaceJournal(activeWorkspace.id);
-            setWorkspaceJournal(j);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setPostingJournal(false);
-        }
-    };
 
     const handleAddEvent = async () => {
         if (!newEventTitle.trim() || !newEventStart || !newEventEnd || !activeWorkspace) return;
@@ -642,7 +622,7 @@ export default function MithraBlend() {
                         <div>
                             {/* Inner tabs */}
                             <div className="flex gap-1 mb-4 p-1 rounded-xl" style={{ background: 'var(--glass-bg)' }}>
-                                {['habits', 'tasks', 'events', 'journal'].map(tab => (
+                                {['habits', 'tasks', 'events'].map(tab => (
                                     <button key={tab} onClick={() => setInnerTab(tab)}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all capitalize ${innerTab === tab ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]'
                                             }`}
@@ -888,79 +868,6 @@ export default function MithraBlend() {
                                 </div>
                             )}
 
-                            {/* ── JOURNAL TAB ── */}
-                            {innerTab === 'journal' && (
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <BookOpen size={16} style={{ color: 'var(--accent-color)' }} />
-                                        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                                            Shared Journal ({workspaceJournal.length})
-                                        </h3>
-                                    </div>
-
-                                    {/* New entry input */}
-                                    <GlassCard className="space-y-2">
-                                        <textarea
-                                            value={journalContent}
-                                            onChange={e => setJournalContent(e.target.value)}
-                                            placeholder="Share a thought, reflection, or update with your blend..."
-                                            rows={3}
-                                            className="w-full px-3 py-2 rounded-lg text-sm bg-transparent text-[var(--text-primary)] outline-none resize-none"
-                                            style={{ border: '1px solid var(--glass-border)' }}
-                                        />
-                                        <div className="flex justify-end">
-                                            <button
-                                                onClick={handlePostJournal}
-                                                disabled={!journalContent.trim() || postingJournal}
-                                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-40"
-                                                style={{ background: 'var(--accent-color)' }}
-                                            >
-                                                {postingJournal ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                                                Post
-                                            </button>
-                                        </div>
-                                    </GlassCard>
-
-                                    {/* Journal entries */}
-                                    {workspaceJournal.length === 0 ? (
-                                        <GlassCard className="text-center py-8">
-                                            <p className="text-sm text-[var(--text-dim)] opacity-60">No shared journal entries yet. Be the first to share!</p>
-                                        </GlassCard>
-                                    ) : (
-                                        workspaceJournal.map(entry => (
-                                            <GlassCard key={entry.id}>
-                                                <div className="flex items-start gap-3">
-                                                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                                                        style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)' }}>
-                                                        {getMemberName(entry.userId)?.[0]?.toUpperCase() || '?'}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-xs font-semibold text-[var(--text-primary)]">
-                                                                {getMemberName(entry.userId)}
-                                                            </span>
-                                                            <span className="text-[10px] text-[var(--text-dim)] opacity-50">
-                                                                {entry.date || (entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '')}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-sm text-[var(--text-primary)] opacity-80 whitespace-pre-wrap">{entry.content}</p>
-                                                        {entry.tags && entry.tags.length > 0 && (
-                                                            <div className="flex gap-1 mt-2 flex-wrap">
-                                                                {entry.tags.map(tag => (
-                                                                    <span key={tag} className="px-2 py-0.5 rounded-full text-[10px]"
-                                                                        style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)' }}>
-                                                                        #{tag}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </GlassCard>
-                                        ))
-                                    )}
-                                </div>
-                            )}
 
                             {/* ── WORKSPACE MANAGEMENT ── */}
                             <GlassCard className="mt-6 space-y-3">

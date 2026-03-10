@@ -963,19 +963,26 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
     return () => clearInterval(t);
   }, []);
 
+  // Scroll to current time (or 8AM min) on mount — same logic as WeekView
   useEffect(() => {
-    if (gridRef.current) gridRef.current.scrollTop = 2 * HOUR_HEIGHT;
+    if (gridRef.current) {
+      const curHour = new Date().getHours();
+      const scrollHour = Math.max(curHour - 1, 7);
+      gridRef.current.scrollTop = scrollHour * HOUR_HEIGHT;
+    }
   }, []);
 
+  // nowTop: offset from midnight (full 24h basis)
   const nowTop = useMemo(() => {
     const mins = getHours(currentTime) * 60 + getMinutes(currentTime);
-    return ((mins - 360) / 60) * HOUR_HEIGHT;
+    return (mins / 60) * HOUR_HEIGHT;
   }, [currentTime]);
 
   const getEventStyle = (event) => {
     const startMin = getHours(event.start) * 60 + getMinutes(event.start);
     const endMin = getHours(event.end) * 60 + getMinutes(event.end);
-    const top = ((startMin - 360) / 60) * HOUR_HEIGHT;
+    // Full 24h: midnight = 0
+    const top = (startMin / 60) * HOUR_HEIGHT;
     const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 24);
     return { top: `${top}px`, height: `${height}px` };
   };
@@ -983,9 +990,10 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
   const handleGridClick = (e) => {
     if (e.target !== e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const hour = Math.floor(y / HOUR_HEIGHT) + 6;
-    onSlotClick(currentDate, Math.min(Math.max(hour, 6), 23));
+    const y = e.clientY - rect.top + (gridRef.current?.scrollTop || 0);
+    const totalMins = (y / HOUR_HEIGHT) * 60;
+    const hour = Math.min(Math.max(Math.floor(totalMins / 60), 0), 23);
+    onSlotClick(currentDate, hour);
   };
 
   return (
@@ -998,16 +1006,28 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
       </div>
       <div ref={gridRef} className="flex-1 overflow-y-auto">
         <div className="flex relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-          <div className="w-10 sm:w-16 flex-shrink-0 relative">
+          <div className="w-14 sm:w-16 flex-shrink-0 relative select-none">
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-xs text-[var(--text-dim)] opacity-30 -mt-2" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px` }}>
-                {hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}
+              <div
+                key={hour}
+                className="absolute w-full flex items-center justify-end pr-2 sm:pr-3"
+                style={{ top: `${hour * HOUR_HEIGHT - 8}px` }}
+              >
+                <span
+                  className="text-[9px] sm:text-[10px] font-medium tabular-nums"
+                  style={{ color: 'var(--text-dim)', opacity: hour === 0 ? 0 : 0.4 }}
+                >
+                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                </span>
               </div>
             ))}
           </div>
-          <div className="flex-1 relative border-l border-white/[0.04]" onClick={handleGridClick}>
+          <div className="flex-1 relative border-l border-white/[0.05]" onClick={handleGridClick}>
             {HOURS.map((hour) => (
-              <div key={hour} className="absolute w-full border-t border-white/[0.04]" style={{ top: `${(hour - 6) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} />
+              <div key={hour} className="absolute w-full" style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}>
+                <div className="w-full border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
+                <div className="w-full absolute" style={{ top: `${HOUR_HEIGHT / 2}px`, borderTop: '1px dashed rgba(255,255,255,0.025)' }} />
+              </div>
             ))}
             {layoutEvents.map(evt => {
               const style = getEventStyle(evt);
@@ -1032,11 +1052,12 @@ const DayView = ({ currentDate, events, onEventClick, onSlotClick }) => {
                 </motion.div>
               );
             })}
-            {isToday(currentDate) && nowTop > 0 && (
+            {/* Current time indicator */}
+            {isToday(currentDate) && nowTop >= 0 && nowTop < HOURS.length * HOUR_HEIGHT && (
               <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: `${nowTop}px` }}>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-[var(--accent-color)] -ml-1.5 shadow-[0_0_8px_var(--accent-color)]" />
-                  <div className="flex-1 h-[2px] bg-[var(--accent-color)] shadow-[0_0_6px_var(--accent-color)]" />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 -ml-1" style={{ backgroundColor: 'var(--accent-color)', boxShadow: '0 0 5px var(--accent-color)' }} />
+                  <div className="flex-1 h-px" style={{ backgroundColor: 'var(--accent-color)', opacity: 0.7 }} />
                 </div>
               </div>
             )}
