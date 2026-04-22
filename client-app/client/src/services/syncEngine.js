@@ -181,11 +181,10 @@ class SyncEngine {
       ...operation,
       id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       timestamp: Date.now(),
-      retries: 0,and exponential backoff */
-  async processQueue() {
-    // Prevent concurrent syncs (mutex lock)
-    if (this.syncLock || !this.isOnline) return;
-    this.syncLock = true
+      retries: 0,
+      // and exponential backoff
+    };
+
     if (existingIdx >= 0) {
       // Replace existing operation with newer one
       queue[existingIdx] = newOp;
@@ -205,7 +204,18 @@ class SyncEngine {
   async processQueue() {
     if (this.syncInProgress || !this.isOnline) return;
     this.syncInProgress = true;
-    this.notify('sy= (op.retries || 0) + 1;
+    this.notify('syncing');
+    
+    const queue = this._getQueue();
+    const failed = [];
+    let successCount = 0;
+
+    for (const op of queue) {
+      try {
+        await this._executeOperation(op);
+        successCount += 1;
+      } catch (e) {
+        op.retries = (op.retries || 0) + 1;
         op.lastError = e.message;
         op.lastAttempt = Date.now();
         
@@ -232,24 +242,7 @@ class SyncEngine {
       if (nextRetryIn > 0) {
         setTimeout(() => this.processQueue(), Math.max(100, nextRetryIn));
       }
-        this.lastError = e.message;
-        op.retries += 1;
-        op.lastError = e.message;
-        op.lastAttempt = Date.now();
-        
-        if (op.retries < MAX_RETRIES) {
-          failed.push(op);
-        } else {
-          this.notify('dropped', { operation: op });
-        }
-      }
     }
-
-    this._saveQueue(failed);
-    
-    try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch { }
-    
-    this.syncInProgress = false;
     
     if (failed.length > 0) {
       this.notify('partial', { synced: successCount, pending: failed.length });
