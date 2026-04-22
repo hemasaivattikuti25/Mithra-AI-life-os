@@ -95,6 +95,10 @@ export default function MithraBlend() {
     const [addingTask, setAddingTask] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
 
+    // Polling state
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(null);
+
     // Journal state removed - Blend Journal tab removed
 
     // Events form
@@ -162,26 +166,41 @@ export default function MithraBlend() {
         return () => { cancelled = true; };
     }, [activeWsId, user]);
 
-    // ── Polling: refresh workspace data periodically (replaces Supabase realtime) ──
+    // ── Polling: refresh workspace data every 5 seconds for real-time feel ──
 
     useEffect(() => {
         if (!activeWsId) return;
 
-        const refreshData = () => {
-            workspaceService.getMembers(activeWsId).then(setMembers).catch(() => { });
-            workspaceService.getWorkspaceHabits(activeWsId).then(setWorkspaceHabits).catch(() => { });
-            workspaceService.getWorkspaceTasks(activeWsId).then(setWorkspaceTasks).catch(() => { });
-            workspaceService.getWorkspaceEvents(activeWsId).then(setWorkspaceEvents).catch(() => { });
+        const refreshData = async () => {
+            setIsRefreshing(true);
+            try {
+                const [m, h, t, ev] = await Promise.all([
+                    workspaceService.getMembers(activeWsId).catch(() => members),
+                    workspaceService.getWorkspaceHabits(activeWsId).catch(() => workspaceHabits),
+                    workspaceService.getWorkspaceTasks(activeWsId).catch(() => workspaceTasks),
+                    workspaceService.getWorkspaceEvents(activeWsId).catch(() => workspaceEvents),
+                ]);
+                setMembers(m);
+                setWorkspaceHabits(h);
+                setWorkspaceTasks(t);
+                setWorkspaceEvents(ev);
+                setLastRefresh(new Date());
+            } catch (err) {
+                // Silently fail - we already have cached data
+                console.debug('Blend refresh failed (using cached data):', err.message);
+            } finally {
+                setIsRefreshing(false);
+            }
         };
 
-        // Initial load
+        // Initial load immediately
         refreshData();
 
-        // Poll every 30 seconds for updates
-        const interval = setInterval(refreshData, 30000);
+        // Poll every 5 seconds for live updates
+        const interval = setInterval(refreshData, 5000);
 
         return () => clearInterval(interval);
-    }, [activeWsId, load]);
+    }, [activeWsId]);
 
     // ── URL auto-join ────────────────────────────────────────────
 
