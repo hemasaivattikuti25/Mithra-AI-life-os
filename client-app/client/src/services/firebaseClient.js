@@ -138,7 +138,18 @@ export async function apiFetch(path, options = {}) {
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
-    const token = await authService.getIdToken();
+    // Refresh token before making request (handles expired tokens)
+    let token = await authService.getIdToken();
+    if (token) {
+      try {
+        // Force refresh: getIdToken(true) forces a token refresh
+        token = await auth.currentUser.getIdToken(true);
+      } catch (e) {
+        // Token refresh failed, use what we have
+        console.debug('Token refresh failed:', e.message);
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

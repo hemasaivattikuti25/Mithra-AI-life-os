@@ -560,6 +560,20 @@ export function DataProvider({ children }) {
     fetchFromAPI();
   }, [user]);
 
+  /* ── Subscribe to sync engine status changes ── */
+  const [syncStatus, setSyncStatus] = useState('idle');
+  useEffect(() => {
+    const unsubscribe = syncEngine.subscribe((event, data) => {
+      setSyncStatus(event);
+      // Log sync events for debugging
+      if (event === 'synced' || event === 'partial' || event === 'dropped') {
+        console.debug(`[Mithra Sync] ${event}:`, data);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   // Computed accent colors for JS usage (charts, inline styles, etc.)
   const accentColor = useMemo(() => {
     const palette = COLOR_THEMES[colorTheme];
@@ -1297,7 +1311,7 @@ export function DataProvider({ children }) {
     // Notifications
     notificationSettings, updateNotificationSettings, requestNotificationPermission, REMINDER_OPTIONS,
     // Settings
-    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus,
+    syncSettings, toggleSyncTasks, toggleSyncHabits, toggleSyncFocus, syncStatus,
     // Export
     exportData, exportAsExcel,
     // Gamification
@@ -1305,7 +1319,7 @@ export function DataProvider({ children }) {
     BADGE_DEFINITIONS, XP_REWARDS,
     // Loading state
     dataLoading,
-  }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings,
+  }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings, syncStatus,
     theme, colorTheme, accentColor, notifications, focusSound, notificationSettings,
     xp, badges, xpPopup, awardXP, checkBadges,
     addTask, updateTask, deleteTask, toggleTask, starTask,

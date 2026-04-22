@@ -15,16 +15,19 @@ import { apiFetch } from './firebaseClient';
 const SYNC_QUEUE_KEY = 'mithra-sync-queue';
 const LAST_SYNC_KEY = 'mithra-last-sync';
 const SYNC_STATUS_KEY = 'mithra-sync-status';
-const RETRY_INTERVAL_MS = 60000; // 1 minute retry interval
-const MAX_RETRIES = 10; // Max retries before dropping
+const MAX_RETRIES = 5;
+const BASE_DELAY_MS = 1000; // 1 second base retry delay
+const MAX_DELAY_MS = 30000; // Cap at 30 seconds
 
 class SyncEngine {
   constructor() {
     this.isOnline = navigator.onLine;
     this.syncInProgress = false;
+    this.syncLock = false; // Mutex to prevent concurrent syncs
     this.listeners = new Set();
     this.retryTimer = null;
     this.lastError = null;
+    this.healthCheckInterval = null;
 
     window.addEventListener('online', () => {
       this.isOnline = true;
@@ -37,25 +40,46 @@ class SyncEngine {
       this.notify('offline');
     });
 
-    // Start auto-retry timer
-    this._startRetryTimer();
-    
+    // Start periodic health check (every 30 seconds)
+    this._startHealthCheck();
+
     // Process any pending queue on startup
     if (this.isOnline && this._getQueue().length > 0) {
       setTimeout(() => this.processQueue(), 2000);
     }
   }
 
-  /* ── Auto-retry timer: processes queue every 60 seconds ── */
-  _startRetryTimer() {
-    if (this.retryTimer) clearInterval(this.retryTimer);
+  /* ── Health check: actual ping to detect connectivity ── */
+  _startHealthCheck() {
+    if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
     
-    this.retryTimer = setInterval(() => {
-      const queue = this._getQueue();
-      if (queue.length > 0 && this.isOnline && !this.syncInProgress) {
-        this.processQueue();
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/ping', { 
+          method: 'GET', 
+          signal: AbortSignal.timeout(5000) 
+        });
+        if (res.ok && !this.isOnline) {
+          this.isOnline = true;
+          this.notify('online');
+          this.processQueue();
+        } else if (!res.ok && this.isOnline) {
+          this.isOnline = false;
+          this.notify('offline');
+        }
+      } catch (e) {
+        if (this.isOnline) {
+          this.isOnline = false;
+          this.notify('offline');
+        }
       }
-    }, RETRY_INTERVAL_MS);
+    }, 30000); // Check every 30 seconds
+  }
+
+  /* ── Calculate exponential backoff delay ── */
+  _getBackoffDelay(retries) {
+    const delay = BASE_DELAY_MS * Math.pow(2, retries);
+    return Math.min(delay, MAX_DELAY_MS) + Math.random() * 1000;
   }
 
   /* ── Event system ── */
@@ -157,9 +181,11 @@ class SyncEngine {
       ...operation,
       id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       timestamp: Date.now(),
-      retries: 0,
-    };
-    
+      retries: 0,and exponential backoff */
+  async processQueue() {
+    // Prevent concurrent syncs (mutex lock)
+    if (this.syncLock || !this.isOnline) return;
+    this.syncLock = true
     if (existingIdx >= 0) {
       // Replace existing operation with newer one
       queue[existingIdx] = newOp;
@@ -179,25 +205,33 @@ class SyncEngine {
   async processQueue() {
     if (this.syncInProgress || !this.isOnline) return;
     this.syncInProgress = true;
-    this.notify('syncing');
-
-    const queue = this._getQueue();
-    if (queue.length === 0) {
-      this.syncInProgress = false;
-      this.lastError = null;
-      this.notify('idle');
-      return;
+    this.notify('sy= (op.retries || 0) + 1;
+        op.lastError = e.message;
+        op.lastAttempt = Date.now();
+        
+        if (op.retries < MAX_RETRIES) {
+          // Schedule retry with exponential backoff
+          op.nextRetry = Date.now() + this._getBackoffDelay(op.retries);
+          failed.push(op);
+        } else {
+          this.notify('dropped', { operation: op, reason: `Exceeded ${MAX_RETRIES} retries: ${e.message}` });
+        }
+      }
     }
 
-    const failed = [];
-    let successCount = 0;
+    this._saveQueue(failed);
     
-    for (const op of queue) {
-      try {
-        await this._executeOperation(op);
-        successCount++;
-        this.lastError = null;
-      } catch (e) {
+    try { localStorage.setItem(LAST_SYNC_KEY, Date.now().toString()); } catch { }
+    
+    this.syncInProgress = false;
+    this.syncLock = false;
+    
+    // If there are failed items with nextRetry set, schedule a retry
+    if (failed.length > 0) {
+      const nextRetryIn = Math.min(...failed.map(op => op.nextRetry || Date.now())) - Date.now();
+      if (nextRetryIn > 0) {
+        setTimeout(() => this.processQueue(), Math.max(100, nextRetryIn));
+      }
         this.lastError = e.message;
         op.retries += 1;
         op.lastError = e.message;
