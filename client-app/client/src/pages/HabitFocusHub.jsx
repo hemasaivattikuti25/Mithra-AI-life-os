@@ -1395,9 +1395,9 @@ export default function HabitFocusHub() {
                             onClick={() => useStreakFreeze(h.id)}
                             className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-all"
                             style={{
-                              background: 'rgba(6,182,212,0.15)',
-                              color: '#22d3ee',
-                              border: '1px solid rgba(6,182,212,0.3)',
+                              background: 'var(--accent-glow)',
+                              color: 'var(--accent-color)',
+                              border: '1px solid var(--glass-border)',
                             }}
                           >
                             🧊 Freeze "{h.title}"

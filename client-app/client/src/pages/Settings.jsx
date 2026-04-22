@@ -622,7 +622,7 @@ export default function Settings() {
           {/* About */}
           <div className="w-full flex items-center justify-between p-4 rounded-lg text-left">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #60a5fa, #3b82f6)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}>
                 <Info size={18} className="text-white" />
               </div>
               <div>

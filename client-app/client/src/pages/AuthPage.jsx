@@ -247,18 +247,18 @@ export default function AuthPage({ isPasswordReset = false }) {
         {/* Mesh gradient background */}
         <div className="absolute inset-0">
           <motion.div className="absolute w-[800px] h-[800px] rounded-full blur-[250px]"
-            style={{ background: '#22d3ee', opacity: 0.12, top: '-30%', left: '-20%' }}
+            style={{ background: 'var(--accent-color)', opacity: 0.12, top: '-30%', left: '-20%' }}
             animate={{ x: [0, 80, 0], y: [0, -50, 0], scale: [1, 1.1, 1] }}
             transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }} />
           <motion.div className="absolute w-[600px] h-[600px] rounded-full blur-[200px]"
-            style={{ background: '#3b82f6', opacity: 0.08, bottom: '-20%', right: '-10%' }}
+            style={{ background: 'var(--accent-secondary)', opacity: 0.08, bottom: '-20%', right: '-10%' }}
             animate={{ x: [0, -60, 0], y: [0, 60, 0] }}
             transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }} />
           {heroParticles.map(p => (
             <motion.div key={p.id} className="absolute rounded-full"
               style={{
                 width: p.size, height: p.size, left: `${p.x}%`, top: `${p.y}%`,
-                background: p.id % 3 === 0 ? '#22d3ee' : 'rgba(255,255,255,0.12)'
+                background: p.id % 3 === 0 ? 'var(--accent-color)' : 'rgba(255,255,255,0.12)'
               }}
               animate={{ y: [0, -80, 0], opacity: [0.08, 0.5, 0.08] }}
               transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }} />
