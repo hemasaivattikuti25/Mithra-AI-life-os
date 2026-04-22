@@ -44,7 +44,7 @@ Key Features:
 • Works offline — your data stays on your device
 • No ads, no data selling
 
-Built with ❤️ by Hema Sai Vartikotti
+Built with ❤️ by Hemasai Vattikuti — Backend & Applied AI Engineer
 
 ## Screenshots Needed (minimum 2, recommended 8)
 1. Dashboard / Home screen

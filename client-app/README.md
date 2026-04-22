@@ -54,11 +54,11 @@ Mithra is an AI-powered productivity operating system that replaces your scatter
 - **Mood Tracking**: Daily 1–10 emotional check-ins
 - **Zen Journal**: Rich text editor with AI mood analysis and tagging
 
-#### 🤖 **AI Automation** *(Coming Soon)*
-- **WhatsApp Bot**: Add tasks, log habits, get summaries via text
-- **Telegram Bot**: Full Mithra control with inline commands
-- **Voice-to-Action**: Forward voice notes → AI transcribes and executes
-- **Proactive Nudges**: AI-timed reminders based on your patterns
+#### 🤖 **Dost AI Companion**
+- **RAG Memory**: Remembers your journal entries, tasks, and moods using semantic search
+- **Natural Language**: "Add a meeting tomorrow at 2 PM" or "Summarize my week"
+- **Context Aware**: Gives personalized, stoic advice based on your life patterns
+- **Seamless Integration**: Operates across all app modules (tasks, habits, calendar, journal)
 
 ---
 
@@ -119,20 +119,7 @@ Environment variables must be set on both platforms — see the root [README](..
 
 ---
 
-### **Roadmap**
 
-- [x] Firebase Auth + Neon PostgreSQL migration
-- [x] Dost AI with RAG memory & life-context awareness
-- [x] Mithra Blend — shared habit workspaces
-- [x] Sync engine with offline queuing
-- [x] Android build via Capacitor
-- [ ] **WhatsApp bot** — text-based task/habit management
-- [ ] **Telegram bot** — full Mithra control via inline commands
-- [ ] **AI Command Engine** — NLP parsing for all operations
-- [ ] **Voice-to-Action pipeline** — voice notes → transcription → execution
-- [ ] Native iOS wrapper + App Store release
-- [ ] AI Daily Planner — auto-generated optimal schedules
-- [ ] Multi-language support
 
 ---
 
@@ -142,5 +129,5 @@ Contributions welcome! Fork → Branch → Commit → PR.
 ---
 
 <div align="center">
-  <sub>Built by <b>Hema Sai Vattikuti</b> — Backend & Applied AI Engineer</sub>
+  <sub>Built by <b>Hemasai Vattikuti</b> — Backend & Applied AI Engineer. Built production systems at DRDL–DRDO (Ministry of Defence). Shipping Mithra Life OS with 690+ users, RAG semantic search, and zero-trust architecture.</sub>
 </div>

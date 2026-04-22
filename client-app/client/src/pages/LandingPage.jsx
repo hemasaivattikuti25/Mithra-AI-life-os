@@ -400,10 +400,10 @@ export default function LandingPage() {
             {/* ═══ Stats Strip ═══ */}
             <section className="border-y border-white/[0.04] py-16 relative overflow-hidden bg-white/[0.01]">
                 <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
-                    <AnimatedStat value="7" suffix="+" label="Core Modules" />
-                    <AnimatedStat value="100" suffix="%" label="Free & Open Source" />
-                    <AnimatedStat value="50" suffix="ms" label="AI Response Time" />
-                    <AnimatedStat value="3" suffix="" label="AI Models Integrated" />
+                    <AnimatedStat value="690" suffix="+" label="Active Users" />
+                    <AnimatedStat value="7" suffix="+" label="Core Features" />
+                    <AnimatedStat value="100" suffix="%" label="Zero-Trust Security" />
+                    <AnimatedStat value="50" suffix="ms" label="RAG Response Time" />
                 </div>
             </section>
 
@@ -562,6 +562,7 @@ export default function LandingPage() {
                                 <div className="flex gap-3 mt-4 justify-center">
                                     <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-white/[0.05] hover:bg-white hover:text-black transition-all"><Github className="w-4 h-4" /></a>
                                     <a href="https://linkedin.com/in/hemsaivattikuti" target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-white/[0.05] hover:bg-[#0077B5] hover:text-white transition-all"><Linkedin className="w-4 h-4" /></a>
+                                    <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-white/[0.05] hover:bg-cyan-500 hover:text-black transition-all"><Globe className="w-4 h-4" /></a>
                                 </div>
                             </div>
 
@@ -570,21 +571,20 @@ export default function LandingPage() {
                                     <h3 className="text-2xl font-bold text-white">Hemasai Vattikuti</h3>
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 uppercase tracking-wide">Builder</span>
                                 </div>
-                                <p className="text-gray-500 font-mono text-xs mb-6">ENGINEERING STUDENT • FULL STACK DEVELOPER • AI RESEARCHER</p>
+                                <p className="text-gray-500 font-mono text-xs mb-6">BACKEND & APPLIED AI ENGINEER</p>
                                 <p className="text-gray-400 mb-8 leading-relaxed max-w-xl">
-                                    "I built Mithra because existing tools forced me to adapt to them. I wanted a system that adapted to me.
-                                    Built from scratch with <span className="text-white font-semibold">React, FastAPI, and Firebase</span> to solve my own chaos."
+                                    "I architected production systems at DRDL–DRDO (Ministry of Defence, Government of India) with distributed databases and zero-trust security. Now shipping Mithra Life OS — an AI productivity platform with 690+ users, RAG semantic search, and Row-Level Security at the database layer."
                                 </p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 rounded-xl bg-black/40 border border-white/[0.05]">
-                                        <div className="text-xs text-gray-600 uppercase tracking-wider mb-1">Internship</div>
-                                        <div className="font-semibold text-sm">DRDO (Defense R&D)</div>
-                                        <div className="text-xs text-gray-500 mt-1">Distributed DB Systems</div>
+                                        <div className="text-xs text-gray-600 uppercase tracking-wider mb-1">Experience</div>
+                                        <div className="font-semibold text-sm">DRDL–DRDO</div>
+                                        <div className="text-xs text-gray-500 mt-1">Distributed Database Systems</div>
                                     </div>
                                     <div className="p-3 rounded-xl bg-black/40 border border-white/[0.05]">
-                                        <div className="text-xs text-gray-600 uppercase tracking-wider mb-1">Research</div>
-                                        <div className="font-semibold text-sm">Newton's Playground</div>
-                                        <div className="text-xs text-gray-500 mt-1">Physics Engine in WebGL</div>
+                                        <div className="text-xs text-gray-600 uppercase tracking-wider mb-1">Shipping</div>
+                                        <div className="font-semibold text-sm">Mithra Life OS</div>
+                                        <div className="text-xs text-gray-500 mt-1">690+ Active Users</div>
                                     </div>
                                 </div>
                             </div>
