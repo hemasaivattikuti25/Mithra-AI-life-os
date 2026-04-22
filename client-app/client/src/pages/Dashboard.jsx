@@ -415,9 +415,9 @@ export default function Dashboard() {
         >
           {/* ambient glows inside the card */}
           <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-[0.1]"
-            style={{ background: 'radial-gradient(circle, #22d3ee 0%, transparent 70%)' }} />
+            style={{ background: `radial-gradient(circle, var(--accent-color) 0%, transparent 70%)` }} />
           <div className="absolute bottom-0 left-[20%] w-56 h-56 rounded-full opacity-[0.08]"
-            style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)' }} />
+            style={{ background: `radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%)` }} />
 
           <div className="relative flex items-center justify-between flex-wrap gap-5">
             <div>
