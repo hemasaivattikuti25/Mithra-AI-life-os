@@ -6,11 +6,12 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from core.config import get_db, get_model, validate_config, init_db_pool, close_db_pool
 from core.rate_limiter import RateLimitMiddleware
 from routers import auth_router, chat_router, tasks_router, planner_router
-from routers import workspace_router
+from routers import workspace_router, calendar_router
 from services.warmup import keep_alive
 
 # ─── Structured logging ─────────────────────────────────────────
@@ -39,6 +40,23 @@ async def lifespan(app: FastAPI):
 
     # Start background warmup worker (keeps DB/Render alive)
     warmup_task = asyncio.create_task(keep_alive())
+    
+    # Initialize APScheduler for background tasks
+    scheduler = AsyncIOScheduler()
+    
+    # Add periodic Google Calendar sync job (every 15 minutes)
+    # scheduler.add_job(
+    #     sync_all_user_calendars,
+    #     'interval',
+    #     minutes=15,
+    #     id='google_calendar_sync',
+    #     name='Google Calendar Sync',
+    #     replace_existing=True
+    # )
+    
+    # Start scheduler
+    scheduler.start()
+    app.state.scheduler = scheduler
 
     logger.info("✅ Mithra Backend ready to accept requests")
     yield  # App runs here
@@ -50,6 +68,10 @@ async def lifespan(app: FastAPI):
         await warmup_task
     except asyncio.CancelledError:
         pass
+    
+    # Shutdown scheduler
+    if hasattr(app.state, 'scheduler') and app.state.scheduler.running:
+        app.state.scheduler.shutdown()
     
     # Close DB pool
     await close_db_pool()
@@ -113,6 +135,7 @@ app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
 app.include_router(planner_router.router, prefix="/api/plan", tags=["AI Planner"])
 app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
 app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"])
+app.include_router(calendar_router.router, tags=["Google Calendar"])
 
 
 # ─── Health Check (full — shows service statuses) ────────────────

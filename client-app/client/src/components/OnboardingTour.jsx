@@ -81,7 +81,7 @@ export default function OnboardingTour({ onComplete }) {
         // Highlight target
         el.style.position = 'relative';
         el.style.zIndex = '10001';
-        el.style.boxShadow = '0 0 0 4px var(--accent-color, #22d3ee), 0 0 20px rgba(34,211,238,0.3)';
+        el.style.boxShadow = '0 0 0 4px var(--accent-color, #06b6d4), 0 0 20px rgba(6,182,212,0.3)';
         el.style.borderRadius = '12px';
         el.style.transition = 'box-shadow 0.3s ease';
     }, [currentStep]);
@@ -214,7 +214,7 @@ export default function OnboardingTour({ onComplete }) {
                             <button
                                 onClick={next}
                                 className="flex items-center gap-1 px-4 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                                style={{ background: 'var(--accent-color, #22d3ee)' }}
+                                style={{ background: 'var(--accent-color, #06b6d4)' }}
                             >
                                 {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
                                 {currentStep < steps.length - 1 && <ChevronRight size={14} />}

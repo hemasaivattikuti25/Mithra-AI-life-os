@@ -997,7 +997,7 @@ export default function DostMode() {
             start: intent.dueDate.toISOString(),
             end: (intent.endDate || new Date(intent.dueDate.getTime() + 1800000)).toISOString(),
             category: 'Dost',
-            color: '#22d3ee',
+            color: 'var(--accent-color)',
             source: 'dost',
           };
           saveCalendarEvent(calEvt2);
@@ -1036,7 +1036,7 @@ export default function DostMode() {
             start: intent.eventDate.toISOString(),
             end: endDateForEvent.toISOString(),
             category: 'Dost',
-            color: '#22d3ee',
+            color: 'var(--accent-color)',
             source: 'dost',
           };
           saveCalendarEvent(calEvent);
@@ -1270,7 +1270,7 @@ export default function DostMode() {
               start: new Date(p.eventDate).toISOString(),
               end: new Date(p.endDate || new Date(p.eventDate).getTime() + 3600000).toISOString(),
               category: 'Dost',
-              color: '#22d3ee',
+              color: 'var(--accent-color)',
               source: 'dost',
             };
             saveCalendarEvent(calEvtConfirmed);

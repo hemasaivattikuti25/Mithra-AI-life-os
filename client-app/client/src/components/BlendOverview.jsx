@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Users, Check, Sparkles, Loader2, TrendingUp, Zap, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../services/firebaseClient';
+import { STATUS_COLORS } from '../utils/COLOR_CONSTANTS';
 
 function statusBadge(pct) {
-    if (pct === 100) return { label: 'Perfect Day', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
-    if (pct >= 50) return { label: 'On Track', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)' };
-    if (pct > 0) return { label: 'In Progress', color: '#facc15', bg: 'rgba(250,204,21,0.1)' };
-    return { label: 'Not Started', color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
+    if (pct === 100) return STATUS_COLORS.perfect;
+    if (pct >= 50) return STATUS_COLORS.onTrack;
+    if (pct > 0) return STATUS_COLORS.inProgress;
+    return STATUS_COLORS.notStarted;
 }
 
 /* ═══════════════════════════════════════════════════════════════
