@@ -8,7 +8,5 @@ PyJWT==2.10.1
 python-multipart==0.0.20
 pydantic==2.11.4
 httpx==0.28.1
-google-auth-oauthlib==1.2.1
-google-api-python-client==2.160.0
 apscheduler==3.10.4
 cryptography==44.0.0
