@@ -71,7 +71,7 @@ Mithra is an AI-powered productivity operating system that replaces your scatter
 | **Backend** | Python 3.12, FastAPI, Uvicorn |
 | **Database** | Neon PostgreSQL, pgvector (AI embeddings) |
 | **Auth** | Firebase Auth (Email/Password + Google OAuth) |
-| **AI** | Google Gemini 1.5 Flash, RAG pipeline |
+| **AI** | Advanced AI Engine, RAG pipeline, semantic search |
 | **Deployment** | Vercel (Frontend), Render (Backend) |
 | **Upcoming** | WhatsApp Business API, Telegram Bot API |
 
@@ -84,7 +84,7 @@ Mithra is an AI-powered productivity operating system that replaces your scatter
 - Python 3.10+
 - Firebase project (free tier)
 - Neon PostgreSQL database (free tier)
-- Google Gemini API Key
+- AI API Key for Dost AI features
 
 #### **Backend**
 ```bash

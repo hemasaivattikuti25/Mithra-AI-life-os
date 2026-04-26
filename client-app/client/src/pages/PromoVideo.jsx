@@ -217,7 +217,7 @@ function Scene2({ elapsed }) {
                 display: "flex", gap: 12,
                 animation: "fadeInUp 0.5s 0.8s ease both",
             }}>
-                {["React", "FastAPI", "Gemini AI", "Firebase"].map(t => (
+                {["React", "FastAPI", "Dost AI", "Firebase"].map(t => (
                     <span key={t} style={{
                         padding: "4px 12px", borderRadius: 20,
                         border: "1px solid rgba(6,182,212,0.3)",
