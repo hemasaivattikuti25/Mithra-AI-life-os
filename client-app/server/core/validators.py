@@ -79,21 +79,24 @@ class InputValidator:
         return password
     
     @staticmethod
-    def validate_string(value: Optional[str], field: str, max_length: int = MAX_TEXT_LENGTH, allow_empty: bool = False) -> str:
+    def validate_string(value: Optional[str], field: str = "value", max_length: int = None, min_length: int = 0, allow_empty: bool = True) -> str:
         """Validate string input."""
+        max_length = max_length or InputValidator.MAX_TEXT_LENGTH
         if value is None:
-            if allow_empty:
+            if allow_empty or min_length == 0:
                 return ""
             raise ValidationError(field, "This field is required")
-        
+
         value = str(value).strip()
-        
-        if not value and not allow_empty:
-            raise ValidationError(field, "This field cannot be empty")
-        
+
+        if len(value) < min_length:
+            if min_length > 0 and not value:
+                raise ValidationError(field, "This field cannot be empty")
+            raise ValidationError(field, f"Too short (min {min_length} chars)")
+
         if len(value) > max_length:
             raise ValidationError(field, f"Too long (max {max_length} chars)")
-        
+
         return value
     
     @staticmethod
@@ -107,19 +110,19 @@ class InputValidator:
         return InputValidator.validate_string(description, "description", InputValidator.MAX_DESCRIPTION_LENGTH, allow_empty=True)
     
     @staticmethod
-    def validate_integer(value: Optional[int], field: str, min_val: int = 0, max_val: int = 10000) -> int:
+    def validate_integer(value: Optional[int], field: str, min_value: int = 0, max_value: int = 10000) -> int:
         """Validate integer input."""
         if value is None:
             raise ValidationError(field, "This field is required")
-        
+
         try:
             value = int(value)
         except (ValueError, TypeError):
             raise ValidationError(field, "Must be a valid integer")
-        
-        if value < min_val or value > max_val:
-            raise ValidationError(field, f"Must be between {min_val} and {max_val}")
-        
+
+        if value < min_value or value > max_value:
+            raise ValidationError(field, f"Must be between {min_value} and {max_value}")
+
         return value
     
     @staticmethod
@@ -138,13 +141,15 @@ class InputValidator:
     @staticmethod
     def validate_array(value: Optional[List[Any]], field: str, max_length: int = None) -> List[Any]:
         """Validate array input."""
+        if value is None:
+            return []
         if not isinstance(value, list):
             raise ValidationError(field, "Must be an array")
-        
+
         max_length = max_length or InputValidator.MAX_ARRAY_LENGTH
         if len(value) > max_length:
             raise ValidationError(field, f"Array too large (max {max_length} items)")
-        
+
         return value
     
     @staticmethod
@@ -152,12 +157,12 @@ class InputValidator:
         """Validate enum value."""
         if value is None:
             raise ValidationError(field, "This field is required")
-        
+
         value = str(value).strip()
-        
+
         if value not in allowed:
             raise ValidationError(field, f"Must be one of: {', '.join(allowed)}")
-        
+
         return value
     
     @staticmethod

@@ -137,23 +137,38 @@ export const authService = {
    ═══════════════════════════════════════════════════════════════ */
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const FETCH_TIMEOUT = 30000;
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000; // Refresh if < 5 min left
+
+// Module-level token cache — avoids a Firebase round-trip on every request
+let _cachedToken = null;
+let _cachedTokenExpiry = 0;
+
+async function _getToken() {
+  if (!auth?.currentUser) return null;
+  const now = Date.now();
+  // Use cached token if still valid with buffer
+  if (_cachedToken && now < _cachedTokenExpiry - TOKEN_EXPIRY_BUFFER_MS) {
+    return _cachedToken;
+  }
+  // Token expired or about to — force refresh
+  try {
+    const result = await auth.currentUser.getIdTokenResult(true);
+    _cachedToken = result.token;
+    _cachedTokenExpiry = new Date(result.expirationTime).getTime();
+    return _cachedToken;
+  } catch (e) {
+    console.warn('[Mithra] Token refresh failed, trying cached:', e.message);
+    // Last resort: use potentially stale token rather than blocking the user
+    try { return await auth.currentUser.getIdToken(); } catch { return null; }
+  }
+}
 
 export async function apiFetch(path, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
-    // Get fresh ID token (force refresh handles expired tokens automatically)
-    let token = null;
-    if (auth?.currentUser) {
-      try {
-        token = await auth.currentUser.getIdToken(true);
-      } catch (e) {
-        console.debug('[Mithra] Token refresh failed:', e.message);
-        // Fall back to potentially stale token
-        try { token = await auth.currentUser.getIdToken(); } catch { /* no token */ }
-      }
-    }
+    const token = await _getToken();
 
     const headers = {
       'Content-Type': 'application/json',
@@ -161,7 +176,6 @@ export async function apiFetch(path, options = {}) {
       ...(options.headers || {}),
     };
 
-    // Ensure /api prefix is present on all paths
     const apiPath = path.startsWith('/api') ? path : `/api${path}`;
 
     const res = await fetch(`${API_URL}${apiPath}`, {
@@ -169,6 +183,21 @@ export async function apiFetch(path, options = {}) {
       headers,
       signal: controller.signal,
     });
+
+    if (res.status === 401) {
+      // Token may have just expired mid-session — clear cache and retry once
+      _cachedToken = null;
+      _cachedTokenExpiry = 0;
+      const freshToken = await _getToken();
+      if (freshToken && freshToken !== token) {
+        const retryRes = await fetch(`${API_URL}${apiPath}`, {
+          ...options,
+          headers: { ...headers, Authorization: `Bearer ${freshToken}` },
+          signal: controller.signal,
+        });
+        if (retryRes.ok) return await retryRes.json();
+      }
+    }
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

@@ -10,6 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from core.config import get_db, get_model, validate_config, init_db_pool, close_db_pool
 from core.rate_limiter import RateLimitMiddleware
+from migrations.runner import run_migrations
 from routers import auth_router, chat_router, tasks_router, planner_router
 from routers import workspace_router, calendar_router
 from services.warmup import keep_alive
@@ -37,6 +38,15 @@ async def lifespan(app: FastAPI):
 
     # Initialize Neon PostgreSQL connection pool
     await init_db_pool()
+
+    # Run DB migrations (idempotent — safe on every restart)
+    db_pool = get_db()
+    if db_pool:
+        try:
+            await run_migrations(db_pool)
+        except Exception as e:
+            logger.error(f"❌ Migration runner failed: {e}", exc_info=True)
+            # Do not crash — migrations may partially succeed; log and continue
 
     # Start background warmup worker (keeps DB/Render alive)
     warmup_task = asyncio.create_task(keep_alive())
@@ -109,12 +119,10 @@ import traceback
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    error_msg = str(exc)
-    logger.error(f"Global Error on {request.method} {request.url.path}: {error_msg}")
-    logger.error(traceback.format_exc())
+    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected server error occurred.", "error": error_msg}
+        content={"detail": "An unexpected server error occurred. Please try again later."}
     )
 
 # ─── Routers ─────────────────────────────────────────────────────

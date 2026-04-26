@@ -135,17 +135,15 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
-        # Validate task data
-        InputValidator.validate_string(task.title, min_length=1, max_length=500, field_name="title")
-        InputValidator.validate_string(task.details or "", max_length=10000, field_name="details")
-        InputValidator.validate_enum(task.priority or "medium", ["low", "medium", "high"], field_name="priority")
-        InputValidator.validate_uuid(task_id, field_name="task_id")
-        
+        InputValidator.validate_string(task.title, "title", max_length=500)
+        InputValidator.validate_string(task.details or "", "details", max_length=10000)
+        InputValidator.validate_uuid(task_id, "task_id")
+
         if task.subtasks:
-            InputValidator.validate_array(task.subtasks, max_length=50, field_name="subtasks")
-        
+            InputValidator.validate_array(task.subtasks, "subtasks", max_length=50)
+
         async with pool.acquire() as conn:
             result = await conn.execute(
                 """UPDATE tasks SET title=$1, details=$2, list_id=$3, priority=$4,
@@ -160,20 +158,14 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Task not found or access denied")
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e.message)
-    except HTTPException:
-        raise
-    except MithraError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Task update failed")
-            
+
         return {"task": {**task.dict(), "id": task_id, "userId": current_user["id"]}}
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Task update failed")
 
 @router.delete("/tasks/{task_id}")
 async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
@@ -262,14 +254,21 @@ async def update_notifications(settings: NotificationSettings, current_user: dic
 # ─── JOURNAL ───
 @router.get("/journal")
 async def list_journal(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
-    """Get journal entries (including workspace shared journals)."""
+    """Get journal entries. Workspace entries require membership."""
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             if workspace_id:
+                # SECURITY: Verify the user is actually a member of this workspace
+                is_member = await conn.fetchval(
+                    "SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+                    workspace_id, current_user["id"]
+                )
+                if not is_member:
+                    raise HTTPException(status_code=403, detail="Access denied to this workspace")
                 rows = await conn.fetch(
                     """SELECT id, user_id, content, mood, tags, date, workspace_id, created_at
                        FROM journal_entries WHERE workspace_id = $1 ORDER BY date DESC""",
@@ -281,10 +280,9 @@ async def list_journal(workspace_id: Optional[str] = None, current_user: dict = 
                        FROM journal_entries WHERE user_id = $1 ORDER BY date DESC""",
                     current_user["id"]
                 )
-        
-        entries = []
-        for e in rows:
-            entries.append({
+
+        entries = [
+            {
                 "id": str(e["id"]),
                 "userId": e["user_id"],
                 "content": e["content"],
@@ -293,10 +291,14 @@ async def list_journal(workspace_id: Optional[str] = None, current_user: dict = 
                 "date": e["date"],
                 "workspaceId": str(e["workspace_id"]) if e.get("workspace_id") else None,
                 "createdAt": e["created_at"].isoformat() if e.get("created_at") else None
-            })
+            }
+            for e in rows
+        ]
         return {"entries": entries}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to load journal entries")
 
 @router.post("/journal")
 async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_current_user)):
@@ -558,44 +560,46 @@ async def delete_habit(habit_id: str, current_user: dict = Depends(get_current_u
 
 @router.post("/habits/{habit_id}/complete")
 async def complete_habit(habit_id: str, current_user: dict = Depends(get_current_user)):
-    """Mark a habit as completed for today."""
+    """Mark a habit as completed for today. Atomic — race-condition safe."""
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     today_str = date.today().isoformat()
-    
+
     try:
         async with pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """SELECT completed_dates, streak, longest_streak FROM habits
-                   WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
-                       SELECT workspace_id FROM workspace_members WHERE user_id=$2
-                   ))""",
-                habit_id, current_user["id"]
-            )
-            if not row:
-                raise HTTPException(status_code=404, detail="Habit not found")
-            
-            completed = list(row.get("completed_dates") or [])
-            if today_str not in completed:
+            async with conn.transaction():
+                row = await conn.fetchrow(
+                    """SELECT completed_dates, streak, longest_streak FROM habits
+                       WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
+                           SELECT workspace_id FROM workspace_members WHERE user_id=$2
+                       ))
+                       FOR UPDATE""",
+                    habit_id, current_user["id"]
+                )
+                if not row:
+                    raise HTTPException(status_code=404, detail="Habit not found")
+
+                completed = list(row.get("completed_dates") or [])
+                if today_str in completed:
+                    # Already completed today — idempotent response
+                    return {"success": True, "streak": row["streak"], "longestStreak": row["longest_streak"], "alreadyDone": True}
+
                 completed.append(today_str)
-            
-            streak = (row.get("streak") or 0) + 1
-            longest = max(row.get("longest_streak") or 0, streak)
-            
-            await conn.execute(
-                """UPDATE habits SET completed_dates=$1, streak=$2, longest_streak=$3, updated_at=NOW()
-                   WHERE id=$4 AND (user_id=$5 OR workspace_id IN (
-                       SELECT workspace_id FROM workspace_members WHERE user_id=$5
-                   ))""",
-                completed, streak, longest, habit_id, current_user["id"]
-            )
-        return {"success": True, "streak": streak, "longestStreak": longest}
+                new_streak = (row.get("streak") or 0) + 1
+                longest = max(row.get("longest_streak") or 0, new_streak)
+
+                await conn.execute(
+                    """UPDATE habits SET completed_dates=$1, streak=$2, longest_streak=$3, updated_at=NOW()
+                       WHERE id=$4""",
+                    completed, new_streak, longest, habit_id
+                )
+        return {"success": True, "streak": new_streak, "longestStreak": longest, "alreadyDone": False}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to complete habit")
 
 # ─── MOOD LOGS ───
 @router.get("/mood-logs")
@@ -697,22 +701,8 @@ async def sync_data(current_user: dict = Depends(get_current_user)):
 
 # ─── CALENDAR EVENTS CRUD (with workspace support for Blend) ───
 
-async def _ensure_events_table(conn):
-    """Create calendar_events table if it doesn't exist."""
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS calendar_events (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            start_time TIMESTAMPTZ NOT NULL,
-            end_time TIMESTAMPTZ NOT NULL,
-            category TEXT DEFAULT 'Personal',
-            workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            updated_at TIMESTAMPTZ DEFAULT NOW()
-        )
-    """)
-
+# NOTE: calendar_events table is created via migrations/004_add_calendar_events.sql
+# DO NOT call _ensure_events_table on every request — it was a DDL lock.
 
 @router.get("/events")
 async def list_events(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
@@ -721,7 +711,6 @@ async def list_events(workspace_id: Optional[str] = None, current_user: dict = D
         raise HTTPException(status_code=503, detail="Database unavailable")
     try:
         async with pool.acquire() as conn:
-            await _ensure_events_table(conn)
             if workspace_id:
                 rows = await conn.fetch(
                     "SELECT * FROM calendar_events WHERE workspace_id = $1 ORDER BY start_time ASC",
@@ -747,8 +736,8 @@ async def list_events(workspace_id: Optional[str] = None, current_user: dict = D
                 }
                 for r in rows
             ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to load events")
 
 
 @router.post("/events")
@@ -758,7 +747,6 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=503, detail="Database unavailable")
     try:
         async with pool.acquire() as conn:
-            await _ensure_events_table(conn)
             row = await conn.fetchrow(
                 """INSERT INTO calendar_events (user_id, title, start_time, end_time, category, workspace_id)
                    VALUES ($1, $2, $3, $4, $5, $6)
@@ -780,8 +768,8 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
                 "workspaceId": event.workspaceId,
                 "createdAt": row["created_at"].isoformat(),
             }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create event")
 
 
 @router.delete("/events/{event_id}")

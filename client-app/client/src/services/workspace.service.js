@@ -1,14 +1,14 @@
 import { apiFetch } from './firebaseClient';
 
 export const workspaceService = {
-  async getWorkspaces(userId) {
-    return await apiFetch(`/workspaces?user_id=${userId}`);
+  async getWorkspaces() {
+    return await apiFetch('/workspaces');
   },
 
-  async createWorkspace(name, userId) {
+  async createWorkspace(name) {
     return await apiFetch('/workspaces', {
       method: 'POST',
-      body: JSON.stringify({ name, user_id: userId }),
+      body: JSON.stringify({ name }),
     });
   },
 

@@ -79,38 +79,41 @@ async def create_workspace(req: WorkspaceCreate, current_user: dict = Depends(ge
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
+    if not req.name or not req.name.strip():
+        raise HTTPException(status_code=422, detail="Workspace name is required")
+    if len(req.name.strip()) > 80:
+        raise HTTPException(status_code=422, detail="Workspace name too long (max 80 chars)")
+
     try:
         ws_id = str(uuid.uuid4())
         share_hash = generate_share_hash(ws_id)
-        
+
         async with pool.acquire() as conn:
-            await conn.execute(
-                """INSERT INTO workspaces (id, name, owner_id, share_link_hash)
-                   VALUES ($1, $2, $3, $4)""",
-                ws_id, req.name.strip(), user_id, share_hash
-            )
-            
-            # Auto-add the owner as a member with 'owner' role
-            await conn.execute(
-                """INSERT INTO workspace_members (workspace_id, user_id, role)
-                   VALUES ($1, $2, 'owner')""",
-                ws_id, user_id
-            )
-        
-        workspace = {
+            # Atomic: workspace row + owner membership in one transaction
+            async with conn.transaction():
+                await conn.execute(
+                    """INSERT INTO workspaces (id, name, owner_id, share_link_hash)
+                       VALUES ($1, $2, $3, $4)""",
+                    ws_id, req.name.strip(), user_id, share_hash
+                )
+                await conn.execute(
+                    """INSERT INTO workspace_members (workspace_id, user_id, role)
+                       VALUES ($1, $2, 'owner')""",
+                    ws_id, user_id
+                )
+
+        return {"workspace": {
             "id": ws_id,
             "name": req.name.strip(),
             "owner_id": user_id,
             "share_link_hash": share_hash,
             "userRole": "owner"
-        }
-        
-        return {"workspace": workspace}
+        }}
     except Exception as e:
         logger.error(f"Error creating workspace: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create workspace")
 
 @router.post("/workspaces/join")
 async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get_current_user)):
@@ -268,7 +271,7 @@ async def transfer_ownership(
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
     new_owner_id = req.new_owner_id.strip()
 
@@ -277,39 +280,34 @@ async def transfer_ownership(
 
     try:
         async with pool.acquire() as conn:
-            # 1. Verify caller is the current owner
-            ws = await conn.fetchrow(
-                "SELECT owner_id FROM workspaces WHERE id = $1",
-                workspace_id
-            )
-            if not ws or ws["owner_id"] != user_id:
-                raise HTTPException(status_code=403, detail="Only the current owner can transfer ownership.")
+            # All 3 steps are atomic — no partial ownership state possible
+            async with conn.transaction():
+                ws = await conn.fetchrow(
+                    "SELECT owner_id FROM workspaces WHERE id = $1",
+                    workspace_id
+                )
+                if not ws or ws["owner_id"] != user_id:
+                    raise HTTPException(status_code=403, detail="Only the current owner can transfer ownership.")
 
-            # 2. Verify new_owner is already a member of this workspace
-            member = await conn.fetchrow(
-                "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
-                workspace_id, new_owner_id
-            )
-            if not member:
-                raise HTTPException(status_code=404, detail="Target user is not a member of this workspace.")
+                member = await conn.fetchrow(
+                    "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+                    workspace_id, new_owner_id
+                )
+                if not member:
+                    raise HTTPException(status_code=404, detail="Target user is not a member of this workspace.")
 
-            # 3. Update workspace owner_id
-            await conn.execute(
-                "UPDATE workspaces SET owner_id = $1 WHERE id = $2",
-                new_owner_id, workspace_id
-            )
-
-            # 4. Demote old owner → member
-            await conn.execute(
-                "UPDATE workspace_members SET role = 'member' WHERE workspace_id = $1 AND user_id = $2",
-                workspace_id, user_id
-            )
-
-            # 5. Promote new owner → owner
-            await conn.execute(
-                "UPDATE workspace_members SET role = 'owner' WHERE workspace_id = $1 AND user_id = $2",
-                workspace_id, new_owner_id
-            )
+                await conn.execute(
+                    "UPDATE workspaces SET owner_id = $1 WHERE id = $2",
+                    new_owner_id, workspace_id
+                )
+                await conn.execute(
+                    "UPDATE workspace_members SET role = 'member' WHERE workspace_id = $1 AND user_id = $2",
+                    workspace_id, user_id
+                )
+                await conn.execute(
+                    "UPDATE workspace_members SET role = 'owner' WHERE workspace_id = $1 AND user_id = $2",
+                    workspace_id, new_owner_id
+                )
 
         logger.info(f"Ownership of workspace {workspace_id} transferred from {user_id} to {new_owner_id}")
         return {"success": True, "newOwnerId": new_owner_id}
@@ -318,5 +316,5 @@ async def transfer_ownership(
         raise
     except Exception as e:
         logger.error(f"Error transferring ownership for workspace {workspace_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to transfer ownership")
 

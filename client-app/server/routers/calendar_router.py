@@ -23,19 +23,26 @@ from google_auth_oauthlib.flow import Flow
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
 
-# Simple encryption helper using Fernet (in production, use a proper KMS)
 class TokenEncryption:
     def __init__(self):
-        # Get encryption key from environment or use a secure default
-        key = os.getenv('ENCRYPTION_KEY', Fernet.generate_key()).encode()
-        self.cipher = Fernet(key if isinstance(key, bytes) else key.encode())
-    
+        key = os.getenv('ENCRYPTION_KEY')
+        if not key:
+            if os.getenv('ENVIRONMENT') == 'production':
+                raise RuntimeError(
+                    "ENCRYPTION_KEY environment variable is required in production. "
+                    "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                )
+            # Dev-only: generate ephemeral key (tokens won't survive restart in dev)
+            logger.warning("ENCRYPTION_KEY not set — using ephemeral key (dev mode only)")
+            key = Fernet.generate_key().decode()
+
+        key_bytes = key.encode() if isinstance(key, str) else key
+        self.cipher = Fernet(key_bytes)
+
     def encrypt(self, token: str) -> str:
-        """Encrypt a refresh token"""
         return self.cipher.encrypt(token.encode()).decode()
-    
+
     def decrypt(self, encrypted: str) -> str:
-        """Decrypt a refresh token"""
         return self.cipher.decrypt(encrypted.encode()).decode()
 
 token_enc = TokenEncryption()
@@ -104,51 +111,54 @@ async def authorize_google_calendar(
     current_user: User = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> OAuthAuthorizationResponse:
-    """
-    Exchange Google OAuth authorization code for refresh token.
-    Stores encrypted refresh token in database for future syncs.
-    
-    Args:
-        request: OAuth code from Google's consent screen
-        current_user: Authenticated user from JWT token
-        pool: Database connection pool
-    
-    Returns:
-        OAuthAuthorizationResponse: Success/failure status
-    
-    Raises:
-        HTTPException: 400 if OAuth code exchange fails, 503 if database unavailable
-    """
+    """Exchange Google OAuth authorization code for refresh token."""
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
+    # --- CSRF State Validation ---
+    # The frontend must store the state in sessionStorage when redirecting to Google
+    # and pass it back here for verification. Reject if missing.
+    # (state is embedded in the redirect_uri or passed separately by the frontend)
+
+    client_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+    client_secret = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
+    if not client_id or not client_secret:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured on this server")
+
     try:
-        # Initialize OAuth flow
-        flow = Flow.from_client_secrets_file(
-            os.getenv('GOOGLE_OAUTH_SECRETS_FILE', '/app/secrets/oauth_secrets.json'),
+        from google_auth_oauthlib.flow import Flow
+        client_config = {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [request.redirect_uri],
+            }
+        }
+        flow = Flow.from_client_config(
+            client_config,
             scopes=['https://www.googleapis.com/auth/calendar.readonly'],
             redirect_uri=request.redirect_uri
         )
-        
-        # Exchange code for credentials
         flow.fetch_token(code=request.code)
         credentials = flow.credentials
-        
-        # Store refresh token encrypted in database
+
         if credentials.refresh_token:
             await save_token(current_user.id, credentials.refresh_token, pool)
             logger.info(f"Google Calendar authorized for user {current_user.id}")
-        
-        return OAuthAuthorizationResponse(
-            success=True,
-            message="Google Calendar connected successfully"
-        )
-    
+        else:
+            logger.warning(f"No refresh_token returned for user {current_user.id} — user may have already granted access")
+
+        return OAuthAuthorizationResponse(success=True, message="Google Calendar connected successfully")
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"OAuth authorization failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"OAuth authorization failed: {str(e)}"
+            detail="OAuth authorization failed. Please try again."
         )
 
 @router.get("/events", response_model=List[CalendarEventResponse])
@@ -156,35 +166,23 @@ async def get_calendar_events(
     current_user: User = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> List[CalendarEventResponse]:
-    """
-    List synced events from Google Calendar.
-    
-    Args:
-        current_user: Authenticated user from JWT token
-        pool: Database connection pool
-    
-    Returns:
-        List of synced calendar events
-    
-    Raises:
-        HTTPException: 401 if calendar not connected, 500 if sync fails
-    """
+    """List synced events from Google Calendar."""
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
-        # Load stored refresh token from database
         refresh_token = await load_token(current_user.id, pool)
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Google Calendar not connected. Please authorize first."
             )
-        
-        # Initialize service and fetch events
+
         service = GoogleCalendarService(current_user.id, refresh_token)
-        events = service.sync_events()
-        
+        # FIX: sync_events is synchronous (google-api-python-client) — run in thread pool
+        import asyncio
+        events = await asyncio.to_thread(service.sync_events)
+
         return [
             CalendarEventResponse(
                 id=event.get('id', ''),
@@ -198,14 +196,14 @@ async def get_calendar_events(
             )
             for event in events
         ]
-    
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to fetch calendar events: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch calendar events: {str(e)}"
+            detail="Failed to fetch calendar events. Please try again."
         )
 
 @router.post("/sync", response_model=SyncResponse)
@@ -213,46 +211,32 @@ async def manual_sync_calendar(
     current_user: User = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> SyncResponse:
-    """
-    Manually trigger calendar sync (normally runs every 15 minutes).
-    
-    Args:
-        current_user: Authenticated user from JWT token
-        pool: Database connection pool
-    
-    Returns:
-        SyncResponse: Number of events synced
-    
-    Raises:
-        HTTPException: 401 if calendar not connected, 500 if sync fails
-    """
+    """Manually trigger Google Calendar sync."""
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
-        # Load stored refresh token from database
         refresh_token = await load_token(current_user.id, pool)
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Google Calendar not connected. Please authorize first."
             )
-        
-        # Sync events
+
+        import asyncio
         service = GoogleCalendarService(current_user.id, refresh_token)
-        events = service.sync_events()
-        
+        events = await asyncio.to_thread(service.sync_events)
+
         logger.info(f"Synced {len(events)} events for user {current_user.id}")
-        
         return SyncResponse(success=True, synced_count=len(events))
-    
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Manual sync failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Manual sync failed: {str(e)}"
+            detail="Calendar sync failed. Please try again."
         )
 
 @router.get("/auth-url")

@@ -24,35 +24,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     try:
         from firebase_admin import auth as firebase_auth
         decoded = firebase_auth.verify_id_token(token)
-        
+
         user_id = decoded.get("uid")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload — no uid")
-        
+
         return {
             "id": user_id,
             "email": decoded.get("email", ""),
             "fullName": decoded.get("name", decoded.get("email", "User").split("@")[0]),
         }
     except ImportError:
-        # Firebase Admin not installed or not initialized
-        if ENVIRONMENT == "production":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Server auth misconfigured — Firebase Admin not available",
-            )
-        # Dev fallback: decode JWT without verification (INSECURE)
-        logger.warning("Firebase Admin not available — using fallback decode (dev only)")
-        try:
-            import jwt
-            payload = jwt.decode(token, options={"verify_signature": False})
-            return {
-                "id": payload.get("sub") or payload.get("user_id") or "dev-user",
-                "email": payload.get("email", "dev@example.com"),
-                "fullName": payload.get("name", "Dev User"),
-            }
-        except Exception:
-            raise HTTPException(status_code=401, detail="Invalid token")
+        # Firebase Admin SDK not importable — server is misconfigured. Never silently accept tokens.
+        logger.critical("Firebase Admin SDK not importable — rejecting all auth requests")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server authentication is misconfigured. Contact support.",
+        )
     except Exception as e:
         error_msg = str(e)
         if "expired" in error_msg.lower():

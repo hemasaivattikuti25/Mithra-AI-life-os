@@ -18,6 +18,12 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
 
   - type: web
     name: mithra-frontend
