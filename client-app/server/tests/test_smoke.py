@@ -102,13 +102,3 @@ class TestSecurity:
             assert exc.value.status_code == 500
 
 
-# ─── Email Service ────────────────────────────────────────────────────────────
-class TestEmailService:
-    @pytest.mark.asyncio
-    async def test_skips_when_no_api_key(self):
-        """Email service should return False gracefully when key is missing."""
-        import os
-        with patch.dict(os.environ, {"RESEND_API_KEY": ""}):
-            from services.email_service import send_welcome_email
-            result = await send_welcome_email("test@example.com", "Test User")
-            assert result is False

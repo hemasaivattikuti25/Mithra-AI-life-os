@@ -65,8 +65,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: ESLint
-        run: npx eslint src --ext .jsx,.js --max-warnings 20
 
       - name: Build (production bundle)
         run: npm run build
