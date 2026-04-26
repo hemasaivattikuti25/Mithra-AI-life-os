@@ -240,10 +240,10 @@ const Stats = () => (
     <section className="py-20 px-6 border-y border-white/5 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-white/5">
             {[
-                { label: 'Tasks Completed', value: '2.4M+' },
-                { label: 'Active Users', value: '50k+' },
-                { label: 'Hours Saved/Week', value: '12.5h' },
-                { label: 'Uptime', value: '99.99%' }
+                { label: 'Early Sign-ups', value: '800+' },
+                { label: 'Features Shipped', value: '20+' },
+                { label: 'Built Solo', value: '1' },
+                { label: 'Uptime', value: '99.9%' }
             ].map((stat, i) => (
                 <div key={i} className="text-center px-4">
                     <div className="text-3xl sm:text-4xl font-bold text-white mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>{stat.value}</div>
@@ -371,10 +371,6 @@ const Founder = () => (
                             <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
                                 <Zap size={14} /> Portfolio
-                            </a>
-                            <a href="https://drive.google.com/file/d/1yU0EMubbWwE8Z2iSmmkMY7_AfY-hAH0U/view" target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
-                                <ChevronRight size={14} /> Resume
                             </a>
                         </div>
                     </div>
