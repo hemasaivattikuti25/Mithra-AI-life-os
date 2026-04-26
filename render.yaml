@@ -1,9 +1,11 @@
 services:
+  # ─── Production Backend ─────────────────────────────────────────────────────
   - type: web
     name: mithra-backend
     env: python
+    plan: starter          # $7/mo — eliminates cold starts and autosuspend on Neon
     buildCommand: "cd client-app/server && pip install -r requirements.txt"
-    startCommand: "cd client-app/server && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    startCommand: "cd client-app/server && uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2"
     healthCheckPath: /ping
     envVars:
       - key: PYTHON_VERSION
@@ -11,7 +13,9 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: ALLOWED_ORIGINS
-        value: "https://mithra-lifeos.com,https://www.mithra-lifeos.com"
+        value: "https://mithra-lifeos.com,https://www.mithra-lifeos.com,https://mithra-life-os.vercel.app"
+      - key: APP_URL
+        value: "https://mithra-lifeos.com"
       - key: NEON_DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
@@ -24,12 +28,43 @@ services:
         sync: false
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_PRO_ANNUAL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: "Mithra <noreply@mithra-lifeos.com>"
+      - key: SENTRY_DSN
+        sync: false
 
+  # ─── Production Frontend ─────────────────────────────────────────────────────
   - type: web
     name: mithra-frontend
     env: static
     buildCommand: "cd client-app/client && npm install && npm run build"
     staticPublishPath: client-app/client/dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: "geolocation=(), microphone=(), camera=()"
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data:; connect-src 'self' https://mithra-backend.onrender.com https://api.resend.com https://sentry.io wss:; frame-src https://js.stripe.com;"
     envVars:
       - key: NODE_VERSION
         value: 20.x
@@ -37,6 +72,62 @@ services:
         value: https://mithra-backend.onrender.com
       - key: VITE_REQUIRE_AUTH
         value: "true"
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false
+
+  # ─── Staging Backend ─────────────────────────────────────────────────────────
+  - type: web
+    name: mithra-backend-staging
+    env: python
+    plan: free             # Free tier OK for staging (cold starts acceptable)
+    branch: staging
+    buildCommand: "cd client-app/server && pip install -r requirements.txt"
+    startCommand: "cd client-app/server && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /ping
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: ALLOWED_ORIGINS
+        value: "https://mithra-frontend-staging.onrender.com,http://localhost:5173"
+      - key: NEON_DATABASE_URL
+        sync: false          # Use a separate staging DB URL
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false          # Use Stripe test mode key
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  # ─── Staging Frontend ────────────────────────────────────────────────────────
+  - type: web
+    name: mithra-frontend-staging
+    env: static
+    branch: staging
+    buildCommand: "cd client-app/client && npm install && npm run build"
+    staticPublishPath: client-app/client/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://mithra-backend-staging.onrender.com
+      - key: VITE_REQUIRE_AUTH
+        value: "false"       # Allow unverified email in staging
       - key: VITE_FIREBASE_API_KEY
         sync: false
       - key: VITE_FIREBASE_AUTH_DOMAIN

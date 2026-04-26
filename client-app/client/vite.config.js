@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const isCapacitor = process.env.CAPACITOR_BUILD === 'true'
+const isProd = process.env.NODE_ENV === 'production'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,30 +11,32 @@ export default defineConfig({
   base: isCapacitor ? './' : '/',
   build: {
     outDir: 'dist',
-    // Produce relative asset paths for Android WebView
     assetsDir: 'assets',
-    // Performance optimizations
-    minify: 'esbuild', // Use default esbuild (faster, no extra dependency)
+    minify: 'esbuild',
     esbuild: {
-      drop: ['console', 'debugger'],
+      // Only strip console/debugger in production builds
+      drop: isProd ? ['console', 'debugger'] : [],
     },
-    // Code splitting for better caching
     rollupOptions: {
+      // @sentry/react is optional — if not installed, skip gracefully
+      external: (id) => id === '@sentry/react',
       output: {
+        // Externalized modules resolve to undefined at runtime
+        globals: { '@sentry/react': 'Sentry' },
         manualChunks: {
-          // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Vendor chunks (stable, long cache TTL)
+          'react-vendor':  ['react', 'react-dom', 'react-router-dom'],
           'framer-motion': ['framer-motion'],
-          'lucide': ['lucide-react'],
-          // Large pages
-          'dost': ['./src/pages/DostMode.jsx'],
-          'blend': ['./src/pages/MithraBlend.jsx'],
-          'calendar': ['./src/pages/Calendar.jsx'],
+          'lucide':        ['lucide-react'],
+          // Heavy page chunks
+          'dost':          ['./src/pages/DostMode.jsx'],
+          'blend':         ['./src/pages/MithraBlend.jsx'],
+          'calendar':      ['./src/pages/Calendar.jsx'],
+          'habits':        ['./src/pages/HabitFocusHub.jsx'],
         },
       },
     },
-    // Chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 800,
   },
   server: {
     proxy: {
@@ -43,7 +46,6 @@ export default defineConfig({
       },
     },
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lucide-react'],
   },

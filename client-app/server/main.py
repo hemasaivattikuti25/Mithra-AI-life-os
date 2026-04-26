@@ -4,6 +4,9 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -12,8 +15,21 @@ from core.config import get_db, get_model, validate_config, init_db_pool, close_
 from core.rate_limiter import RateLimitMiddleware
 from migrations.runner import run_migrations
 from routers import auth_router, chat_router, tasks_router, planner_router
-from routers import workspace_router, calendar_router
+from routers import workspace_router, calendar_router, payments_router, gdpr_router, referrals_router
 from services.warmup import keep_alive
+from services.scheduler_jobs import send_weekly_digests, send_streak_alerts
+
+# ─── Sentry Error Tracking ────────────────────────────────────────
+_sentry_dsn = os.getenv("SENTRY_DSN", "")
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[FastApiIntegration(), AsyncioIntegration()],
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "development"),
+    )
+    logging.getLogger("mithra").info("Sentry initialized")
 
 # ─── Structured logging ─────────────────────────────────────────
 logging.basicConfig(
@@ -53,6 +69,21 @@ async def lifespan(app: FastAPI):
     
     # Initialize APScheduler for background tasks
     scheduler = AsyncIOScheduler()
+    db_pool = get_db()
+
+    # Weekly digest — every Sunday at 9AM UTC
+    scheduler.add_job(
+        send_weekly_digests, 'cron',
+        day_of_week='sun', hour=9, minute=0,
+        args=[db_pool], id='weekly_digest', replace_existing=True
+    )
+    # Streak alert — every day at 7PM UTC
+    scheduler.add_job(
+        send_streak_alerts, 'cron',
+        hour=19, minute=0,
+        args=[db_pool], id='streak_alerts', replace_existing=True
+    )
+
     scheduler.start()
     app.state.scheduler = scheduler
 
@@ -88,17 +119,23 @@ raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 if raw_origins:
     origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 else:
-    # Explicit fallback: used when Render drops the env var (common on free tier)
-    origins = [
-        "https://mithra-lifeos.com",
-        "https://www.mithra-lifeos.com",
-        "https://mithra-life-os.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:3000",
-        # Capacitor (Android/iOS WebView)
-        "capacitor://localhost",
-        "http://localhost",
-    ]
+    # Production fallback: only known production domains
+    # localhost is NOT included here for security — set ALLOWED_ORIGINS env var for local dev
+    _env = os.getenv("ENVIRONMENT", "development")
+    if _env == "production":
+        origins = [
+            "https://mithra-lifeos.com",
+            "https://www.mithra-lifeos.com",
+            "https://mithra-life-os.vercel.app",
+            "capacitor://localhost",
+            "http://localhost",   # Capacitor Android
+        ]
+    else:
+        origins = [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:8000",
+        ]
 
 
 app.add_middleware(
@@ -125,13 +162,16 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "An unexpected server error occurred. Please try again later."}
     )
 
-# ─── Routers ─────────────────────────────────────────────────────
-app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
-app.include_router(chat_router.router, prefix="/api/chat", tags=["AI Chat"])
-app.include_router(planner_router.router, prefix="/api/plan", tags=["AI Planner"])
-app.include_router(tasks_router.router, prefix="/api", tags=["Activity & Data"])
-app.include_router(workspace_router.router, prefix="/api", tags=["Mithra Blend"])
-app.include_router(calendar_router.router, tags=["Google Calendar"])
+# ─── Routers ───────────────────────────────────────────────
+app.include_router(auth_router.router,       prefix="/api/auth",      tags=["Auth"])
+app.include_router(chat_router.router,       prefix="/api/chat",      tags=["AI Chat"])
+app.include_router(planner_router.router,    prefix="/api/plan",      tags=["AI Planner"])
+app.include_router(tasks_router.router,      prefix="/api",           tags=["Activity & Data"])
+app.include_router(workspace_router.router,  prefix="/api",           tags=["Mithra Blend"])
+app.include_router(calendar_router.router,                             tags=["Google Calendar"])
+app.include_router(payments_router.router,   prefix="/api/payments",  tags=["Payments"])
+app.include_router(gdpr_router.router,       prefix="/api/gdpr",      tags=["GDPR"])
+app.include_router(referrals_router.router,  prefix="/api/referrals", tags=["Referrals"])
 
 
 # ─── Health Check (full — shows service statuses) ────────────────

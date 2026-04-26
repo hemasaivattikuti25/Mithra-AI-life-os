@@ -21,60 +21,85 @@ async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(
             raise HTTPException(status_code=503, detail="AI Service Unavailable")
 
         today_str = date.today().isoformat()
-        prompt = f"""
-        Extract calendar events for user {current_user['fullName']}.
-        Text: "{request.text}".
-        Today: {today_str}.
-        Return ONLY JSON array:
-        [{{ "title": "...", "start": "ISO", "end": "ISO", "category": "Work|Personal|Health|Focus" }}]
-        
-        CRITICAL RULES FOR "end":
-        1. If the user says "for 3 hours" or specifies a duration, you MUST add exactly that duration to the "start" time to calculate the "end" time. Do not default to 1 hour!
-        2. If the user says until a specific time (e.g. "until 5pm"), calculate the exact "end" ISO timestamp.
-        3. Only default to 1 hour if the user has absolutely not mentioned any length of time.
-        """
+        user_name = current_user.get('fullName', 'User')
+
+        # SECURITY: Sanitize user input — truncate and strip potential prompt injection sequences
+        safe_text = request.text[:500].replace('```', '').replace('<|', '').replace('|>', '')
+
+        prompt = f"""You are a calendar event parser. Extract events from the user's message.
+
+User name: {user_name}
+Today's date: {today_str}
+User message: {safe_text}
+
+Return ONLY a valid JSON array with this exact format:
+[{{"title": "event name", "start": "ISO datetime", "end": "ISO datetime", "category": "Work|Personal|Health|Focus"}}]
+
+Rules:
+- If duration is specified (e.g. '3 hours'), calculate end = start + duration exactly
+- If end time is specified, use it exactly
+- Default duration is 1 hour only if no duration mentioned
+- Return ONLY the JSON array. No explanation, no markdown, no extra text."""
+
         response = model.generate_content(prompt)
         clean_json = response.text.replace('```json', '').replace('```', '').strip()
         events = json.loads(clean_json)
         return {"events": events}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except json.JSONDecodeError:
+        return {"events": []}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Schedule parsing failed. Please try again.")
 
 # ─── TASK CRUD ───
 @router.get("/tasks")
-async def list_tasks(workspace_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
-    """List authenticated user's tasks (including shared workspace tasks)."""
+async def list_tasks(
+    workspace_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """List authenticated user's tasks with pagination."""
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
+    # Clamp pagination params
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+
     try:
         async with pool.acquire() as conn:
             if workspace_id:
                 rows = await conn.fetch(
-                    "SELECT * FROM tasks WHERE workspace_id = $1 ORDER BY created_at DESC",
-                    workspace_id
+                    """SELECT id, user_id, title, details, list_id, priority, completed, starred,
+                              due_date, recurrence, subtasks, subtasks_json, workspace_id
+                       FROM tasks WHERE workspace_id = $1 AND deleted_at IS NULL
+                       ORDER BY created_at DESC LIMIT $2 OFFSET $3""",
+                    workspace_id, limit, offset
                 )
             else:
-                # Personal tasks (no workspace) + workspace tasks where user is member
                 rows = await conn.fetch(
-                    """SELECT t.* FROM tasks t
+                    """SELECT t.id, t.user_id, t.title, t.details, t.list_id, t.priority,
+                              t.completed, t.starred, t.due_date, t.recurrence, t.subtasks,
+                              t.subtasks_json, t.workspace_id
+                       FROM tasks t
                        LEFT JOIN workspace_members wm ON t.workspace_id = wm.workspace_id
-                       WHERE t.user_id = $1 OR wm.user_id = $1
-                       ORDER BY t.created_at DESC""",
-                    current_user["id"]
+                       WHERE (t.user_id = $1 OR wm.user_id = $1) AND t.deleted_at IS NULL
+                       ORDER BY t.created_at DESC LIMIT $2 OFFSET $3""",
+                    current_user["id"], limit, offset
                 )
-        
+
         tasks = []
         for t in rows:
-            raw_subtasks = t.get("subtasks", [])
-            if isinstance(raw_subtasks, str):
-                try:
-                    raw_subtasks = json.loads(raw_subtasks)
-                except (json.JSONDecodeError, TypeError):
-                    raw_subtasks = []
-            if not isinstance(raw_subtasks, list):
-                raw_subtasks = []
+            # Prefer JSONB subtasks_json if available
+            subtasks = t.get("subtasks_json") or []
+            if not subtasks:
+                raw = t.get("subtasks", [])
+                if isinstance(raw, str):
+                    try:
+                        subtasks = json.loads(raw)
+                    except Exception:
+                        subtasks = []
             tasks.append({
                 "id": str(t["id"]),
                 "userId": t["user_id"],
@@ -86,47 +111,61 @@ async def list_tasks(workspace_id: Optional[str] = None, current_user: dict = De
                 "starred": t.get("starred", False),
                 "dueDate": t["due_date"].isoformat() if t.get("due_date") else None,
                 "recurrence": t.get("recurrence", "none"),
-                "subtasks": raw_subtasks,
+                "subtasks": subtasks,
                 "workspaceId": str(t["workspace_id"]) if t.get("workspace_id") else None
             })
-        return {"tasks": tasks}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"tasks": tasks, "limit": limit, "offset": offset, "count": len(tasks)}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to load tasks")
 
 @router.post("/tasks")
 async def create_task(task: TaskCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new task."""
+    """Create a new task. Enforces plan limits."""
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
-        # Validate task data
-        InputValidator.validate_string(task.title, min_length=1, max_length=500, field_name="title")
-        InputValidator.validate_string(task.details or "", max_length=10000, field_name="details")
-        InputValidator.validate_enum(task.priority or "medium", ["low", "medium", "high"], field_name="priority")
-        
+        InputValidator.validate_string(task.title, "title", min_length=1, max_length=500)
+        InputValidator.validate_string(task.details or "", "details", max_length=10000)
+
         if task.subtasks:
-            InputValidator.validate_array(task.subtasks, max_length=50, field_name="subtasks")
-        
+            InputValidator.validate_array(task.subtasks, "subtasks", max_length=50)
+
         user_id = current_user["id"]
-        task_id = str(uuid.uuid4())
-        
+
         async with pool.acquire() as conn:
+            # Plan limit enforcement: check current task count vs plan max
+            plan_row = await conn.fetchrow("""
+                SELECT p.max_tasks FROM plans p
+                JOIN user_plans up ON p.id = up.plan_id
+                WHERE up.user_id = $1 AND (up.expires_at IS NULL OR up.expires_at > NOW())
+            """, user_id)
+            max_tasks = plan_row["max_tasks"] if plan_row else 100  # free default
+            current_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM tasks WHERE user_id=$1 AND deleted_at IS NULL", user_id
+            )
+            if current_count >= max_tasks:
+                raise HTTPException(
+                    status_code=429,
+                    detail={"error": "plan_limit_exceeded",
+                            "message": f"You've reached your {max_tasks} task limit. Upgrade to Pro for more.",
+                            "upgrade_url": "/settings#plan"}
+                )
+
+            task_id = str(uuid.uuid4())
             await conn.execute(
-                """INSERT INTO tasks (id, user_id, title, details, list_id, priority, 
-                   completed, starred, due_date, recurrence, subtasks, workspace_id)
-                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)""",
+                """INSERT INTO tasks (id, user_id, title, details, list_id, priority,
+                   completed, starred, due_date, recurrence, subtasks, subtasks_json, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13)""",
                 task_id, user_id, task.title, task.details, task.listId, task.priority,
                 task.completed, task.starred, task.dueDate, task.recurrence,
-                json.dumps(task.subtasks), task.workspaceId
+                json.dumps(task.subtasks), json.dumps(task.subtasks), task.workspaceId
             )
         return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e.message)
-    except MithraError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(status_code=500, detail="Task creation failed")
 
 @router.put("/tasks/{task_id}")

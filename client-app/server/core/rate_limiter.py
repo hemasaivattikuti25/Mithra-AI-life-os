@@ -36,6 +36,24 @@ def _extract_user_id(request: Request) -> str:
             pass
     return None
 
+def _get_real_ip(request: Request) -> str:
+    """
+    Get the real client IP behind a reverse proxy (Render, Nginx, etc.).
+    Reads X-Forwarded-For, falling back to the direct connection IP.
+    """
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # X-Forwarded-For can be a comma-separated list; leftmost is the original client
+        real_ip = forwarded_for.split(",")[0].strip()
+        if real_ip:
+            return real_ip
+    # CF-Connecting-IP (Cloudflare), X-Real-IP (Nginx)
+    for header in ("CF-Connecting-IP", "X-Real-IP"):
+        ip = request.headers.get(header)
+        if ip:
+            return ip.strip()
+    return request.client.host if request.client else "unknown"
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -43,7 +61,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         user_id = _extract_user_id(request)
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = _get_real_ip(request)
         identifier = user_id if user_id else client_ip
         limit = _get_limit(path)
 

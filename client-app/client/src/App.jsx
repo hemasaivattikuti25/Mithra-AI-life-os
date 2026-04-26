@@ -3,8 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import { Layout } from './components/Layout';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PlanProvider } from './context/PlanContext';
 import { ErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, useToast } from './components/Toast';
+import UpgradeModal from './components/UpgradeModal';
 import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton, CalendarSkeleton } from './components/LoadingSkeleton';
 import SearchDialog from './components/SearchDialog';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
@@ -14,6 +16,24 @@ import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
 import { checkBackendHealth } from './services/firebaseClient';
+
+// Sentry — optional: only active when VITE_SENTRY_DSN is set AND package is installed
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+let Sentry = null;
+if (SENTRY_DSN) {
+  try {
+    // Dynamic require — build still succeeds if package is absent
+    Sentry = await import('@sentry/react').catch(() => null);
+    if (Sentry) {
+      Sentry.init({
+        dsn: SENTRY_DSN,
+        integrations: [Sentry.browserTracingIntegration()],
+        tracesSampleRate: 0.1,
+        environment: import.meta.env.MODE,
+      });
+    }
+  } catch {}
+}
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -65,7 +85,8 @@ const OAuthCallbackGuard = ({ children }) => {
 
 /* Guard: redirect to /auth if not authenticated */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('mithra-onboarding-done');
   });
@@ -91,6 +112,36 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
+
+  // Firebase email verification gate
+  if (user?.emailVerified === false && !user?.providerData?.some(p => p.providerId === 'google.com')) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center p-6" style={{ background: 'var(--bg-primary, #0A0A0A)' }}>
+        <div className="max-w-sm w-full text-center" style={{ background: '#131313', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
+          <div className="text-4xl mb-4">📧</div>
+          <h2 className="text-xl font-bold text-white mb-2">Verify your email</h2>
+          <p className="text-sm mb-6" style={{ color: '#888' }}>
+            A verification link was sent to <strong className="text-white">{user?.email}</strong>. Click it to continue.
+          </p>
+          <button
+            onClick={async () => {
+              const { sendEmailVerification } = await import('firebase/auth');
+              const { firebaseAuth } = await import('./services/firebaseClient');
+              if (firebaseAuth?.currentUser) {
+                await sendEmailVerification(firebaseAuth.currentUser);
+                addToast({ message: 'Verification email resent!', type: 'success' });
+              }
+            }}
+            className="text-sm px-4 py-2 rounded-lg"
+            style={{ background: '#7c3aed', color: '#fff' }}
+          >
+            Resend verification email
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (showOnboarding) return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   return children;
 };
@@ -184,20 +235,22 @@ function AppRoutes() {
 }
 
 function App() {
-  // Initialize analytics on app mount (SW registration disabled during cache purge)
   useEffect(() => { initAnalytics(); }, []);
 
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <DataProvider>
-          <ToastProvider>
-            <BackendHealthGate />
-            <Router>
-              <AppRoutes />
-            </Router>
-          </ToastProvider>
-        </DataProvider>
+        <PlanProvider>
+          <DataProvider>
+            <ToastProvider>
+              <UpgradeModal />
+              <BackendHealthGate />
+              <Router>
+                <AppRoutes />
+              </Router>
+            </ToastProvider>
+          </DataProvider>
+        </PlanProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

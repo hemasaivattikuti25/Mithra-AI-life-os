@@ -1,119 +1,107 @@
 """
-Auth Router — Minimal backend auth endpoints for Firebase Auth.
-
-Firebase handles authentication on the frontend. This router provides:
-1. Account deletion (cleans up user data from Neon DB)
-2. Profile sync (ensures user exists in profiles table)
+Auth router additions:
+- Send welcome email on first profile sync
+- Hook for Stripe customer creation
 """
-
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Optional
 import logging
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, validator
+from typing import Optional
+import re
 
-from core.config import get_db
 from core.security import get_current_user
-from core.validators import InputValidator
-from core.errors import ValidationError, MithraError
+from core.config import get_db
+from services.email_service import send_welcome_email
 
+logger = logging.getLogger("mithra.auth")
 router = APIRouter()
-logger = logging.getLogger("auth_router")
 
 
-class ProfileSync(BaseModel):
-    displayName: Optional[str] = None
+class ProfileSyncRequest(BaseModel):
+    fullName: Optional[str] = None
     avatarUrl: Optional[str] = None
+    timezone: Optional[str] = None
+
+    @validator("avatarUrl")
+    def validate_avatar_url(cls, v):
+        """Prevent SSRF — only allow https:// URLs from known image hosts."""
+        if not v:
+            return v
+        allowed_prefixes = (
+            "https://lh3.googleusercontent.com/",
+            "https://storage.googleapis.com/",
+            "https://avatars.githubusercontent.com/",
+            "https://i.imgur.com/",
+            "https://firebasestorage.googleapis.com/",
+        )
+        if not any(v.startswith(p) for p in allowed_prefixes):
+            # Accept empty/null silently, reject other URLs
+            logger.warning(f"Rejected avatarUrl: {v[:80]}")
+            return None
+        return v
+
+    @validator("fullName")
+    def validate_name(cls, v):
+        if v and len(v) > 80:
+            return v[:80]
+        return v
 
 
 @router.post("/sync-profile")
-async def sync_profile(req: ProfileSync, current_user: dict = Depends(get_current_user)):
+async def sync_profile(req: ProfileSyncRequest, current_user: dict = Depends(get_current_user)):
     """
-    Ensure user profile exists in DB after Firebase auth.
-    Creates profile if not exists, updates display_name if provided.
-    """
-    pool = get_db()
-    if not pool:
-        raise HTTPException(status_code=503, detail="Database unavailable")
-
-    try:
-        # Validate email from token
-        email = current_user.get("email", "")
-        InputValidator.validate_email(email)
-        
-        # Validate optional display name
-        if req.displayName:
-            display_name = InputValidator.validate_string(req.displayName, min_length=1, max_length=100)
-        else:
-            display_name = current_user.get("fullName", email.split("@")[0])
-        
-        user_id = current_user["id"]
-
-        async with pool.acquire() as conn:
-            # Upsert profile
-            await conn.execute(
-                """INSERT INTO profiles (id, email, display_name, avatar_url)
-                   VALUES ($1, $2, $3, $4)
-                   ON CONFLICT (id) DO UPDATE SET
-                       display_name = COALESCE(EXCLUDED.display_name, profiles.display_name),
-                       avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
-                       updated_at = NOW()""",
-                user_id, email, display_name, req.avatarUrl
-            )
-        return {"success": True, "userId": user_id}
-    except ValidationError as e:
-        logger.warning(f"Profile sync validation failed: {e}")
-        raise HTTPException(status_code=422, detail=e.message)
-    except MithraError as e:
-        logger.error(f"Profile sync error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
-        logger.error(f"Profile sync failed: {e}")
-        raise HTTPException(status_code=500, detail="Profile sync failed")
-
-
-@router.delete("/account")
-async def delete_account(current_user: dict = Depends(get_current_user)):
-    """
-    Delete all user data from the database.
-    Note: The Firebase user must be deleted separately on the frontend.
+    Called after Firebase sign-in to sync profile to DB.
+    Sends welcome email on first sync (new user).
     """
     pool = get_db()
-    if not pool:
-        raise HTTPException(status_code=503, detail="Database unavailable")
-
     user_id = current_user["id"]
+    email = current_user.get("email", "")
+    display_name = req.fullName or current_user.get("fullName", "")
+
+    if not pool:
+        return {"synced": False, "reason": "db_unavailable"}
 
     try:
         async with pool.acquire() as conn:
-            # Delete in order respecting foreign keys
-            await conn.execute("DELETE FROM ai_usage WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM focus_sessions WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM mood_logs WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM journal_entries WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM habits WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM tasks WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM notification_settings WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM workspace_members WHERE user_id = $1", user_id)
-            # Delete workspaces where user is owner
-            await conn.execute("DELETE FROM workspaces WHERE owner_id = $1", user_id)
-            await conn.execute("DELETE FROM profiles WHERE id = $1", user_id)
+            existing = await conn.fetchrow("SELECT id, created_at FROM profiles WHERE id = $1", user_id)
+            is_new_user = existing is None
 
-        logger.info(f"Account data deleted for user {user_id}")
-        return {"success": True, "message": "Account data deleted"}
-    except MithraError as e:
-        logger.error(f"Account deletion failed with MithraError: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            await conn.execute("""
+                INSERT INTO profiles (id, email, display_name, avatar_url, timezone)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (id) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    display_name = COALESCE(EXCLUDED.display_name, profiles.display_name),
+                    avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
+                    timezone = COALESCE(EXCLUDED.timezone, profiles.timezone),
+                    updated_at = NOW()
+            """, user_id, email, display_name, req.avatarUrl, req.timezone)
+
+            if is_new_user:
+                # Provision free plan
+                await conn.execute("""
+                    INSERT INTO user_plans (user_id, plan_id, status, started_at)
+                    VALUES ($1, 'free', 'active', NOW())
+                    ON CONFLICT (user_id) DO NOTHING
+                """, user_id)
+
+                # Generate referral code
+                import secrets, string
+                code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+                await conn.execute("""
+                    INSERT INTO referrals (referrer_id, referral_code)
+                    VALUES ($1, $2) ON CONFLICT DO NOTHING
+                """, user_id, code)
+                await conn.execute("""
+                    UPDATE profiles SET referral_code = $1 WHERE id = $2
+                """, code, user_id)
+
+        # Send welcome email (non-blocking — fire and forget)
+        if is_new_user and email:
+            import asyncio
+            asyncio.create_task(send_welcome_email(email, display_name or "there"))
+
+        return {"synced": True, "newUser": is_new_user}
     except Exception as e:
-        logger.error(f"Account deletion failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Account deletion failed")
-
-
-@router.get("/me")
-async def get_current_user_info(current_user: dict = Depends(get_current_user)):
-    """Return the current authenticated user's info from the token."""
-    return {
-        "id": current_user["id"],
-        "email": current_user.get("email"),
-        "fullName": current_user.get("fullName"),
-    }
-
+        logger.error(f"Profile sync failed for {user_id}: {e}", exc_info=True)
+        return {"synced": False, "reason": "sync_failed"}
