@@ -13,11 +13,9 @@ import logging
 import os
 from cryptography.fernet import Fernet
 
-from ..core.security import get_current_user
-from ..core.config import get_db
-from ..schemas.models import User
-from ..services.calendar_sync_service import GoogleCalendarService
-from google_auth_oauthlib.flow import Flow
+from core.security import get_current_user
+from core.config import get_db
+from services.calendar_sync_service import GoogleCalendarService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
@@ -107,7 +105,7 @@ class SyncResponse(BaseModel):
 @router.post("/authorize", response_model=OAuthAuthorizationResponse)
 async def authorize_google_calendar(
     request: OAuthCodeRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> OAuthAuthorizationResponse:
     """Exchange Google OAuth authorization code for refresh token."""
@@ -162,7 +160,7 @@ async def authorize_google_calendar(
 
 @router.get("/events", response_model=List[CalendarEventResponse])
 async def get_calendar_events(
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> List[CalendarEventResponse]:
     """List synced events from Google Calendar."""
@@ -207,7 +205,7 @@ async def get_calendar_events(
 
 @router.post("/sync", response_model=SyncResponse)
 async def manual_sync_calendar(
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     pool = Depends(get_db)
 ) -> SyncResponse:
     """Manually trigger Google Calendar sync."""
@@ -239,34 +237,26 @@ async def manual_sync_calendar(
         )
 
 @router.get("/auth-url")
-async def get_oauth_url(current_user: User = Depends(get_current_user)) -> dict:
+async def get_oauth_url(current_user: dict = Depends(get_current_user)) -> dict:
     """
     Get Google OAuth authorization URL for frontend redirect.
-
-    Args:
-        current_user: Authenticated user from JWT token
-
-    Returns:
-        dict: {
-            'auth_url': str - URL to redirect user to Google consent screen,
-            'state': str - CSRF state token
-        }
     """
     try:
-        flow = Flow.from_client_secrets_file(
-            os.getenv('GOOGLE_OAUTH_SECRETS_FILE', '/app/secrets/oauth_secrets.json'),
-            scopes=['https://www.googleapis.com/auth/calendar.readonly']
+        client_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+        redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:5173/calendar/callback')
+        import secrets
+        state = secrets.token_urlsafe(16)
+        auth_url = (
+            "https://accounts.google.com/o/oauth2/v2/auth"
+            f"?client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            "&response_type=code"
+            "&scope=https://www.googleapis.com/auth/calendar"
+            "&access_type=offline"
+            "&include_granted_scopes=true"
+            f"&state={state}"
         )
-
-        flow.redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:5173/calendar/callback')
-
-        auth_url, state = flow.authorization_url(
-            access_type='offline',
-            include_granted_scopes='true'
-        )
-
         return {'auth_url': auth_url, 'state': state}
-
     except Exception as e:
         logger.error(f"Failed to generate OAuth URL: {str(e)}")
         raise HTTPException(

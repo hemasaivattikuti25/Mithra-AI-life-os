@@ -7,11 +7,7 @@ Uses OAuth 2.0 for authentication and implements last-write-wins conflict resolu
 
 import os
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Any
-from google.auth.transport.requests import Request
-from google.oauth2.service_account import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth import default
+from typing import Dict, List, Any
 import google.auth.transport.requests
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
