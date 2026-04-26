@@ -31,9 +31,7 @@ const Navbar = ({ isAuthenticated, navigate }) => {
         <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
             <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
-                        <Sparkles size={18} className="text-white" />
-                    </div>
+                    <img src="/assets/logo.png" alt="Mithra" className="w-9 h-9 rounded-lg" />
                     <span className="text-xl font-bold tracking-tight text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>Mithra</span>
                 </div>
                 <div className="hidden md:flex items-center gap-8">
@@ -328,9 +326,7 @@ const Footer = () => (
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             <div className="col-span-2">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
-                        <Sparkles size={12} className="text-white" />
-                    </div>
+                    <img src="/assets/logo.png" alt="Mithra" className="w-7 h-7 rounded-md" />
                     <span className="text-lg font-bold text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>Mithra</span>
                 </div>
                 <p className="text-sm text-gray-400 max-w-xs">
@@ -356,7 +352,7 @@ const Footer = () => (
         </div>
         <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
             <p>© {new Date().getFullYear()} Mithra AI. All rights reserved.</p>
-            <p>Designed with precision.</p>
+            <p>Built by <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Hemasai Vattikuti</a></p>
         </div>
     </footer>
 );
