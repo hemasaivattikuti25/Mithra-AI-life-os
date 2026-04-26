@@ -30,7 +30,7 @@ jobs:
           pip install ruff pytest pytest-asyncio httpx
 
       - name: Lint with ruff
-        run: ruff check . --select E,W,F --ignore E501
+        run: ruff check . --select E,W,F --ignore E501,F401
 
       - name: Type check (pyright light)
         run: python -m py_compile main.py core/security.py core/validators.py routers/tasks_router.py

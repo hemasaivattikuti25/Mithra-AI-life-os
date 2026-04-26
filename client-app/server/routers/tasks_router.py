@@ -5,9 +5,9 @@ import uuid
 import json
 
 from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate, EventCreate
-from core.security import get_current_user, check_resource_ownership
+from core.security import get_current_user
 from core.config import get_db, get_model, get_embedding
-from core.validators import InputValidator, DataValidator
+from core.validators import InputValidator
 from core.errors import ValidationError, MithraError, PermissionError
 
 router = APIRouter()
@@ -212,25 +212,25 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         # Validate task_id
         InputValidator.validate_uuid(task_id, field_name="task_id")
-        
+
         async with pool.acquire() as conn:
             # First verify ownership/permission
             task_owner = await conn.fetchval(
                 """SELECT user_id FROM tasks WHERE id=$1""",
                 task_id
             )
-            
+
             if not task_owner:
                 raise HTTPException(status_code=404, detail="Task not found")
-            
+
             # Check ownership
             if task_owner != current_user["id"]:
                 raise PermissionError(f"Access denied to task {task_id}")
-            
+
             # Delete the task
             result = await conn.execute(
                 """DELETE FROM tasks WHERE id=$1 AND user_id=$2""",
@@ -238,7 +238,7 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
             )
             if result == "DELETE 0":
                 raise HTTPException(status_code=500, detail="Delete operation failed")
-        
+
         return {"deleted": task_id}
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.message)
@@ -248,7 +248,7 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
         raise
     except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Task deletion failed")
 
 # ─── NOTIFICATION SETTINGS ───
@@ -258,7 +258,7 @@ async def get_notifications(current_user: dict = Depends(get_current_user)):
     pool = get_db()
     if not pool:
         return {"settings": {"enabled": False, "reminderMinutes": 15}}
-    
+
     try:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -277,7 +277,7 @@ async def update_notifications(settings: NotificationSettings, current_user: dic
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             await conn.execute(
@@ -345,21 +345,21 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         # Validate journal entry
         InputValidator.validate_string(entry.content, min_length=1, max_length=10000, field_name="content")
         InputValidator.validate_enum(entry.mood or "neutral", ["very_sad", "sad", "neutral", "happy", "very_happy"], field_name="mood")
-        
+
         if entry.tags:
             InputValidator.validate_array(entry.tags, max_length=10, field_name="tags")
-        
+
         user_id = current_user["id"]
         entry_id = str(uuid.uuid4())
         entry_date = entry.date or date.today().isoformat()
-        
+
         embedding = get_embedding(entry.content)
-        
+
         async with pool.acquire() as conn:
             await conn.execute(
                 """INSERT INTO journal_entries (id, user_id, content, mood, tags, date, embedding, workspace_id)
@@ -367,7 +367,7 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
                 entry_id, user_id, entry.content, entry.mood, entry.tags, entry_date,
                 str(embedding), entry.workspaceId
             )
-        
+
         return_entry = {
             "id": entry_id,
             "userId": user_id,
@@ -383,7 +383,7 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
         raise HTTPException(status_code=422, detail=e.message)
     except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Journal entry creation failed")
 
 @router.put("/journal/{entry_id}")
@@ -392,7 +392,7 @@ async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.execute(
@@ -403,7 +403,7 @@ async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Journal entry not found")
-        
+
         return {"entry": {
             "id": entry_id,
             "content": entry.content,
@@ -422,7 +422,7 @@ async def delete_journal(entry_id: str, current_user: dict = Depends(get_current
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.execute(
@@ -444,7 +444,7 @@ async def list_habits(workspace_id: Optional[str] = None, current_user: dict = D
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             if workspace_id:
@@ -457,7 +457,7 @@ async def list_habits(workspace_id: Optional[str] = None, current_user: dict = D
                     "SELECT * FROM habits WHERE user_id = $1 AND workspace_id IS NULL",
                     current_user["id"]
                 )
-        
+
         habits = []
         for h in rows:
             habits.append({
@@ -488,22 +488,22 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         # Validate habit data
         InputValidator.validate_string(habit.title, min_length=1, max_length=500, field_name="title")
         InputValidator.validate_enum(habit.category, ["Work", "Health", "Personal", "Learning", "Mindfulness"], field_name="category")
         InputValidator.validate_enum(habit.frequency or "daily", ["daily", "weekly", "monthly"], field_name="frequency")
-        
+
         if habit.repeat_days:
             InputValidator.validate_array(habit.repeat_days, max_length=7, field_name="repeat_days")
-        
+
         if habit.streak_goal:
             InputValidator.validate_integer(habit.streak_goal, min_value=1, max_value=365, field_name="streak_goal")
-        
+
         user_id = current_user["id"]
         habit_id = str(uuid.uuid4())
-        
+
         async with pool.acquire() as conn:
             await conn.execute(
                 """INSERT INTO habits (id, user_id, title, category, color, streak, longest_streak,
@@ -540,7 +540,7 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=422, detail=e.message)
     except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Habit creation failed")
 
 @router.put("/habits/{habit_id}")
@@ -549,7 +549,7 @@ async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = D
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.execute(
@@ -580,7 +580,7 @@ async def delete_habit(habit_id: str, current_user: dict = Depends(get_current_u
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.execute(
@@ -647,14 +647,14 @@ async def list_mood_logs(limit: int = 30, current_user: dict = Depends(get_curre
     pool = get_db()
     if not pool:
         return {"moodLogs": []}
-    
+
     try:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT * FROM mood_logs WHERE user_id = $1 ORDER BY logged_at DESC LIMIT $2",
                 current_user["id"], limit
             )
-        
+
         logs = []
         for r in rows:
             logs.append({
@@ -674,9 +674,9 @@ async def create_mood_log(log: MoodLogCreate, current_user: dict = Depends(get_c
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     log_id = str(uuid.uuid4())
-    
+
     try:
         async with pool.acquire() as conn:
             await conn.execute(
@@ -695,9 +695,9 @@ async def create_focus_session(session: FocusSessionCreate, current_user: dict =
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     session_id = str(uuid.uuid4())
-    
+
     try:
         async with pool.acquire() as conn:
             await conn.execute(
@@ -717,16 +717,16 @@ async def sync_data(current_user: dict = Depends(get_current_user)):
     pool = get_db()
     if not pool:
         return {"tasks": [], "journal": [], "notifications": {}, "habits": []}
-    
+
     user_id = current_user["id"]
-    
+
     try:
         async with pool.acquire() as conn:
             tasks = await conn.fetch("SELECT * FROM tasks WHERE user_id = $1", user_id)
             journal = await conn.fetch("SELECT * FROM journal_entries WHERE user_id = $1", user_id)
             habits = await conn.fetch("SELECT * FROM habits WHERE user_id = $1", user_id)
             notif = await conn.fetchrow("SELECT * FROM notification_settings WHERE user_id = $1", user_id)
-        
+
         return {
             "tasks": [dict(t) for t in tasks],
             "journal": [dict(j) for j in journal],
@@ -818,7 +818,7 @@ async def delete_event(event_id: str, current_user: dict = Depends(get_current_u
         raise HTTPException(status_code=503, detail="Database unavailable")
     try:
         async with pool.acquire() as conn:
-            await _ensure_events_table(conn)
+
             result = await conn.execute(
                 """DELETE FROM calendar_events WHERE id = $1
                    AND (user_id = $2 OR workspace_id IN (

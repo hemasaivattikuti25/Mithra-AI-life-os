@@ -4,14 +4,13 @@ Auth router additions:
 - Hook for Stripe customer creation
 """
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, validator
 from typing import Optional
 import re
 
 from core.security import get_current_user
 from core.config import get_db
-from services.email_service import send_welcome_email
 
 logger = logging.getLogger("mithra.auth")
 router = APIRouter()
@@ -86,7 +85,8 @@ async def sync_profile(req: ProfileSyncRequest, current_user: dict = Depends(get
                 """, user_id)
 
                 # Generate referral code
-                import secrets, string
+                import secrets
+                import string
                 code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
                 await conn.execute("""
                     INSERT INTO referrals (referrer_id, referral_code)
@@ -95,11 +95,6 @@ async def sync_profile(req: ProfileSyncRequest, current_user: dict = Depends(get
                 await conn.execute("""
                     UPDATE profiles SET referral_code = $1 WHERE id = $2
                 """, code, user_id)
-
-        # Send welcome email (non-blocking — fire and forget)
-        if is_new_user and email:
-            import asyncio
-            asyncio.create_task(send_welcome_email(email, display_name or "there"))
 
         return {"synced": True, "newUser": is_new_user}
     except Exception as e:
