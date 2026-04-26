@@ -456,7 +456,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit, existingHabits = []
           <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ backgroundColor: color }} />
           <div className="flex items-center justify-between p-5 pt-6">
             <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{editingHabit ? 'Edit Habit' : 'New Habit'}</h3>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-dim)' }}><X size={20} /></button>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-colors" style={{ color: 'var(--text-dim)' }}><X size={20} /></button>
           </div>
         </div>
 
@@ -600,7 +600,7 @@ const HabitModal = ({ isOpen, onClose, onSave, editingHabit, existingHabits = []
           </div>
         )}
         <div className="p-5 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors" style={{ color: 'var(--text-dim)' }}>Cancel</button>
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm hover:bg-[var(--glass-border)] transition-colors" style={{ color: 'var(--text-dim)' }}>Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
             className={clsx('px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-all', !title.trim() && 'opacity-40 cursor-not-allowed')}
             style={{ backgroundColor: color, boxShadow: title.trim() ? `0 0 20px ${color}40` : undefined }}>
@@ -1318,10 +1318,10 @@ export default function HabitFocusHub() {
             animate={{ left: activeTab === 'tracker' ? '4px' : 'calc(50%)', width: 'calc(50% - 4px)' }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             style={{ background: 'rgb(var(--color-visor) / 0.1)', boxShadow: '0 0 16px rgb(var(--color-visor) / 0.08)' }} />
-          <button onClick={() => setActiveTab('tracker')} className={clsx('flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-full z-10 flex items-center justify-center gap-2 transition-colors', activeTab === 'tracker' ? 'text-[#C2185B]' : 'text-[#F2EBE3]/35')}>
+          <button onClick={() => setActiveTab('tracker')} className={clsx('flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-full z-10 flex items-center justify-center gap-2 transition-colors', activeTab === 'tracker' ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]')}>
             <Activity size={16} /> Tracker
           </button>
-          <button onClick={() => setActiveTab('focus')} className={clsx('flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-full z-10 flex items-center justify-center gap-2 transition-colors', activeTab === 'focus' ? 'text-[#C2185B]' : 'text-[#F2EBE3]/35')}>
+          <button onClick={() => setActiveTab('focus')} className={clsx('flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-full z-10 flex items-center justify-center gap-2 transition-colors', activeTab === 'focus' ? 'text-[var(--accent-color)]' : 'text-[var(--text-dim)]')}>
             <Zap size={16} /> Focus
           </button>
         </div>
@@ -1335,17 +1335,17 @@ export default function HabitFocusHub() {
               <div className="glass-card rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2.5">
                 <Target size={16} className="text-accent-visor" />
                 <span className="text-sm font-semibold">{doneToday}/{habits.length}</span>
-                <span className="text-xs text-[#F2EBE3]/30">today</span>
+                <span className="text-xs text-[var(--text-dim)]">today</span>
               </div>
               <div className="glass-card rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2.5">
                 <Flame size={16} className="text-orange-500" />
                 <span className="text-sm font-semibold text-orange-400">{Math.max(...habits.map(h => h.streak), 0)}</span>
-                <span className="text-xs text-[#F2EBE3]/30">best streak</span>
+                <span className="text-xs text-[var(--text-dim)]">best streak</span>
               </div>
               <div className="glass-card rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2.5">
                 <TrendingUp size={16} className="text-accent-visor" />
                 <span className="text-sm font-semibold text-accent-visor">{Math.round((doneToday / Math.max(habits.length, 1)) * 100)}%</span>
-                <span className="text-xs text-[#F2EBE3]/30">completion</span>
+                <span className="text-xs text-[var(--text-dim)]">completion</span>
               </div>
             </div>
             <Heatmap habits={habits} accentColor={accentColor} totalFreezes={getAvailableFreezes()} FREEZES_PER_MONTH={FREEZES_PER_MONTH} />
@@ -1359,7 +1359,7 @@ export default function HabitFocusHub() {
                     <Sparkles size={14} /> Templates
                   </button>
                   <button onClick={() => { setEditingHabit(null); setShowModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-accent-visor text-xs font-bold hover:bg-[#C2185B]/10 transition-all">
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-accent-visor text-xs font-bold hover:bg-[var(--accent-color)]/10 transition-all">
                     <Plus size={16} /> Add Habit
                   </button>
                 </div>
@@ -1477,21 +1477,21 @@ export default function HabitFocusHub() {
             <div className="flex gap-2 mb-8">
               <button onClick={() => { setMode('timer'); setIsActive(false); }}
                 className={clsx('px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-2',
-                  mode === 'timer' ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35')}>
+                  mode === 'timer' ? 'border-[var(--accent-color)]/30 text-[var(--accent-color)] bg-[var(--accent-color)]/10' : 'border-[var(--glass-border)] text-[var(--text-dim)]')}>
                 <Timer size={14} /> Timer
               </button>
               <button onClick={() => { setMode('stopwatch'); setIsActive(false); setStopwatchTime(0); }}
                 className={clsx('px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-2',
-                  mode === 'stopwatch' ? 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10' : 'border-[#F2EBE3]/10 text-[#F2EBE3]/35')}>
+                  mode === 'stopwatch' ? 'border-[var(--accent-color)]/30 text-[var(--accent-color)] bg-[var(--accent-color)]/10' : 'border-[var(--glass-border)] text-[var(--text-dim)]')}>
                 <Clock size={14} /> Stopwatch
               </button>
             </div>
 
             {/* Session label */}
             {selectedSession && mode === 'timer' && (
-              <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-[#F2EBE3]/30 mb-4 flex items-center gap-2">
+              <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-[var(--text-dim)] mb-4 flex items-center gap-2">
                 <Flame size={14} className="text-orange-500" />
-                Focusing on <span className="text-[#F2EBE3]/60 font-medium ml-1">{sessionLabel}</span>
+                Focusing on <span className="text-[var(--text-primary)] font-medium ml-1">{sessionLabel}</span>
               </motion.p>
             )}
 
@@ -1512,7 +1512,7 @@ export default function HabitFocusHub() {
               <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                 onClick={handlePlayPause}
                 className={clsx('px-8 py-3.5 rounded-full font-bold tracking-widest text-sm transition-all',
-                  isActive && !isPaused ? 'glass-card text-orange-400 border border-orange-400/30' : 'bg-[#C2185B] text-white shadow-[0_0_30px_rgba(194,24,91,0.25)]')}>
+                  isActive && !isPaused ? 'glass-card text-orange-400 border border-orange-400/30' : 'bg-[var(--accent-color)] text-white shadow-[0_0_30px_rgba(194,24,91,0.25)]')}>
                 {isActive && !isPaused
                   ? <span className="flex items-center gap-2"><Pause size={18} /> Pause</span>
                   : <span className="flex items-center gap-2"><Play size={18} /> {isPaused ? 'Resume' : 'Start'}</span>}
@@ -1522,7 +1522,7 @@ export default function HabitFocusHub() {
               {isActive && (
                 <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
                   whileTap={{ scale: 0.95 }} onClick={endSession}
-                  className="px-6 py-3.5 rounded-full font-bold tracking-widest text-sm text-[#C2185B] border border-[#C2185B]/30 glass-card flex items-center gap-2">
+                  className="px-6 py-3.5 rounded-full font-bold tracking-widest text-sm text-[var(--accent-color)] border border-[var(--accent-color)]/30 glass-card flex items-center gap-2">
                   <CheckCircle2 size={16} /> End
                 </motion.button>
               )}
@@ -1538,7 +1538,7 @@ export default function HabitFocusHub() {
 
               {/* Reset when paused or not started */}
               {!isActive && (
-                <button onClick={resetTimer} className="p-3 rounded-full text-[#F2EBE3]/25 hover:text-[#F2EBE3]/60 transition-colors">
+                <button onClick={resetTimer} className="p-3 rounded-full text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors">
                   <RotateCcw size={20} />
                 </button>
               )}
@@ -1549,30 +1549,30 @@ export default function HabitFocusHub() {
               <div className="glass-card rounded-xl px-5 py-3 flex items-center gap-2.5">
                 <Timer size={16} className="text-blue-400" />
                 <span className="text-sm font-semibold">{sessions}</span>
-                <span className="text-xs text-[#F2EBE3]/30">Sessions</span>
+                <span className="text-xs text-[var(--text-dim)]">Sessions</span>
               </div>
               <div className="glass-card rounded-xl px-5 py-3 flex items-center gap-2.5">
-                <Clock size={16} className="text-[#C2185B]" />
-                <span className="text-sm font-semibold text-[#C2185B]">{totalFocusTime}m</span>
-                <span className="text-xs text-[#F2EBE3]/30">Total Time</span>
+                <Clock size={16} className="text-[var(--accent-color)]" />
+                <span className="text-sm font-semibold text-[var(--accent-color)]">{totalFocusTime}m</span>
+                <span className="text-xs text-[var(--text-dim)]">Total Time</span>
               </div>
             </div>
 
             {/* Session History */}
             {sessionHistory.length > 0 && (
               <div className="w-full max-w-2xl mb-6">
-                <h3 className="text-xs text-[#F2EBE3]/30 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+                <h3 className="text-xs text-[var(--text-dim)] uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
                   <Clock size={12} /> Today's Sessions
                 </h3>
                 <div className="space-y-2">
                   {sessionHistory.map((s) => (
                     <div key={s.id} className="glass-card rounded-xl p-3 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#C2185B]/10 border border-[#C2185B]/20 flex items-center justify-center">
-                        <CheckCircle2 size={14} className="text-[#C2185B]" />
+                      <div className="w-8 h-8 rounded-lg bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 flex items-center justify-center">
+                        <CheckCircle2 size={14} className="text-[var(--accent-color)]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm text-[#F2EBE3]/80">{s.name}</span>
-                        <span className="text-xs text-[#F2EBE3]/25 ml-2">
+                        <span className="text-sm text-[var(--text-primary)]">{s.name}</span>
+                        <span className="text-xs text-[var(--text-dim)] ml-2">
                           {new Date(s.endedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
@@ -1581,18 +1581,18 @@ export default function HabitFocusHub() {
                           <input type="number" value={editDuration} onChange={e => setEditDuration(e.target.value)}
                             className="w-16 px-2 py-1 rounded-lg glass-input !py-1 !px-2 !text-xs text-center"
                             placeholder="min" autoFocus onKeyDown={e => e.key === 'Enter' && saveHistoryEdit(s.id)} />
-                          <button onClick={() => saveHistoryEdit(s.id)} className="text-[#C2185B] text-xs font-bold px-2 py-1 rounded hover:bg-[#C2185B]/10">✓</button>
-                          <button onClick={() => { setEditingHistorySession(null); setEditDuration(''); }} className="text-[#F2EBE3]/30 text-xs px-2 py-1 rounded hover:bg-white/5">✕</button>
+                          <button onClick={() => saveHistoryEdit(s.id)} className="text-[var(--accent-color)] text-xs font-bold px-2 py-1 rounded hover:bg-[var(--accent-color)]/10">✓</button>
+                          <button onClick={() => { setEditingHistorySession(null); setEditDuration(''); }} className="text-[var(--text-dim)] text-xs px-2 py-1 rounded hover:bg-[var(--glass-border)]">✕</button>
                         </div>
                       ) : (
                         <>
-                          <span className="text-sm font-semibold text-[#C2185B] tabular-nums">{s.duration}m</span>
+                          <span className="text-sm font-semibold text-[var(--accent-color)] tabular-nums">{s.duration}m</span>
                           <button onClick={() => { setEditingHistorySession(s.id); setEditDuration(String(s.duration)); }}
-                            className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-[#F2EBE3]/60 hover:bg-white/5 transition-all">
+                            className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] transition-all">
                             <Pencil size={13} />
                           </button>
                           <button onClick={() => deleteHistorySession(s.id)}
-                            className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                            className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-red-400 hover:bg-red-500/10 transition-all">
                             <Trash2 size={13} />
                           </button>
                         </>
@@ -1605,7 +1605,7 @@ export default function HabitFocusHub() {
 
             {/* Custom Sessions — at top */}
             <div className="w-full max-w-2xl">
-              <h3 className="text-xs text-[#F2EBE3]/30 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+              <h3 className="text-xs text-[var(--text-dim)] uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
                 <Zap size={12} /> Custom Sessions
               </h3>
               <div className="space-y-2 mb-4">
@@ -1615,22 +1615,22 @@ export default function HabitFocusHub() {
                     <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
                       className={clsx('glass-card rounded-xl p-3.5 flex items-center gap-3 cursor-pointer transition-all group',
-                        isSelected ? 'border border-[#C2185B]/30 bg-[#C2185B]/5' : 'hover:bg-white/[0.03]')}>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#C2185B]/10 border border-[#C2185B]/20"
+                        isSelected ? 'border border-[var(--accent-color)]/30 bg-[var(--accent-color)]/5' : 'hover:bg-white/[0.03]')}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20"
                         onClick={() => startSession(s, 'custom')}>
-                        <Zap size={16} className="text-[#C2185B]" />
+                        <Zap size={16} className="text-[var(--accent-color)]" />
                       </div>
                       <div className="flex-1 min-w-0" onClick={() => startSession(s, 'custom')}>
-                        <span className="text-sm font-medium text-[#F2EBE3]/80">{s.name}</span>
-                        <span className="text-xs text-[#F2EBE3]/25 ml-2">{s.time}m</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{s.name}</span>
+                        <span className="text-xs text-[var(--text-dim)] ml-2">{s.time}m</span>
                       </div>
-                      <span className="text-xs text-[#F2EBE3]/15 font-mono uppercase mr-2">{toRoman(i + 1)}</span>
+                      <span className="text-xs text-[var(--text-dim)] font-mono uppercase mr-2">{toRoman(i + 1)}</span>
                       <button onClick={(e) => { e.stopPropagation(); setEditingSession(s); setShowSessionModal(true); }}
-                        className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-[#F2EBE3]/60 hover:bg-white/5 transition-all">
+                        className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] transition-all">
                         <Pencil size={13} />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); deleteCustomSession(s.id); }}
-                        className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                        className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-red-400 hover:bg-red-500/10 transition-all">
                         <Trash2 size={13} />
                       </button>
                     </motion.div>
@@ -1639,12 +1639,12 @@ export default function HabitFocusHub() {
               </div>
 
               <button onClick={() => { setEditingSession(null); setShowSessionModal(true); }}
-                className="w-full py-3 rounded-xl border border-dashed border-[#C2185B]/20 text-[#C2185B] text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#C2185B]/5 transition-all mb-6">
+                className="w-full py-3 rounded-xl border border-dashed border-[var(--accent-color)]/20 text-[var(--accent-color)] text-sm font-medium flex items-center justify-center gap-2 hover:bg-[var(--accent-color)]/5 transition-all mb-6">
                 <Plus size={16} /> Add Custom Session
               </button>
 
               {/* Sessions from Habits — below custom */}
-              <h3 className="text-xs text-[#F2EBE3]/30 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+              <h3 className="text-xs text-[var(--text-dim)] uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
                 <Activity size={12} /> From Your Habits
               </h3>
               <div className="space-y-2">
@@ -1656,23 +1656,23 @@ export default function HabitFocusHub() {
                     <motion.div key={h.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
                       className={clsx('glass-card rounded-xl p-3.5 flex items-center gap-3 cursor-pointer transition-all group',
-                        isSelected ? 'border border-[#C2185B]/30 bg-[#C2185B]/5' : 'hover:bg-white/[0.03]')}>
+                        isSelected ? 'border border-[var(--accent-color)]/30 bg-[var(--accent-color)]/5' : 'hover:bg-white/[0.03]')}>
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{ background: `${h.color || cfg.color}15` }}
                         onClick={() => startSession(h, 'habit')}>
                         <Icon size={16} style={{ color: h.color || cfg.color }} />
                       </div>
                       <div className="flex-1 min-w-0" onClick={() => startSession(h, 'habit')}>
-                        <span className="text-sm font-medium text-[#F2EBE3]/80">{h.title}</span>
-                        <span className="text-xs text-[#F2EBE3]/25 ml-2">{h.focusDuration}m</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{h.title}</span>
+                        <span className="text-xs text-[var(--text-dim)] ml-2">{h.focusDuration}m</span>
                       </div>
-                      <span className="text-xs text-[#F2EBE3]/15 font-mono uppercase mr-2">{toRoman(i + 1)}</span>
+                      <span className="text-xs text-[var(--text-dim)] font-mono uppercase mr-2">{toRoman(i + 1)}</span>
                       <button onClick={(e) => { e.stopPropagation(); setEditingHabit(h); setShowModal(true); }}
-                        className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-[#F2EBE3]/60 hover:bg-white/5 transition-all">
+                        className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] transition-all">
                         <Pencil size={13} />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); deleteHabit(h.id); }}
-                        className="p-1.5 rounded-lg text-[#F2EBE3]/20 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                        className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-red-400 hover:bg-red-500/10 transition-all">
                         <Trash2 size={13} />
                       </button>
                     </motion.div>

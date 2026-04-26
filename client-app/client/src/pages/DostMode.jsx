@@ -1749,7 +1749,7 @@ export default function DostMode() {
               <span>{apiError.message}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setApiError(null)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"><X size={16} /></button>
+              <button onClick={() => setApiError(null)} className="p-1.5 hover:bg-[var(--glass-bg-hover)] rounded-lg text-white/70 hover:text-white transition-colors"><X size={16} /></button>
               <button onClick={() => { setInput(apiError.input); setApiError(null); }}
                 className="px-3 py-1.5 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-white/90 transition-colors shadow-sm">
                 Retry

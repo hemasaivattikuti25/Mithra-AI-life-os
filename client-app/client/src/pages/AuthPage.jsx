@@ -669,7 +669,7 @@ export default function AuthPage({ isPasswordReset = false }) {
           <div className="lg:hidden text-center mt-8 space-y-4">
             <div className="flex items-center justify-center gap-4 text-xs text-white/40">
               <a href="#/privacy" className="hover:text-white/70 transition-colors">Privacy Policy</a>
-              <span className="w-1 h-1 rounded-full bg-white/10" />
+              <span className="w-1 h-1 rounded-full bg-[var(--glass-bg-hover)]" />
               <a href="#/terms" className="hover:text-white/70 transition-colors">Terms of Service</a>
             </div>
             <p className="text-[11px] text-white/40 tracking-wide">

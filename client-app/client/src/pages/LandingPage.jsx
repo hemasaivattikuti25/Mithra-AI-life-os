@@ -71,7 +71,7 @@ const Hero = ({ navigate, isAuthenticated }) => {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="relative z-10"
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-cyan-400 mb-6 backdrop-blur-sm">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--glass-border)] border border-white/10 text-xs font-medium text-cyan-400 mb-6 backdrop-blur-sm">
                         <Sparkles size={14} /> Introducing Mithra Life OS 2.0
                     </div>
                     <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -90,7 +90,7 @@ const Hero = ({ navigate, isAuthenticated }) => {
                         >
                             Start for free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </button>
-                        <Link to="/promo-video" className="flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-medium bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors">
+                        <Link to="/promo-video" className="flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-medium bg-[var(--glass-border)] text-white border border-white/10 hover:bg-[var(--glass-bg-hover)] transition-colors">
                             Watch Demo
                         </Link>
                     </div>
@@ -117,7 +117,7 @@ const Hero = ({ navigate, isAuthenticated }) => {
                                 <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                                 <div className="w-3 h-3 rounded-full bg-green-500/80" />
                             </div>
-                            <div className="mx-auto px-4 py-1 rounded-md bg-white/5 text-[10px] text-gray-500 font-mono">mithra-lifeos.com</div>
+                            <div className="mx-auto px-4 py-1 rounded-md bg-[var(--glass-border)] text-[10px] text-gray-500 font-mono">mithra-lifeos.com</div>
                         </div>
                         {/* Mockup Body */}
                         <div className="p-6 flex-1 flex flex-col gap-4">
@@ -129,18 +129,18 @@ const Hero = ({ navigate, isAuthenticated }) => {
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 border-2 border-black" />
                             </div>
                             <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div className="p-4 rounded-xl bg-[var(--glass-border)] border border-white/5">
                                     <div className="flex items-center gap-2 mb-2"><Target size={14} className="text-cyan-400" /><span className="text-xs font-medium text-gray-300">Deep Work</span></div>
                                     <div className="text-2xl font-bold text-white">4h 20m</div>
                                     <div className="text-[10px] text-green-400 mt-1">+12% from yesterday</div>
                                 </div>
-                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div className="p-4 rounded-xl bg-[var(--glass-border)] border border-white/5">
                                     <div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-purple-400" /><span className="text-xs font-medium text-gray-300">Energy Score</span></div>
                                     <div className="text-2xl font-bold text-white">92/100</div>
                                     <div className="text-[10px] text-gray-400 mt-1">Optimal state</div>
                                 </div>
                             </div>
-                            <div className="flex-1 rounded-xl bg-white/5 border border-white/5 p-4 mt-2">
+                            <div className="flex-1 rounded-xl bg-[var(--glass-border)] border border-white/5 p-4 mt-2">
                                 <h4 className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">Up Next</h4>
                                 <div className="space-y-2">
                                     {[
@@ -172,7 +172,7 @@ const Hero = ({ navigate, isAuthenticated }) => {
 const FeatureCard = ({ icon: Icon, title, description, color }) => (
     <motion.div 
         whileHover={{ y: -5 }}
-        className="p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative overflow-hidden group"
+        className="p-8 rounded-2xl bg-[var(--glass-border)] border border-white/10 backdrop-blur-md relative overflow-hidden group"
     >
         <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} bg-opacity-20 flex items-center justify-center mb-6`}>
@@ -295,7 +295,7 @@ const AIDemo = () => {
                         <div className="space-y-6">
                             <div className="flex gap-4">
                                 <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
-                                <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm p-4 text-sm text-gray-200">
+                                <div className="bg-[var(--glass-border)] border border-white/10 rounded-2xl rounded-tl-sm p-4 text-sm text-gray-200">
                                     I feel completely overwhelmed this week. I have 3 major project deadlines and haven't worked out in 4 days.
                                 </div>
                             </div>

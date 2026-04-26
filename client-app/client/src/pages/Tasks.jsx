@@ -306,7 +306,7 @@ const TaskDetailPanel = ({ task, onClose, onUpdate, onDelete }) => {
         <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] text-[var(--text-dim)] transition-colors"><X size={20} /></button>
         <div className="flex gap-1">
           <button onClick={cyclePriority}
-            className={clsx('p-2 rounded-lg hover:bg-white/10 transition-colors', PRIORITY_CONFIG[task.priority].color)}
+            className={clsx('p-2 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-colors', PRIORITY_CONFIG[task.priority].color)}
             title="Cycle priority">
             <Flag size={18} />
           </button>

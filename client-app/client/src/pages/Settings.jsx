@@ -238,11 +238,11 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
               <ReminderSlider label="Tasks"
                 value={notificationSettings.taskReminderMinutes || notificationSettings.reminderMinutes}
                 onChange={(v) => updateNotificationSettings({ taskReminderMinutes: v, reminderMinutes: v })} />
-              <div className="h-px bg-white/5" />
+              <div className="h-px bg-[var(--glass-border)]" />
               <ReminderSlider label="Calendar Events"
                 value={notificationSettings.eventReminderMinutes || notificationSettings.reminderMinutes}
                 onChange={(v) => updateNotificationSettings({ eventReminderMinutes: v })} />
-              <div className="h-px bg-white/5" />
+              <div className="h-px bg-[var(--glass-border)]" />
               <ReminderSlider label="Habits"
                 value={notificationSettings.habitReminderMinutes || 60}
                 onChange={(v) => updateNotificationSettings({ habitReminderMinutes: v })} />

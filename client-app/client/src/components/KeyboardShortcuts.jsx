@@ -101,7 +101,7 @@ export default function KeyboardShortcuts() {
                 <Keyboard size={18} style={{ color: 'var(--accent-color)' }} />
                 <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Keyboard Shortcuts</h2>
               </div>
-              <button onClick={() => setShowHelp(false)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+              <button onClick={() => setShowHelp(false)} className="p-1 rounded-lg hover:bg-[var(--glass-bg-hover)] transition-colors">
                 <X size={18} style={{ color: 'var(--text-dim)' }} />
               </button>
             </div>

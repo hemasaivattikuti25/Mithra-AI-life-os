@@ -98,7 +98,7 @@ export default function SyncStatus() {
     <button
       onClick={handleClick}
       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium
-        bg-white/5 hover:bg-white/10 transition-colors cursor-pointer ${c.className}`}
+        bg-[var(--glass-border)] hover:bg-[var(--glass-bg-hover)] transition-colors cursor-pointer ${c.className}`}
       title={getTooltip()}
     >
       {c.icon}

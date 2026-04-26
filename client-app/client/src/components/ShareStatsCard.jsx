@@ -105,7 +105,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full bg-[var(--glass-bg-hover)] hover:bg-white/20 transition-colors"
           >
             <X size={20} className="text-white" />
           </button>
@@ -122,7 +122,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
           >
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 mb-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--glass-border)] mb-3">
                 <Flame size={14} className="text-orange-500" />
                 <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">
                   Mithra Stats
@@ -166,7 +166,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
             </div>
 
             {/* Motivational quote */}
-            <div className="text-center py-3 px-4 rounded-xl bg-white/5">
+            <div className="text-center py-3 px-4 rounded-xl bg-[var(--glass-border)]">
               <p className="text-xs italic text-white/60">
                 "The obstacle is the way."
               </p>

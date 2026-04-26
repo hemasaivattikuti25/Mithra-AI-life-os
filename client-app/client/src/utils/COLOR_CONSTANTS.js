@@ -29,11 +29,11 @@ export const HABIT_COLORS = [
 // Habit focus mode buttons (dark mode only currently)
 export const HABIT_MODE_COLORS = {
   timer: {
-    active: 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10',
+    active: 'border-[var(--accent-color)]/30 text-[var(--accent-color)] bg-[var(--accent-color)]/10',
     inactive: 'border-[var(--text-primary)]/10 text-[var(--text-primary)]/35',
   },
   stopwatch: {
-    active: 'border-[#C2185B]/30 text-[#C2185B] bg-[#C2185B]/10',
+    active: 'border-[var(--accent-color)]/30 text-[var(--accent-color)] bg-[var(--accent-color)]/10',
     inactive: 'border-[var(--text-primary)]/10 text-[var(--text-primary)]/35',
   },
 };
