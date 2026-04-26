@@ -209,7 +209,7 @@ const SceneFounder = () => (
             
             <div className="grid grid-cols-2 gap-4">
                 {[
-                    { label: 'Early Signups', value: '800+' },
+                    { label: 'Early Signups', value: '900+' },
                     { label: 'Uptime', value: '99.9%' },
                     { label: 'Shipped Features', value: '20+' },
                     { label: 'Team Size', value: '1' }

@@ -240,7 +240,7 @@ const Stats = () => (
     <section className="py-20 px-6 border-y border-white/5 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-white/5">
             {[
-                { label: 'Early Sign-ups', value: '800+' },
+                { label: 'Early Sign-ups', value: '900+' },
                 { label: 'Features Shipped', value: '20+' },
                 { label: 'Built Solo', value: '1' },
                 { label: 'Uptime', value: '99.9%' }
