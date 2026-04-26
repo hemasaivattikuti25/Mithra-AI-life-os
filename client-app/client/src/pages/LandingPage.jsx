@@ -37,7 +37,7 @@ const Navbar = ({ isAuthenticated, navigate }) => {
                 <div className="hidden md:flex items-center gap-8">
                     <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
                     <a href="#ai" className="text-sm text-gray-400 hover:text-white transition-colors">Dost AI</a>
-                    <a href="#testimonials" className="text-sm text-gray-400 hover:text-white transition-colors">Reviews</a>
+                    <a href="#founder" className="text-sm text-gray-400 hover:text-white transition-colors">About</a>
                 </div>
                 <div className="flex items-center gap-4">
                     {isAuthenticated ? (
@@ -261,7 +261,7 @@ const AIDemo = () => {
             <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs font-medium text-purple-400 mb-6">
-                        <Brain size={14} /> Powered by Gemini 1.5 Pro
+                        <Brain size={14} /> Advanced AI Engine
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
                         Meet Dost.<br />
@@ -298,9 +298,7 @@ const AIDemo = () => {
                                 </div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 shrink-0 flex items-center justify-center">
-                                    <Sparkles size={14} className="text-white" />
-                                </div>
+                                <img src="/assets/logo.png" alt="Dost" className="w-8 h-8 rounded-full shrink-0" />
                                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl rounded-tl-sm p-4 text-sm text-gray-200">
                                     <p className="mb-3">I see you're stressed. Let's fix this. Looking at your calendar, Thursday is completely packed, but tomorrow morning is light.</p>
                                     <p className="mb-3">I've proactively generated a revised schedule:</p>
@@ -320,6 +318,72 @@ const AIDemo = () => {
     );
 };
 
+// --- Founder Section ---
+const Founder = () => (
+    <section id="founder" className="py-24 px-6 relative z-10">
+        <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    Meet the <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Founder</span>
+                </h2>
+            </div>
+            <div className="relative rounded-3xl border border-white/10 bg-[#121212]/60 backdrop-blur-xl overflow-hidden p-8 sm:p-12">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5" />
+                <div className="relative flex flex-col lg:flex-row items-center gap-10">
+                    {/* Photo */}
+                    <div className="shrink-0">
+                        <div className="relative">
+                            <div className="absolute -inset-1 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full blur-md opacity-60" />
+                            <img
+                                src="/assets/hemasai.jpeg"
+                                alt="Hemasai Vattikuti"
+                                className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover border-4 border-[#1a1a1a] shadow-2xl"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Story */}
+                    <div className="flex-1 text-center lg:text-left">
+                        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                            Hemasai Vattikuti
+                        </h3>
+                        <p className="text-cyan-400 text-sm font-medium mb-5 tracking-wide uppercase">Founder & Developer</p>
+                        <p className="text-gray-300 leading-relaxed mb-4">
+                            I built Mithra because I believe everyone deserves to be productive, organized, and self-aware.
+                            Too many people struggle with scattered tools and no real insight into their own patterns.
+                        </p>
+                        <p className="text-gray-400 leading-relaxed mb-6">
+                            Mithra is the system I wished I had — an AI-powered life OS that doesn't just store your tasks,
+                            but actually understands your habits, analyzes your mood, and helps you become the best version of yourself.
+                            Every feature was designed with one goal: making self-improvement effortless.
+                        </p>
+
+                        {/* Social Links */}
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3">
+                            <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                                <Globe size={14} /> GitHub
+                            </a>
+                            <a href="https://www.linkedin.com/in/hemasaivattikuti" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                                <Users size={14} /> LinkedIn
+                            </a>
+                            <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                                <Zap size={14} /> Portfolio
+                            </a>
+                            <a href="https://drive.google.com/file/d/1yU0EMubbWwE8Z2iSmmkMY7_AfY-hAH0U/view" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                                <ChevronRight size={14} /> Resume
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
 // --- Footer ---
 const Footer = () => (
     <footer className="border-t border-white/10 bg-black pt-16 pb-8 px-6">
@@ -338,7 +402,7 @@ const Footer = () => (
                 <ul className="space-y-2 text-sm text-gray-400">
                     <li><a href="#features" className="hover:text-cyan-400 transition-colors">Features</a></li>
                     <li><a href="#ai" className="hover:text-cyan-400 transition-colors">Dost AI</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Pricing</a></li>
+                    <li><a href="#founder" className="hover:text-cyan-400 transition-colors">About</a></li>
                 </ul>
             </div>
             <div>
@@ -346,13 +410,13 @@ const Footer = () => (
                 <ul className="space-y-2 text-sm text-gray-400">
                     <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</Link></li>
                     <li><Link to="/terms" className="hover:text-cyan-400 transition-colors">Terms of Service</Link></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Contact</a></li>
+                    <li><a href="https://www.linkedin.com/in/hemasaivattikuti" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">Contact</a></li>
                 </ul>
             </div>
         </div>
         <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
             <p>© {new Date().getFullYear()} Mithra AI. All rights reserved.</p>
-            <p>Built by <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Hemasai Vattikuti</a></p>
+            <p>Built with ❤️ by <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Hemasai Vattikuti</a></p>
         </div>
     </footer>
 );
@@ -370,6 +434,7 @@ export default function LandingPage() {
                 <Stats />
                 <Features />
                 <AIDemo />
+                <Founder />
             </main>
             <Footer />
         </div>
