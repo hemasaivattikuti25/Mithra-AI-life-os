@@ -3,10 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import { Layout } from './components/Layout';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { PlanProvider } from './context/PlanContext';
 import { ErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, useToast } from './components/Toast';
-import UpgradeModal from './components/UpgradeModal';
 import { DashboardSkeleton, TasksSkeleton, HabitsSkeleton, JournalSkeleton, PageSkeleton, CalendarSkeleton } from './components/LoadingSkeleton';
 import SearchDialog from './components/SearchDialog';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
@@ -16,24 +14,6 @@ import Onboarding from './pages/Onboarding';
 import { setupBackButton, isNative } from './native';
 import { initAnalytics } from './services/analytics';
 import { checkBackendHealth } from './services/firebaseClient';
-
-// Sentry — optional: only active when VITE_SENTRY_DSN is set AND package is installed
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-let Sentry = null;
-if (SENTRY_DSN) {
-  try {
-    // Dynamic require — build still succeeds if package is absent
-    Sentry = await import('@sentry/react').catch(() => null);
-    if (Sentry) {
-      Sentry.init({
-        dsn: SENTRY_DSN,
-        integrations: [Sentry.browserTracingIntegration()],
-        tracesSampleRate: 0.1,
-        environment: import.meta.env.MODE,
-      });
-    }
-  } catch {}
-}
 
 /* Lazy-load heavy page components for faster initial paint */
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -240,17 +220,14 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <PlanProvider>
-          <DataProvider>
-            <ToastProvider>
-              <UpgradeModal />
-              <BackendHealthGate />
-              <Router>
-                <AppRoutes />
-              </Router>
-            </ToastProvider>
-          </DataProvider>
-        </PlanProvider>
+        <DataProvider>
+          <ToastProvider>
+            <BackendHealthGate />
+            <Router>
+              <AppRoutes />
+            </Router>
+          </ToastProvider>
+        </DataProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
