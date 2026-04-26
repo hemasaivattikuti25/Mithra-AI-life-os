@@ -21,7 +21,7 @@ const Toggle = ({ label, description, isActive, onToggle }) => (
     <button
       onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300"
-      style={{ background: isActive ? 'var(--accent-color)' : 'var(--glass-border)' }}
+      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(150, 150, 150, 0.4)' }}
     >
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
         style={{ backgroundColor: '#fff' }} />
@@ -105,7 +105,7 @@ const IconToggle = ({ label, description, icon: Icon, isActive, onToggle, disabl
     </div>
     <button onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 ml-3"
-      style={{ background: isActive ? 'var(--accent-color)' : 'var(--glass-border)' }}>
+      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(150, 150, 150, 0.4)' }}>
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
         style={{ backgroundColor: '#fff' }} />
     </button>
