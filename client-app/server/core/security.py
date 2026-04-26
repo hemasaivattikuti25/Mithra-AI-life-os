@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import logging
-from core.config import ENVIRONMENT
 
 logger = logging.getLogger("mithra.security")
 
@@ -10,7 +9,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     """Verify Firebase ID token and extract user info.
-    
+
     The frontend sends: Authorization: Bearer <firebase_id_token>
     We verify it using Firebase Admin SDK.
     """
@@ -65,7 +64,7 @@ async def check_resource_ownership(
 ):
     """
     Verify that current user owns the requested resource.
-    
+
     Raises 403 Forbidden if user doesn't own resource.
     """
     if current_user["id"] != resource_owner_id:
@@ -85,24 +84,24 @@ async def check_workspace_membership(
 ):
     """
     Verify that current user is a member of the workspace.
-    
+
     Requires database access to check membership.
     """
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.fetchval(
                 """
-                SELECT id FROM workspace_members 
+                SELECT id FROM workspace_members
                 WHERE workspace_id = $1 AND user_id = $2
                 LIMIT 1
                 """,
                 workspace_id,
                 current_user["id"]
             )
-            
+
             if not result:
                 logger.warning(
                     f"Access denied: User {current_user['id']} is not member of workspace {workspace_id}"
@@ -128,18 +127,18 @@ async def check_workspace_admin(
     """
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             result = await conn.fetchval(
                 """
-                SELECT role FROM workspace_members 
+                SELECT role FROM workspace_members
                 WHERE workspace_id = $1 AND user_id = $2
                 """,
                 workspace_id,
                 current_user["id"]
             )
-            
+
             if result != "admin":
                 logger.warning(
                     f"Access denied: User {current_user['id']} is not admin of workspace {workspace_id}"

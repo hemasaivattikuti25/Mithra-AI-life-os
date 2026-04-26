@@ -19,7 +19,7 @@ from .memory_engine import build_memory_context, save_journal_memory
 __all__ = [
     # Gateway
     "generate_chat_response",
-    "parse_natural_language", 
+    "parse_natural_language",
     "generate_daily_plan",
     "create_embedding",
     "generate_quick_insight",

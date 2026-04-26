@@ -46,7 +46,7 @@ class DataError(MithraError):
 
 class retry_with_backoff:
     """Decorator to retry failed async operations with exponential backoff."""
-    
+
     def __init__(
         self,
         max_retries: int = 3,
@@ -60,53 +60,53 @@ class retry_with_backoff:
         self.max_delay = max_delay
         self.backoff_factor = backoff_factor
         self.on_retry = on_retry
-    
+
     def __call__(self, func):
         async def wrapper(*args, **kwargs):
             delay = self.initial_delay
             last_error = None
-            
+
             for attempt in range(self.max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
                 except Exception as e:
                     last_error = e
-                    
+
                     if attempt < self.max_retries:
                         if self.on_retry:
                             self.on_retry(attempt + 1, delay, e)
-                        
+
                         logger.warning(
                             f"Attempt {attempt + 1} failed for {func.__name__}: {str(e)}. "
                             f"Retrying in {delay:.1f}s..."
                         )
-                        
+
                         import asyncio
                         await asyncio.sleep(delay)
-                        
+
                         delay = min(delay * self.backoff_factor, self.max_delay)
                     else:
                         logger.error(
                             f"All {self.max_retries + 1} attempts failed for {func.__name__}: {str(e)}"
                         )
-            
+
             raise last_error
-        
+
         return wrapper
 
 
 def handle_api_error(error: Any, context: str = "", default_message: str = None) -> MithraError:
     """Convert API errors into structured MithraErrors."""
-    
+
     default_message = default_message or "An error occurred. Please try again."
-    
+
     if isinstance(error, MithraError):
         return error
-    
+
     if hasattr(error, 'status_code'):
         status = error.status_code
         detail = getattr(error, 'detail', str(error))
-        
+
         if status == 401:
             return AuthenticationError(
                 f"Authentication failed: {detail}",
@@ -137,21 +137,21 @@ def handle_api_error(error: Any, context: str = "", default_message: str = None)
                 f"Request failed: {detail}",
                 code=f"HTTP_{status}"
             )
-    
+
     error_str = str(error).lower()
-    
+
     if "network" in error_str or "timeout" in error_str:
         return NetworkError(
             "Network error. Check your connection and try again.",
             code="NETWORK_ERROR"
         )
-    
+
     if "json" in error_str:
         return DataError(
             "Invalid response format from server",
             code="INVALID_RESPONSE"
         )
-    
+
     return MithraError(default_message, code="UNKNOWN", details={"original": str(error), "context": context})
 
 

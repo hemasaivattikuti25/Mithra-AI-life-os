@@ -130,14 +130,14 @@ async def generate_chat_response(
     model = _get_model(model_name)
     if not model:
         raise RuntimeError("AI Gateway: Gemini not available")
-    
+
     try:
         # Build the full prompt
         full_prompt = f"{system_prompt}\n\nUser: {user_message}\nDost:"
-        
+
         # Estimate and log tokens
         input_tokens = _estimate_tokens(full_prompt)
-        
+
         # Generate response
         generation_config = {
             "max_output_tokens": max_tokens,
@@ -147,13 +147,13 @@ async def generate_chat_response(
             full_prompt,
             generation_config=generation_config,
         )
-        
+
         result = response.text.strip()
         output_tokens = _estimate_tokens(result)
         _log_ai_call("chat_response", model_name, input_tokens, output_tokens)
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"[AI Gateway] chat_response failed: {e}")
         raise RuntimeError(f"AI Gateway: chat_response failed — {str(e)}")
@@ -174,7 +174,7 @@ async def generate_chat_with_history(
     model = _get_model(model_name)
     if not model:
         raise RuntimeError("AI Gateway: Gemini not available")
-    
+
     try:
         # Truncate history to save tokens
         trimmed_history = []
@@ -189,22 +189,22 @@ async def generate_chat_with_history(
                 "role": msg.get("role", "user"),
                 "parts": [parts],
             })
-        
+
         # Start chat with history
         chat = model.start_chat(history=trimmed_history)
-        
+
         # Send the system prompt + user message
         full_prompt = f"{system_prompt}\n\nUser: {user_message}"
         input_tokens = _estimate_tokens(full_prompt) + sum(_estimate_tokens(str(m)) for m in trimmed_history)
-        
+
         response = chat.send_message(full_prompt)
         result = response.text.strip()
-        
+
         output_tokens = _estimate_tokens(result)
         _log_ai_call("chat_with_history", model_name, input_tokens, output_tokens)
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"[AI Gateway] chat_with_history failed: {e}")
         raise RuntimeError(f"AI Gateway: chat_with_history failed — {str(e)}")
@@ -223,38 +223,38 @@ async def parse_natural_language(
     model = _get_model(FLASH_MODEL)
     if not model:
         raise RuntimeError("AI Gateway: Gemini not available")
-    
+
     today = today or datetime.now().strftime("%Y-%m-%d")
-    
+
     prompts = {
         "task": f"""Parse this into a task. Today is {today}.
 Input: "{text}"
 Return ONLY valid JSON (no markdown):
 {{"title": "...", "due_date": "YYYY-MM-DD or null", "due_time": "HH:MM or null", "priority": "low|medium|high", "confidence": 0.0-1.0}}""",
-        
+
         "event": f"""Parse this into a calendar event. Today is {today}.
 Input: "{text}"
 Return ONLY valid JSON (no markdown):
 {{"title": "...", "start": "YYYY-MM-DDTHH:MM:SS", "end": "YYYY-MM-DDTHH:MM:SS", "category": "Work|Personal|Meeting|Other"}}""",
-        
+
         "habit": f"""Parse this into a habit definition.
 Input: "{text}"
 Return ONLY valid JSON (no markdown):
 {{"name": "...", "frequency": "daily|weekly", "time_of_day": "morning|afternoon|evening|anytime", "duration_minutes": number, "category": "Health|Productivity|Mindfulness|Learning|Other"}}""",
     }
-    
+
     if parse_type not in prompts:
         raise ValueError(f"Unknown parse_type: {parse_type}")
-    
+
     try:
         prompt = prompts[parse_type]
         input_tokens = _estimate_tokens(prompt)
-        
+
         response = model.generate_content(
             prompt,
             generation_config={"max_output_tokens": max_tokens, "temperature": 0.1},
         )
-        
+
         result_text = response.text.strip()
         # Clean up potential markdown formatting
         if result_text.startswith("```json"):
@@ -264,12 +264,12 @@ Return ONLY valid JSON (no markdown):
         if result_text.endswith("```"):
             result_text = result_text[:-3]
         result_text = result_text.strip()
-        
+
         output_tokens = _estimate_tokens(result_text)
         _log_ai_call(f"parse_{parse_type}", FLASH_MODEL, input_tokens, output_tokens)
-        
+
         return json.loads(result_text)
-        
+
     except json.JSONDecodeError as e:
         logger.warning(f"[AI Gateway] parse_natural_language JSON error: {e}")
         raise ValueError(f"Failed to parse response as JSON: {e}")
@@ -295,29 +295,29 @@ async def generate_daily_plan(
     today = datetime.now().strftime("%Y-%m-%d")
     task_ids = "-".join([t.get("id", "")[:8] for t in tasks[:5]])
     cache_key = _cache_key("daily-plan", today, energy_level, task_ids)
-    
+
     # Check cache first
     cached = get_cached(cache_key)
     if cached:
         logger.info("[AI Gateway] daily_plan cache hit")
         return json.loads(cached)
-    
+
     model = _get_model(FLASH_MODEL)
     if not model:
         raise RuntimeError("AI Gateway: Gemini not available")
-    
+
     # Build task list (max 8, today/overdue only)
     task_list = "\n".join([
         f"- {t.get('title', 'Task')} (Priority: {t.get('priority', 'medium')}, Due: {t.get('due_date', 'none')})"
         for t in tasks[:8]
     ]) or "No pending tasks"
-    
+
     # Build habit list (max 6)
     habit_list = "\n".join([
         f"- {h.get('title', 'Habit')} ({h.get('focus_duration', 25)} min)"
         for h in habits[:6]
     ]) or "No habits"
-    
+
     prompt = f"""You are a productivity coach creating a day plan for {user_name}.
 
 TODAY: {today}
@@ -351,12 +351,12 @@ Rules:
 
     try:
         input_tokens = _estimate_tokens(prompt)
-        
+
         response = model.generate_content(
             prompt,
             generation_config={"max_output_tokens": max_tokens, "temperature": 0.3},
         )
-        
+
         result_text = response.text.strip()
         # Clean markdown
         if result_text.startswith("```json"):
@@ -366,17 +366,17 @@ Rules:
         if result_text.endswith("```"):
             result_text = result_text[:-3]
         result_text = result_text.strip()
-        
+
         output_tokens = _estimate_tokens(result_text)
         _log_ai_call("daily_plan", FLASH_MODEL, input_tokens, output_tokens)
-        
+
         result = json.loads(result_text)
-        
+
         # Cache for 12 hours
         set_cached(cache_key, json.dumps(result), ttl_seconds=43200)
-        
+
         return result
-        
+
     except json.JSONDecodeError as e:
         logger.warning(f"[AI Gateway] daily_plan JSON error: {e}")
         # Return a fallback plan
@@ -404,24 +404,24 @@ async def create_embedding(text: str) -> list:
     if not _ensure_configured():
         logger.debug("[AI Gateway] Embedding skipped: No Gemini key")
         return [0.0] * 768
-    
+
     try:
         import google.generativeai as genai
-        
+
         # Truncate to save tokens
         truncated = text[:1000] if len(text) > 1000 else text
         input_tokens = _estimate_tokens(truncated)
-        
+
         result = genai.embed_content(
             model="models/embedding-001",
             content=truncated,
             task_type="retrieval_document",
             title="Mithra Memory",
         )
-        
+
         _log_ai_call("embedding", "embedding-001", input_tokens)
         return result["embedding"]
-        
+
     except Exception as e:
         logger.warning(f"[AI Gateway] create_embedding failed: {e}")
         return [0.0] * 768
@@ -438,30 +438,30 @@ async def generate_quick_insight(
     model = _get_model(FLASH_MODEL)
     if not model:
         return "Keep up the great work! 💪"
-    
+
     prompts = {
         "weekly_summary": f"Based on this data, give a 1-2 sentence weekly insight:\n{context}",
         "habit_tip": f"Based on these habits, give a quick tip:\n{context}",
         "motivation": f"Give a short motivational message based on:\n{context}",
         "general": f"Give a brief insight:\n{context}",
     }
-    
+
     prompt = prompts.get(insight_type, prompts["general"])
-    
+
     try:
         input_tokens = _estimate_tokens(prompt)
-        
+
         response = model.generate_content(
             prompt,
             generation_config={"max_output_tokens": max_tokens, "temperature": 0.7},
         )
-        
+
         result = response.text.strip()
         output_tokens = _estimate_tokens(result)
         _log_ai_call("quick_insight", FLASH_MODEL, input_tokens, output_tokens)
-        
+
         return result
-        
+
     except Exception as e:
         logger.warning(f"[AI Gateway] quick_insight failed: {e}")
         return "Keep up the great work! 💪"

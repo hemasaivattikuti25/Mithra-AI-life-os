@@ -23,7 +23,7 @@ class TaskRepository:
     async def update(self, user_id: str, task_id: int, data: dict):
         async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
-                UPDATE tasks 
+                UPDATE tasks
                 SET title = COALESCE($1, title), completed = COALESCE($2, completed), priority = COALESCE($3, priority), duration = COALESCE($4, duration)
                 WHERE id = $5 AND (user_id = $6 OR workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = $6))
                 RETURNING *
@@ -32,10 +32,10 @@ class TaskRepository:
     async def delete(self, user_id: str, task_id: int):
         async with self.pool.acquire() as conn:
             await conn.execute("""
-                DELETE FROM tasks 
+                DELETE FROM tasks
                 WHERE id = $1 AND (user_id = $2 OR workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = $2))
             """, task_id, user_id)
-            
+
     async def delete_completed(self, user_id: str):
         async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM tasks WHERE user_id = $1 AND completed = TRUE AND workspace_id IS NULL", user_id)

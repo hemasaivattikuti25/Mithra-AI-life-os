@@ -30,10 +30,10 @@ async def _fetch_tasks_and_habits(user_id: str, db_pool) -> tuple[list, list]:
     """Fetch user's tasks and habits for planning."""
     tasks = []
     habits = []
-    
+
     if not db_pool:
         return tasks, habits
-    
+
     try:
         async with db_pool.acquire() as conn:
             # Get pending tasks
@@ -45,7 +45,7 @@ async def _fetch_tasks_and_habits(user_id: str, db_pool) -> tuple[list, list]:
                 user_id
             )
             tasks = [dict(t) for t in task_rows] if task_rows else []
-            
+
             # Get habits
             habit_rows = await conn.fetch(
                 """SELECT id, title, category, streak, longest_streak, completed_dates
@@ -61,7 +61,7 @@ async def _fetch_tasks_and_habits(user_id: str, db_pool) -> tuple[list, list]:
                     habits.append(h_dict)
     except Exception as e:
         logger.debug(f"Failed to fetch tasks/habits: {e}")
-    
+
     return tasks, habits
 
 
@@ -73,7 +73,7 @@ async def get_daily_plan(
 ):
     """
     Generate or retrieve today's AI-powered daily plan.
-    
+
     Returns a structured plan with time blocks, tasks, habits, and breaks.
     Uses 12-hour caching unless force_refresh=True.
     """
@@ -81,10 +81,10 @@ async def get_daily_plan(
         user_id = current_user["id"]
         user_name = current_user.get("fullName", "friend")
         db_pool = get_db()
-        
+
         # Fetch tasks and habits from DB
         tasks, habits = await _fetch_tasks_and_habits(user_id, db_pool)
-        
+
         if request.force_refresh:
             # Regenerate ignoring cache
             plan = await planner_engine.regenerate_plan(
@@ -103,13 +103,13 @@ async def get_daily_plan(
                 energy_level=request.energy_level or "medium",
                 user_name=user_name,
             )
-        
+
         return {
             "plan": plan,
             "energy_level": request.energy_level,
             "usage": usage,
         }
-        
+
     except Exception as e:
         logger.error(f"Planner error: {e}")
         return {
@@ -130,17 +130,17 @@ async def get_cached_plan(
 ):
     """
     Get today's plan from cache (no-regenerate).
-    
+
     Quick endpoint for loading existing plans.
     """
     try:
         user_id = current_user["id"]
         user_name = current_user.get("fullName", "friend")
         db_pool = get_db()
-        
+
         # Fetch tasks and habits
         tasks, habits = await _fetch_tasks_and_habits(user_id, db_pool)
-        
+
         plan = await planner_engine.get_or_generate_plan(
             user_id=user_id,
             tasks=tasks,
@@ -148,12 +148,12 @@ async def get_cached_plan(
             energy_level="medium",
             user_name=user_name,
         )
-        
+
         return {
             "plan": plan,
             "usage": usage,
         }
-        
+
     except Exception as e:
         logger.error(f"Planner GET error: {e}")
         return {

@@ -27,7 +27,7 @@ def validate_config():
         "GEMINI_API_KEY": GEMINI_API_KEY,
     }
     missing = [k for k, v in required.items() if not v or "your-" in v]
-    
+
     # Core vars for production
     core_vars = ["NEON_DATABASE_URL", "FIREBASE_SERVICE_ACCOUNT_JSON"]
     if ENVIRONMENT == "production" and any(k in missing for k in core_vars):

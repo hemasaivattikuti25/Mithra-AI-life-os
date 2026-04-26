@@ -9,7 +9,6 @@ Tokens are stored encrypted in the database (oauth_tokens table).
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
 import logging
 import os
 from cryptography.fernet import Fernet
@@ -243,10 +242,10 @@ async def manual_sync_calendar(
 async def get_oauth_url(current_user: User = Depends(get_current_user)) -> dict:
     """
     Get Google OAuth authorization URL for frontend redirect.
-    
+
     Args:
         current_user: Authenticated user from JWT token
-    
+
     Returns:
         dict: {
             'auth_url': str - URL to redirect user to Google consent screen,
@@ -258,16 +257,16 @@ async def get_oauth_url(current_user: User = Depends(get_current_user)) -> dict:
             os.getenv('GOOGLE_OAUTH_SECRETS_FILE', '/app/secrets/oauth_secrets.json'),
             scopes=['https://www.googleapis.com/auth/calendar.readonly']
         )
-        
+
         flow.redirect_uri = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:5173/calendar/callback')
-        
+
         auth_url, state = flow.authorization_url(
             access_type='offline',
             include_granted_scopes='true'
         )
-        
+
         return {'auth_url': auth_url, 'state': state}
-    
+
     except Exception as e:
         logger.error(f"Failed to generate OAuth URL: {str(e)}")
         raise HTTPException(

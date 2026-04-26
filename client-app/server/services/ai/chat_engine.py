@@ -34,10 +34,10 @@ class ChatEngine:
     The brain of Dost AI. Handles conversation flow, context building,
     and action extraction.
     """
-    
+
     def __init__(self):
         self.logger = logging.getLogger("mithra.chat_engine")
-    
+
     def build_system_prompt(
         self,
         user_context: dict,
@@ -47,20 +47,20 @@ class ChatEngine:
     ) -> str:
         """
         Build a carefully crafted system prompt with token budget in mind.
-        
+
         Args:
             user_context: Dict with pending_tasks, habits, today_mood
             user_name: User's display name
             memory_context: RAG-retrieved journal snippets
             is_day_plan: Whether this is a day planning request
-        
+
         Returns:
             System prompt string (under 800 tokens)
         """
         today = datetime.now()
         day_name = today.strftime("%A")
         date_str = today.strftime("%B %d, %Y")
-        
+
         # Build task list (limited to top 5)
         tasks = user_context.get("pending_tasks", [])[:MAX_TASKS_IN_CONTEXT]
         if tasks:
@@ -72,7 +72,7 @@ class ChatEngine:
                 if due:
                     try:
                         due = datetime.fromisoformat(due.replace("Z", "+00:00")).strftime("%b %d")
-                    except:
+                    except Exception:
                         due = "soon"
                 else:
                     due = "no date"
@@ -80,7 +80,7 @@ class ChatEngine:
             task_block = "\n".join(task_lines)
         else:
             task_block = "  (No pending tasks — all caught up! 🎉)"
-        
+
         # Build habit list (limited to 8)
         habits = user_context.get("habits", [])[:MAX_HABITS_IN_CONTEXT]
         if habits:
@@ -93,17 +93,17 @@ class ChatEngine:
             habit_block = f"({done_count}/{len(habits)} done today)\n" + "\n".join(habit_lines)
         else:
             habit_block = "  (No habits set up yet)"
-        
+
         # Mood
         mood = user_context.get("today_mood")
         mood_labels = {1: "Rough 😔", 2: "Low 😕", 3: "Okay 😐", 4: "Good 🙂", 5: "Great 😊"}
         mood_text = mood_labels.get(mood, "Not logged") if mood else "Not logged"
-        
+
         # Memory context (truncated)
         if memory_context and len(memory_context) > MAX_MEMORY_TOKENS * 4:
             memory_context = memory_context[:MAX_MEMORY_TOKENS * 4] + "..."
         memory_block = memory_context if memory_context else "No relevant past entries."
-        
+
         if is_day_plan:
             return f"""You are Dost, a stoic productivity architect for {user_name}.
 
@@ -158,22 +158,22 @@ If user wants to CREATE something, output JSON at the END:
 ||JSON||{{"action": "create_task|create_habit|log_mood", "data": {{...}}}}
 
 Only output JSON for clear, actionable requests."""
-    
+
     def extract_actions(self, response_text: str) -> tuple[str, list]:
         """
         Extract action JSON blocks from Gemini response.
-        
+
         Returns:
             Tuple of (clean_message, actions_list)
         """
         actions = []
         clean_text = response_text
-        
+
         # Look for ||JSON|| blocks
         if "||JSON||" in response_text:
             parts = response_text.split("||JSON||")
             clean_text = parts[0].strip()
-            
+
             for json_part in parts[1:]:
                 try:
                     # Clean up markdown
@@ -185,7 +185,7 @@ Only output JSON for clear, actionable requests."""
                     if json_str.endswith("```"):
                         json_str = json_str[:-3]
                     json_str = json_str.strip()
-                    
+
                     # Parse JSON
                     action_data = json.loads(json_str)
                     if action_data:
@@ -194,9 +194,9 @@ Only output JSON for clear, actionable requests."""
                     self.logger.debug(f"Failed to parse action JSON: {e}")
                 except Exception:
                     pass
-        
+
         return clean_text, actions
-    
+
     def is_day_plan_request(self, message: str) -> bool:
         """Detect if user wants a day plan."""
         triggers = [
@@ -207,20 +207,20 @@ Only output JSON for clear, actionable requests."""
         ]
         lower = message.lower().strip()
         return any(t in lower for t in triggers)
-    
+
     # ─── Token Budget Constants as class attributes ────────────────────────────
     MAX_TASKS_IN_CONTEXT = MAX_TASKS_IN_CONTEXT
     MAX_HABITS_IN_CONTEXT = MAX_HABITS_IN_CONTEXT
-    
+
     def extract_casual_actions(self, message: str, habits: list, tasks: list) -> list:
         """
         Detect actions from casual conversation using NLP-style pattern matching.
-        
+
         Returns a list of action dicts that should be silently executed.
         """
         actions = []
         lower = message.lower().strip()
-        
+
         # Habit completion patterns
         habit_triggers = [
             # Exercise/Gym
@@ -237,7 +237,7 @@ Only output JSON for clear, actionable requests."""
             # Coding/Work
             (r"\b(finished?|done with|completed?)\s+(coding|work|project|task)\b", ["coding", "code", "work", "project"]),
         ]
-        
+
         for pattern, keywords in habit_triggers:
             if re.search(pattern, lower):
                 for habit in habits:
@@ -251,7 +251,7 @@ Only output JSON for clear, actionable requests."""
                                 "habit_name": habit.get("title"),
                             })
                             break
-        
+
         # Mood detection patterns
         mood_patterns = [
             (r"\b(feeling|i'?m)\s+(great|amazing|fantastic|incredible|awesome|wonderful|excited|happy|energetic)\b", 9),
@@ -263,18 +263,18 @@ Only output JSON for clear, actionable requests."""
             (r"\b(feeling|i'?m)\s+(sad|down|low|depressed|rough|bad|terrible|awful)\b", 2),
             (r"\b(rough|hard|tough|difficult|bad)\s+day\b", 3),
         ]
-        
+
         for pattern, score in mood_patterns:
             if re.search(pattern, lower):
                 actions.append({"type": "log_mood", "score": score})
                 break
-        
+
         # Task completion patterns
         task_triggers = [
             r"\b(finished?|completed?|done with|submitted|sent)\s+(the\s+)?(.+?)\s*(report|project|assignment|task|email|presentation|document)\b",
             r"\bjust\s+(finished?|completed?|submitted|sent)\s+(.+)\b",
         ]
-        
+
         for pattern in task_triggers:
             match = re.search(pattern, lower)
             if match:
@@ -288,13 +288,13 @@ Only output JSON for clear, actionable requests."""
                             "task_name": task.get("title"),
                         })
                         break
-        
+
         return actions
-    
+
     def trim_history(self, history: list) -> list:
         """
         Trim chat history to save tokens.
-        
+
         - Max 6 messages
         - Each message truncated to 200 chars
         """
@@ -303,18 +303,18 @@ Only output JSON for clear, actionable requests."""
             parts = msg.get("parts", "")
             if isinstance(parts, list):
                 parts = " ".join(str(p) for p in parts)
-            
+
             # Truncate
             if len(parts) > MAX_MESSAGE_LENGTH:
                 parts = parts[:MAX_MESSAGE_LENGTH] + "..."
-            
+
             trimmed.append({
                 "role": msg.get("role", "user"),
                 "parts": parts,
             })
-        
+
         return trimmed
-    
+
     async def process_message(
         self,
         message: str,
@@ -325,33 +325,32 @@ Only output JSON for clear, actionable requests."""
     ) -> dict:
         """
         Process a chat message through the full pipeline.
-        
+
         This is the main entry point called by the router.
         Handles fetching context, building prompts, and generating response.
-        
+
         Args:
             message: The user's input
             user_id: User's unique ID
             user_name: User's display name
             history: Previous messages (list of {role, parts})
             db_pool: asyncpg connection pool
-        
+
         Returns:
             {"reply": str, "action": dict, "actions": list, "memory_used": bool, "context_used": bool}
         """
-        from . import ai_gateway
         from . import memory_engine
-        
+
         # Fetch user context from DB
         user_context = await self._fetch_user_context(user_id, db_pool)
-        
+
         # Detect casual actions (NLP)
         casual_actions = self.extract_casual_actions(
             message,
             user_context.get("habits", []),
             user_context.get("pending_tasks", []),
         )
-        
+
         # Get RAG memory context
         memory_context = ""
         try:
@@ -362,9 +361,9 @@ Only output JSON for clear, actionable requests."""
             )
         except Exception as e:
             self.logger.debug(f"Memory context failed: {e}")
-        
+
         is_day_plan = self.is_day_plan_request(message)
-        
+
         # Build system prompt
         system_prompt = self.build_system_prompt(
             user_context=user_context,
@@ -372,7 +371,7 @@ Only output JSON for clear, actionable requests."""
             memory_context=memory_context,
             is_day_plan=is_day_plan,
         )
-        
+
         try:
             # Generate response
             if history:
@@ -389,10 +388,10 @@ Only output JSON for clear, actionable requests."""
                     user_message=message,
                     max_tokens=400 if is_day_plan else 300,
                 )
-            
+
             # Extract structured actions from response
             clean_message, parsed_actions = self.extract_actions(response_text)
-            
+
             return {
                 "reply": clean_message,
                 "action": parsed_actions[0] if parsed_actions else None,
@@ -400,7 +399,7 @@ Only output JSON for clear, actionable requests."""
                 "memory_used": bool(memory_context),
                 "context_used": bool(user_context.get("pending_tasks") or user_context.get("habits")),
             }
-            
+
         except Exception as e:
             self.logger.error(f"Chat engine error: {e}")
             return {
@@ -410,20 +409,19 @@ Only output JSON for clear, actionable requests."""
                 "memory_used": False,
                 "context_used": False,
             }
-    
+
     async def _fetch_user_context(self, user_id: str, db_pool) -> dict:
         """Fetch live tasks, habits, and today's mood for the user."""
-        from datetime import date
-        
+
         context = {
             "pending_tasks": [],
             "habits": [],
             "today_mood": None,
         }
-        
+
         if not db_pool:
             return context
-        
+
         try:
             async with db_pool.acquire() as conn:
                 # Pending tasks
@@ -436,7 +434,7 @@ Only output JSON for clear, actionable requests."""
                 )
                 if tasks:
                     context["pending_tasks"] = [dict(t) for t in tasks]
-                
+
                 # Active habits with streak info
                 habits = await conn.fetch(
                     """SELECT id, title, category, streak, longest_streak, completed_dates
@@ -450,7 +448,7 @@ Only output JSON for clear, actionable requests."""
                         h_dict = dict(h)
                         h_dict["today_done"] = today_str in completed_dates if completed_dates else False
                         context["habits"].append(h_dict)
-                
+
                 # Today's journal mood
                 journal = await conn.fetchrow(
                     """SELECT mood FROM journal_entries
@@ -461,7 +459,7 @@ Only output JSON for clear, actionable requests."""
                     context["today_mood"] = journal.get("mood")
         except Exception as e:
             self.logger.debug(f"Failed to fetch context: {e}")
-        
+
         return context
 
 

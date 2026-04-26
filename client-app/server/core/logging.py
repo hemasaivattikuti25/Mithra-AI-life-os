@@ -11,13 +11,13 @@ class StructuredFormatter(logging.Formatter):
             "message": record.getMessage(),
             "module": record.name,
         }
-        
+
         if hasattr(record, "extra"):
             log_obj["context"] = record.extra
-            
+
         if record.exc_info:
             log_obj["error"] = self.formatException(record.exc_info)
-            
+
         return json.dumps(log_obj)
 
 def get_logger(name: str) -> logging.Logger:

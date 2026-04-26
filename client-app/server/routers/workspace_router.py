@@ -26,7 +26,7 @@ async def list_workspaces(current_user: dict = Depends(get_current_user)):
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
     try:
         async with pool.acquire() as conn:
@@ -35,26 +35,26 @@ async def list_workspaces(current_user: dict = Depends(get_current_user)):
                 "SELECT workspace_id, role FROM workspace_members WHERE user_id = $1",
                 user_id
             )
-            
+
             if not memberships:
                 return {"workspaces": []}
-            
+
             roles_map = {str(m["workspace_id"]): m["role"] for m in memberships}
             ws_ids = list(roles_map.keys())
-            
+
             # Fetch workspace details
             workspaces = await conn.fetch(
                 "SELECT * FROM workspaces WHERE id = ANY($1::uuid[])",
                 ws_ids
             )
-            
+
             # Fetch member counts for all these workspaces
             counts_result = await conn.fetch(
                 "SELECT workspace_id, COUNT(*) as cnt FROM workspace_members WHERE workspace_id = ANY($1::uuid[]) GROUP BY workspace_id",
                 ws_ids
             )
             counts = {str(c["workspace_id"]): c["cnt"] for c in counts_result}
-            
+
         results = []
         for ws in workspaces:
             ws_id = str(ws["id"])
@@ -67,7 +67,7 @@ async def list_workspaces(current_user: dict = Depends(get_current_user)):
                 "memberCount": counts.get(ws_id, 1),
                 "created_at": ws["created_at"].isoformat() if ws.get("created_at") else None
             })
-            
+
         return {"workspaces": results}
     except Exception as e:
         logger.error(f"Error listing workspaces: {e}")
@@ -121,7 +121,7 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
     try:
         async with pool.acquire() as conn:
@@ -130,10 +130,10 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
                 "SELECT id FROM workspaces WHERE share_link_hash = $1",
                 req.hash.strip()
             )
-            
+
             if not ws:
                 raise HTTPException(status_code=404, detail="Invalid invite link")
-            
+
             target_ws_id = str(ws["id"])
 
             # Check if already a member
@@ -150,7 +150,7 @@ async def join_workspace(req: JoinWorkspaceReq, current_user: dict = Depends(get
                    VALUES ($1, $2, 'member')""",
                 target_ws_id, user_id
             )
-        
+
         return {"success": True, "workspaceId": target_ws_id}
     except HTTPException:
         raise
@@ -164,7 +164,7 @@ async def delete_workspace(workspace_id: str, current_user: dict = Depends(get_c
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
     try:
         async with pool.acquire() as conn:
@@ -174,7 +174,7 @@ async def delete_workspace(workspace_id: str, current_user: dict = Depends(get_c
             )
             if not ws or ws["owner_id"] != user_id:
                 raise HTTPException(status_code=403, detail="Only the owner can delete this workspace.")
-            
+
             await conn.execute("DELETE FROM workspaces WHERE id = $1", workspace_id)
         return {"success": True}
     except HTTPException:
@@ -189,7 +189,7 @@ async def leave_workspace(workspace_id: str, current_user: dict = Depends(get_cu
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     user_id = current_user["id"]
     try:
         async with pool.acquire() as conn:
@@ -199,7 +199,7 @@ async def leave_workspace(workspace_id: str, current_user: dict = Depends(get_cu
             )
             if ws and ws["owner_id"] == user_id:
                 raise HTTPException(status_code=400, detail="Owner cannot leave the workspace. Delete it instead.")
-            
+
             await conn.execute(
                 "DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
                 workspace_id, user_id
@@ -217,7 +217,7 @@ async def get_workspace_members(workspace_id: str, current_user: dict = Depends(
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     try:
         async with pool.acquire() as conn:
             memberships = await conn.fetch(

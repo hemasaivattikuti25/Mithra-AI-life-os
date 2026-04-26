@@ -34,19 +34,19 @@ async def chat_with_dost(
 ):
     """
     AI chat with Dost — stoic companion with memory, context, and history.
-    
+
     This endpoint is THIN — all logic delegated to ChatEngine.
     """
     try:
         user_id = current_user["id"]
         user_name = current_user.get("fullName", "friend")
         db_pool = get_db()
-        
+
         # Convert history to simple format if provided
         history = None
         if request.history:
             history = [{"role": m.role, "parts": m.parts} for m in request.history]
-        
+
         # ═══ Delegate ALL logic to ChatEngine ═══
         result = await chat_engine.process_message(
             message=request.message,
@@ -55,11 +55,11 @@ async def chat_with_dost(
             history=history,
             db_pool=db_pool,
         )
-        
+
         # Add usage info to response
         result["usage"] = usage
         return result
-        
+
     except Exception as e:
         logger.error(f"Chat error: {e}")
         return {

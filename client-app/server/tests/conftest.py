@@ -9,7 +9,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Asyncio mode for pytest-asyncio
-import pytest
 
 def pytest_configure(config):
     config.addinivalue_line(
