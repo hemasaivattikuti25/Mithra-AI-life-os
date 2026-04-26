@@ -307,16 +307,25 @@ export default function PromoVideo() {
     const [currentScene, setCurrentScene] = useState(0);
     const [playing, setPlaying] = useState(false);
     const timerRef = useRef(null);
+    const audioRef = useRef(null);
 
     const startShowcase = () => {
         setPlaying(true);
         setCurrentScene(0);
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => {});
+        }
     };
 
     const stopShowcase = () => {
         setPlaying(false);
         if (timerRef.current) clearTimeout(timerRef.current);
         setCurrentScene(0);
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
     };
 
     useEffect(() => {
@@ -353,6 +362,7 @@ export default function PromoVideo() {
 
     return (
         <div className="fixed inset-0 bg-[#060810] text-white font-sans overflow-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <audio ref={audioRef} src="/promo/voiceover.mp3" preload="auto" />
             {/* Top Navigation Bar */}
             <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
                 <Link to="/" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 font-medium bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
