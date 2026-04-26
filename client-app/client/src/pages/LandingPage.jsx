@@ -1,464 +1,381 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
-  ArrowRight, Check, Github, Menu, X, Layout, Calendar, BookOpen, Clock, Zap,
-  Brain, Users, Linkedin, Globe, Rocket, Sparkles, Shield, TrendingUp
+    ArrowRight, CheckCircle2, Sparkles, Brain, Target, CalendarDays,
+    Users, Shield, Zap, ChevronRight, Activity, LineChart, Globe
 } from 'lucide-react';
 
-export default function LandingPage() {
-  const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-
-  const features = [
-    {
-      title: 'Smart Task Management',
-      desc: 'Subtasks, priorities, recurring schedules, and Kanban views.',
-      icon: Layout,
-      gradient: 'from-blue-500 to-cyan-500',
-      delay: 0,
-    },
-    {
-      title: 'Unified Calendar',
-      desc: 'Sync with Google Calendar. Time-block your day intelligently.',
-      icon: Calendar,
-      gradient: 'from-purple-500 to-pink-500',
-      delay: 0.1,
-    },
-    {
-      title: 'Habit Tracking',
-      desc: 'GitHub-style heatmaps, streaks, and focus timers.',
-      icon: Zap,
-      gradient: 'from-orange-500 to-yellow-500',
-      delay: 0.2,
-    },
-    {
-      title: 'Dost AI Companion',
-      desc: 'RAG-powered AI that remembers your tasks, moods, and goals.',
-      icon: Brain,
-      gradient: 'from-indigo-500 to-purple-500',
-      delay: 0.3,
-    },
-    {
-      title: 'Daily Journaling',
-      desc: 'Track emotions with mood scores and AI sentiment analysis.',
-      icon: BookOpen,
-      gradient: 'from-red-500 to-pink-500',
-      delay: 0.4,
-    },
-    {
-      title: 'Mithra Blend',
-      desc: 'Share workspaces with friends. Track accountability together.',
-      icon: Users,
-      gradient: 'from-teal-500 to-cyan-500',
-      delay: 0.5,
-    },
-  ];
-
-  return (
-    <div className={`min-h-screen overflow-hidden ${isDark ? 'bg-slate-950' : 'bg-white'}`}>
-      {/* Animated Background Gradient */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-white via-slate-50 to-white'}`} />
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-0 right-0 w-[500px] h-[500px] opacity-20 pointer-events-none"
-          style={{
-            background: isDark ? 'radial-gradient(circle, rgba(34,211,238,0.3) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-        />
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute bottom-0 left-0 w-[500px] h-[500px] opacity-20 pointer-events-none"
-          style={{
-            background: isDark ? 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-        />
-      </div>
-
-      {/* Navbar */}
-      <motion.nav
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors ${isDark ? 'bg-slate-950/80 border-slate-800/50' : 'bg-white/80 border-slate-200/50'}`}
-      >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <motion.div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate('/')}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <img src="/assets/logo.svg" alt="Mithra" className="w-7 h-7 rounded-lg shadow-lg" />
-            <span className={`font-bold text-lg ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>
-              Mithra <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Life OS</span>
-            </span>
-          </motion.div>
-
-          <div className="hidden md:flex items-center gap-8 text-sm">
-            {['Features', 'How It Works', 'About'].map((item) => (
-              <motion.a
-                key={item}
-                href={`#${item.toLowerCase().replace(' ', '-')}`}
-                className={`font-medium transition-colors hover:text-cyan-500 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-                whileHover={{ scale: 1.05 }}
-              >
-                {item}
-              </motion.a>
-            ))}
-            <motion.button
-              onClick={() => navigate('/auth')}
-              className={`font-semibold transition-colors ${isDark ? 'text-slate-400 hover:text-slate-50' : 'text-slate-600 hover:text-slate-900'}`}
-              whileHover={{ scale: 1.05 }}
-            >
-              Log in
-            </motion.button>
-            <motion.button
-              onClick={() => navigate('/auth')}
-              className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
-              whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(6,182,212,0.6)' }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Get Started
-            </motion.button>
-          </div>
-
-          <button className={`md:hidden ${isDark ? 'text-slate-400' : 'text-slate-600'}`} onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`md:hidden border-t px-6 py-4 space-y-3 ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-200'}`}
-          >
-            <a href="#features" className={`block py-2 font-medium ${isDark ? 'text-slate-400 hover:text-slate-50' : 'text-slate-600 hover:text-slate-900'}`}>Features</a>
-            <a href="#how-it-works" className={`block py-2 font-medium ${isDark ? 'text-slate-400 hover:text-slate-50' : 'text-slate-600 hover:text-slate-900'}`}>How It Works</a>
-            <button onClick={() => { setIsMenuOpen(false); navigate('/auth'); }} className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2.5 rounded-lg font-semibold">Get Started</button>
-          </motion.div>
-        )}
-      </motion.nav>
-
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-24 px-6 min-h-screen flex items-center justify-center">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="mb-8"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 mb-6">
-              <Sparkles size={16} className="text-cyan-500" />
-              <span className="text-sm font-medium text-cyan-500">Introducing Mithra Life OS</span>
-            </div>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className={`text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight ${isDark ? 'text-slate-50' : 'text-slate-900'}`}
-          >
-            One Workspace.
-            <br />
-            <span className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent animate-pulse">Your Entire Life.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className={`text-xl md:text-2xl mb-12 max-w-3xl mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
-          >
-            Master your tasks, habits, and emotions with AI. Sync with your calendar, journal beautifully, and stay accountable with friends.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
-          >
-            <motion.button
-              onClick={() => navigate('/auth')}
-              className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold flex items-center gap-2 hover:shadow-2xl hover:shadow-cyan-500/50 transition-all"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Start Free <ArrowRight size={20} />
-            </motion.button>
-            <motion.a
-              href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os"
-              target="_blank"
-              rel="noreferrer"
-              className={`px-8 py-4 border-2 rounded-xl font-semibold flex items-center gap-2 transition-all ${isDark ? 'border-slate-700 text-slate-200 hover:bg-slate-800/50' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Github size={20} /> GitHub
-            </motion.a>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className={`grid grid-cols-3 gap-6 max-w-2xl mx-auto pt-12 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}
-          >
-            {[
-              { value: '690+', label: 'Active Users' },
-              { value: '7+', label: 'Features' },
-              { value: '100%', label: 'Zero-Trust' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 + i * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-4xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">{stat.value}</div>
-                <div className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className={`py-24 px-6 ${isDark ? 'bg-gradient-to-b from-slate-900/50 to-slate-950' : 'bg-gradient-to-b from-slate-50 to-white'}`}>
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className={`text-5xl md:text-6xl font-bold mb-6 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>Powerful Features</h2>
-            <p className={`text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Everything built for elite productivity</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <FeatureCard key={i} {...feature} isDark={isDark} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className={`text-5xl md:text-6xl font-bold text-center mb-16 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}
-          >
-            Get Started in 3 Steps
-          </motion.h2>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: '01', title: 'Sign Up', desc: 'Create free account in 30 seconds', icon: Rocket },
-              { step: '02', title: 'Build Your Life', desc: 'Add tasks, habits, goals, journals', icon: TrendingUp },
-              { step: '03', title: 'Stay Accountable', desc: 'Share with friends, track together', icon: Users },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: i * 0.15 }}
-                viewport={{ once: true }}
-                className={`relative p-8 rounded-2xl border transition-all hover:shadow-xl ${isDark ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800/50' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'}`}
-              >
-                <div className={`text-4xl font-bold mb-4 bg-gradient-to-r ${i === 0 ? 'from-blue-500 to-cyan-500' : i === 1 ? 'from-purple-500 to-pink-500' : 'from-orange-500 to-red-500'} bg-clip-text text-transparent`}>{item.step}</div>
-                <h3 className={`text-2xl font-bold mb-2 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>{item.title}</h3>
-                <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Companion */}
-      <section className={`py-24 px-6 ${isDark ? 'bg-gradient-to-b from-slate-900/50 to-slate-950' : 'bg-gradient-to-b from-slate-50 to-white'}`}>
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="grid md:grid-cols-2 gap-12 items-center"
-          >
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 mb-6">
-                <Sparkles size={16} className="text-purple-500" />
-                <span className="text-sm font-medium text-purple-500">AI-Powered</span>
-              </div>
-              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>Dost: Your AI Companion</h2>
-              <p className={`text-lg mb-8 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                Unlike ordinary chatbots, Dost remembers your entire life. Using RAG (Retrieval Augmented Generation), it builds a deep understanding of your tasks, moods, and goals.
-              </p>
-              <ul className="space-y-4">
-                {['RAG-powered memory', 'Stoic guidance', 'Smart scheduling'].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                    viewport={{ once: true }}
-                    className="flex items-center gap-3"
-                  >
-                    <Check size={24} className="text-cyan-500 flex-shrink-0" />
-                    <span className={`text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item}</span>
-                  </motion.div>
-                ))}
-              </ul>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className={`rounded-2xl p-6 border ${isDark ? 'border-slate-800 bg-gradient-to-br from-slate-900/50 to-slate-800/50' : 'border-slate-200 bg-gradient-to-br from-white to-slate-50'}`}
-            >
-              <div className={`text-sm font-semibold mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Sample Conversation</div>
-              <div className="space-y-4">
-                <div className={`p-4 rounded-lg text-sm ${isDark ? 'bg-slate-700/50 text-slate-200' : 'bg-slate-200/50 text-slate-700'}`}>
-                  I'm feeling stressed about the deadline...
-                </div>
-                <div className="p-4 rounded-lg text-sm bg-gradient-to-r from-purple-500/20 to-cyan-500/20 text-slate-50">
-                  Based on your journal, you handle pressure well. Let me block 2-hour focus slots tomorrow. What time works?
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className={`text-5xl font-bold text-center mb-16 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}
-          >
-            Built by Engineers
-          </motion.h2>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className={`rounded-2xl p-12 border ${isDark ? 'border-slate-800 bg-gradient-to-br from-slate-900/50 to-slate-800/50' : 'border-slate-200 bg-gradient-to-br from-slate-50 to-white'}`}
-          >
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <img src="/assets/hemasai.jpeg" alt="Hemasai" className="w-32 h-32 rounded-xl object-cover shadow-lg flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className={`text-3xl font-bold mb-1 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>Hemasai Vattikuti</h3>
-                <p className="text-cyan-500 font-semibold mb-4">Backend & Applied AI Engineer</p>
-                <p className={`text-lg leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Engineered production systems at DRDL–DRDO (Ministry of Defence) with distributed databases and zero-trust security. Now shipping Mithra Life OS to 690+ users with RAG semantic search and enterprise-grade security.
-                </p>
-                <div className="flex gap-4">
-                  <motion.a
-                    href="https://github.com/hemasaivattikuti25"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <Github size={20} />
-                  </motion.a>
-                  <motion.a
-                    href="https://linkedin.com/in/hemasai-vattikuti"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <Linkedin size={20} />
-                  </motion.a>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA Footer */}
-      <section className={`py-24 px-6 text-center bg-gradient-to-b ${isDark ? 'from-slate-950 to-slate-900' : 'from-white to-slate-50'}`}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <h2 className={`text-5xl md:text-6xl font-bold mb-6 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>Ready to Transform?</h2>
-          <p className={`text-xl mb-10 max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Join 690+ users. No credit card. Forever free.
-          </p>
-          <motion.button
-            onClick={() => navigate('/auth')}
-            className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold flex items-center gap-3 mx-auto hover:shadow-2xl hover:shadow-cyan-500/50 transition-all"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Get Started Now <ArrowRight size={20} />
-          </motion.button>
-        </motion.div>
-      </section>
+// --- Background Components ---
+const AnimatedBackground = () => (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-[#0a0a0a]">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px] mix-blend-screen animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[150px] mix-blend-screen" style={{ animation: 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite reverse' }} />
+        <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-purple-500/10 blur-[100px] mix-blend-screen animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20" />
     </div>
-  );
-}
+);
 
-function FeatureCard({ title, desc, icon: Icon, gradient, delay, isDark }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+// --- Navbar ---
+const Navbar = ({ isAuthenticated, navigate }) => {
+    const [scrolled, setScrolled] = useState(false);
 
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay }}
-      className={`group relative p-8 rounded-2xl border overflow-hidden transition-all hover:shadow-xl cursor-pointer ${isDark ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800/50' : 'border-slate-200 bg-white/50 hover:bg-slate-100/50'}`}
-      whileHover={{ y: -4 }}
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    return (
+        <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+            <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+                        <Sparkles size={18} className="text-white" />
+                    </div>
+                    <span className="text-xl font-bold tracking-tight text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>Mithra</span>
+                </div>
+                <div className="hidden md:flex items-center gap-8">
+                    <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
+                    <a href="#ai" className="text-sm text-gray-400 hover:text-white transition-colors">Dost AI</a>
+                    <a href="#testimonials" className="text-sm text-gray-400 hover:text-white transition-colors">Reviews</a>
+                </div>
+                <div className="flex items-center gap-4">
+                    {isAuthenticated ? (
+                        <button onClick={() => navigate('/dashboard')} className="px-5 py-2.5 rounded-full text-sm font-medium bg-white text-black hover:bg-gray-100 transition-colors">
+                            Go to Dashboard
+                        </button>
+                    ) : (
+                        <>
+                            <Link to="/auth" className="text-sm font-medium text-gray-300 hover:text-white transition-colors hidden sm:block">Log in</Link>
+                            <Link to="/auth" className="px-5 py-2.5 rounded-full text-sm font-medium bg-white text-black hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                Get Started
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </div>
+        </nav>
+    );
+};
+
+// --- Hero Section ---
+const Hero = ({ navigate, isAuthenticated }) => {
+    return (
+        <section className="relative pt-40 pb-20 px-6 overflow-hidden min-h-screen flex items-center">
+            <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="relative z-10"
+                >
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-cyan-400 mb-6 backdrop-blur-sm">
+                        <Sparkles size={14} /> Introducing Mithra Life OS 2.0
+                    </div>
+                    <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                        Your mind, <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+                            beautifully organized.
+                        </span>
+                    </h1>
+                    <p className="text-lg text-gray-400 mb-8 max-w-xl leading-relaxed">
+                        The world's first AI-native life operating system. Manage tasks, build atomic habits, track your mood, and let Dost AI optimize your schedule autonomously.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <button
+                            onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')}
+                            className="group flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-medium bg-white text-black hover:bg-gray-100 transition-all hover:scale-105 active:scale-95"
+                        >
+                            Start for free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        <Link to="/promo-video" className="flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-medium bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors">
+                            Watch Demo
+                        </Link>
+                    </div>
+                    
+                    <div className="mt-12 flex items-center gap-6 text-sm text-gray-500">
+                        <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-cyan-500" /> No credit card required</div>
+                        <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-cyan-500" /> Free forever plan</div>
+                    </div>
+                </motion.div>
+
+                {/* Dashboard Mockup */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+                    animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                    transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                    className="relative lg:h-[600px] perspective-1000"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 rounded-2xl blur-3xl" />
+                    <div className="relative h-full w-full rounded-2xl border border-white/10 bg-[#121212]/90 backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col">
+                        {/* Mockup Header */}
+                        <div className="h-12 border-b border-white/5 flex items-center px-4 gap-2 bg-black/40">
+                            <div className="flex gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                            </div>
+                            <div className="mx-auto px-4 py-1 rounded-md bg-white/5 text-[10px] text-gray-500 font-mono">mithra-lifeos.com</div>
+                        </div>
+                        {/* Mockup Body */}
+                        <div className="p-6 flex-1 flex flex-col gap-4">
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-1">Good morning, Alex</h3>
+                                    <p className="text-xs text-gray-400">Here's your optimized day.</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 border-2 border-black" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="flex items-center gap-2 mb-2"><Target size={14} className="text-cyan-400" /><span className="text-xs font-medium text-gray-300">Deep Work</span></div>
+                                    <div className="text-2xl font-bold text-white">4h 20m</div>
+                                    <div className="text-[10px] text-green-400 mt-1">+12% from yesterday</div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-purple-400" /><span className="text-xs font-medium text-gray-300">Energy Score</span></div>
+                                    <div className="text-2xl font-bold text-white">92/100</div>
+                                    <div className="text-[10px] text-gray-400 mt-1">Optimal state</div>
+                                </div>
+                            </div>
+                            <div className="flex-1 rounded-xl bg-white/5 border border-white/5 p-4 mt-2">
+                                <h4 className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">Up Next</h4>
+                                <div className="space-y-2">
+                                    {[
+                                        { t: 'Review Q3 Metrics', time: '10:00 AM', d: true },
+                                        { t: 'Team Standup', time: '11:30 AM', d: false },
+                                        { t: 'Workout (Leg Day)', time: '5:00 PM', d: false }
+                                    ].map((task, i) => (
+                                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-black/40 border border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-4 h-4 rounded-full border ${task.d ? 'border-cyan-500 bg-cyan-500/20' : 'border-gray-600'} flex items-center justify-center`}>
+                                                    {task.d && <CheckCircle2 size={10} className="text-cyan-400" />}
+                                                </div>
+                                                <span className={`text-sm ${task.d ? 'text-gray-500 line-through' : 'text-gray-200'}`}>{task.t}</span>
+                                            </div>
+                                            <span className="text-xs text-gray-500 font-mono">{task.time}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </section>
+    );
+};
+
+// --- Features Section ---
+const FeatureCard = ({ icon: Icon, title, description, color }) => (
+    <motion.div 
+        whileHover={{ y: -5 }}
+        className="p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative overflow-hidden group"
     >
-      {/* Gradient Background */}
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-br ${gradient}`} />
-
-      <div className={`relative z-10 w-14 h-14 rounded-lg mb-6 flex items-center justify-center bg-gradient-to-br ${gradient} text-white`}>
-        <Icon size={28} />
-      </div>
-
-      <h3 className={`text-xl font-bold mb-3 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>{title}</h3>
-      <p className={`mb-6 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{desc}</p>
-
-      <motion.div
-        className="flex items-center gap-2 text-cyan-500 font-semibold group-hover:gap-4 transition-all"
-        whileHover={{ x: 8 }}
-      >
-        Learn More <ArrowRight size={16} />
-      </motion.div>
+        <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} bg-opacity-20 flex items-center justify-center mb-6`}>
+            <Icon size={24} className="text-white" />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>{title}</h3>
+        <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
     </motion.div>
-  );
+);
+
+const Features = () => {
+    return (
+        <section id="features" className="py-24 px-6 relative z-10">
+            <div className="max-w-7xl mx-auto">
+                <div className="text-center mb-16 max-w-2xl mx-auto">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                        Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">operate at your peak.</span>
+                    </h2>
+                    <p className="text-gray-400">Replace 5 different apps with one unified, AI-powered system designed for focus and clarity.</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <FeatureCard 
+                        icon={Brain} 
+                        title="Dost AI" 
+                        description="Your proactive AI companion. It analyzes your habits, suggests schedule optimizations, and acts as a sounding board for your thoughts."
+                        color="from-purple-500 to-pink-500"
+                    />
+                    <FeatureCard 
+                        icon={Target} 
+                        title="Habit Focus Hub" 
+                        description="Build atomic habits with beautiful streak tracking, heatmaps, and smart reminders that adapt to your schedule."
+                        color="from-cyan-500 to-blue-500"
+                    />
+                    <FeatureCard 
+                        icon={CalendarDays} 
+                        title="Smart Calendar" 
+                        description="Two-way sync with Google Calendar. Time-block your tasks automatically based on priority and your energy levels."
+                        color="from-green-500 to-emerald-500"
+                    />
+                    <FeatureCard 
+                        icon={LineChart} 
+                        title="Life Analytics" 
+                        description="Quantify your life. See correlations between your sleep, mood, and productivity with gorgeous, interactive charts."
+                        color="from-orange-500 to-red-500"
+                    />
+                    <FeatureCard 
+                        icon={Users} 
+                        title="Mithra Blend" 
+                        description="Collaborate with friends or colleagues. Share specific habit goals, track joint projects, and build accountability."
+                        color="from-blue-500 to-indigo-500"
+                    />
+                    <FeatureCard 
+                        icon={Shield} 
+                        title="Local-First Privacy" 
+                        description="Your data is encrypted and works completely offline. Syncs instantly to the cloud the moment you reconnect."
+                        color="from-slate-400 to-slate-600"
+                    />
+                </div>
+            </div>
+        </section>
+    );
+};
+
+// --- Stats Section ---
+const Stats = () => (
+    <section className="py-20 px-6 border-y border-white/5 bg-white/[0.02]">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-white/5">
+            {[
+                { label: 'Tasks Completed', value: '2.4M+' },
+                { label: 'Active Users', value: '50k+' },
+                { label: 'Hours Saved/Week', value: '12.5h' },
+                { label: 'Uptime', value: '99.99%' }
+            ].map((stat, i) => (
+                <div key={i} className="text-center px-4">
+                    <div className="text-3xl sm:text-4xl font-bold text-white mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>{stat.value}</div>
+                    <div className="text-xs sm:text-sm text-gray-500 font-medium uppercase tracking-wider">{stat.label}</div>
+                </div>
+            ))}
+        </div>
+    </section>
+);
+
+// --- AI Demo Section ---
+const AIDemo = () => {
+    return (
+        <section id="ai" className="py-24 px-6 relative z-10">
+            <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs font-medium text-purple-400 mb-6">
+                        <Brain size={14} /> Powered by Gemini 1.5 Pro
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                        Meet Dost.<br />
+                        Your cognitive co-pilot.
+                    </h2>
+                    <p className="text-gray-400 mb-8 leading-relaxed">
+                        Dost isn't just a chatbot. It has full context of your tasks, habits, calendar, and journal entries. It proactively suggests schedule changes, helps you break down complex projects, and identifies patterns in your mood.
+                    </p>
+                    <ul className="space-y-4 mb-8">
+                        {[
+                            'Auto-schedules tasks into free calendar slots',
+                            'Detects burnout patterns before they happen',
+                            'Breaks down overwhelming goals into atomic steps'
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                                <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                    <CheckCircle2 size={14} className="text-purple-400" />
+                                </div>
+                                <span className="text-gray-300">{item}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                
+                {/* Chat Mockup */}
+                <div className="relative">
+                    <div className="absolute inset-0 bg-purple-500/20 blur-[100px] rounded-full" />
+                    <div className="relative rounded-2xl border border-white/10 bg-[#1a1a1a]/80 backdrop-blur-xl overflow-hidden shadow-2xl p-6">
+                        <div className="space-y-6">
+                            <div className="flex gap-4">
+                                <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
+                                <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm p-4 text-sm text-gray-200">
+                                    I feel completely overwhelmed this week. I have 3 major project deadlines and haven't worked out in 4 days.
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 shrink-0 flex items-center justify-center">
+                                    <Sparkles size={14} className="text-white" />
+                                </div>
+                                <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl rounded-tl-sm p-4 text-sm text-gray-200">
+                                    <p className="mb-3">I see you're stressed. Let's fix this. Looking at your calendar, Thursday is completely packed, but tomorrow morning is light.</p>
+                                    <p className="mb-3">I've proactively generated a revised schedule:</p>
+                                    <div className="bg-black/40 rounded-lg p-3 border border-white/5 font-mono text-xs text-gray-400 space-y-1">
+                                        <div className="text-white">1. Moved "Project A Review" to Wed 9AM.</div>
+                                        <div>2. Scheduled a 30m run for tomorrow at 7AM.</div>
+                                        <div>3. Blocked Thursday afternoon for deep work.</div>
+                                    </div>
+                                    <p className="mt-3 text-cyan-400 font-medium cursor-pointer hover:underline">Apply these changes?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+// --- Footer ---
+const Footer = () => (
+    <footer className="border-t border-white/10 bg-black pt-16 pb-8 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            <div className="col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+                        <Sparkles size={12} className="text-white" />
+                    </div>
+                    <span className="text-lg font-bold text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>Mithra</span>
+                </div>
+                <p className="text-sm text-gray-400 max-w-xs">
+                    The premium life operating system designed for high performers. Organize, automate, and elevate your life.
+                </p>
+            </div>
+            <div>
+                <h4 className="text-white font-medium mb-4">Product</h4>
+                <ul className="space-y-2 text-sm text-gray-400">
+                    <li><a href="#features" className="hover:text-cyan-400 transition-colors">Features</a></li>
+                    <li><a href="#ai" className="hover:text-cyan-400 transition-colors">Dost AI</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Pricing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 className="text-white font-medium mb-4">Legal</h4>
+                <ul className="space-y-2 text-sm text-gray-400">
+                    <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</Link></li>
+                    <li><Link to="/terms" className="hover:text-cyan-400 transition-colors">Terms of Service</Link></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+            <p>© {new Date().getFullYear()} Mithra AI. All rights reserved.</p>
+            <p>Designed with precision.</p>
+        </div>
+    </footer>
+);
+
+export default function LandingPage() {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+
+    return (
+        <div className="min-h-screen bg-[#0a0a0a] text-gray-200 selection:bg-cyan-500/30 font-sans">
+            <AnimatedBackground />
+            <Navbar isAuthenticated={isAuthenticated} navigate={navigate} />
+            <main>
+                <Hero navigate={navigate} isAuthenticated={isAuthenticated} />
+                <Stats />
+                <Features />
+                <AIDemo />
+            </main>
+            <Footer />
+        </div>
+    );
 }

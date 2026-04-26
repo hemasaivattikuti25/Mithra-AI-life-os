@@ -452,8 +452,7 @@ export default function Settings() {
                     onClick={saveProfile}
                     whileTap={{ scale: 0.95 }}
                     disabled={profileSaving}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60" style={{ color: 'var(--text-primary)' }}
-                    style={{ background: 'var(--accent-color)' }}>
+                    className="px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                     {profileSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     Save
                   </motion.button>
@@ -829,8 +828,7 @@ export default function Settings() {
                       Cancel
                     </button>
                     <button type="submit" disabled={pwLoading}
-                      className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60" style={{ color: 'var(--text-primary)' }}
-                      style={{ background: 'var(--accent-color)' }}>
+                      className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                       {pwLoading ? <Loader2 size={14} className="animate-spin" /> : 'Update Password'}
                     </button>
                   </div>

@@ -1,39 +1,39 @@
-# Mithra AI — Render Blueprint
-# https://render.com/docs/blueprint-spec
-
 services:
   - type: web
-    name: mithra-api
-    runtime: python
-    region: oregon  # or your preferred region
-
-    # The server code lives in client-app/server/
-    rootDir: client-app/server
-
-    # Build: install Python dependencies
-    buildCommand: pip install -r requirements.txt
-
-    # Start: uvicorn with Render-optimized flags
-    # - 1 worker (free tier has 512MB RAM)
-    # - timeout-keep-alive 30 (Render kills idle connections)
-    # - $PORT is auto-set by Render
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 30
-
-    # Health check — lightweight /ping endpoint (no DB call)
+    name: mithra-backend
+    env: python
+    buildCommand: "cd client-app/server && pip install -r requirements.txt"
+    startCommand: "cd client-app/server && uvicorn main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /ping
-
-    # Free tier
-    plan: free
-
-    # Environment variables (set values in Render Dashboard)
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: "https://mithra-lifeos.com,https://www.mithra-lifeos.com"
       - key: NEON_DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      - key: ENVIRONMENT
-        value: production
-      - key: PYTHON_VERSION
-        value: "3.11.0"
+
+  - type: web
+    name: mithra-frontend
+    env: static
+    buildCommand: "cd client-app/client && npm install && npm run build"
+    staticPublishPath: client-app/client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 20.x
+      - key: VITE_API_URL
+        value: https://mithra-backend.onrender.com
+      - key: VITE_REQUIRE_AUTH
+        value: "true"
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false

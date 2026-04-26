@@ -1,33 +1,25 @@
-"""
-Centralized Plan Enforcement Middleware
-
-Checks user plan and usage BEFORE any gated endpoint runs.
-Used as a FastAPI dependency, not as middleware — gives per-route control.
-
-Usage:
-    from core.plan_gate import require_ai_access
-
-    @router.post("/chat")
-    async def chat(current_user = Depends(get_current_user), usage = Depends(require_ai_access)):
-        # usage = {'allowed': True, 'current': 5, 'limit': 20, 'plan': 'free'}
-        ...
-"""
-
 from fastapi import Depends, HTTPException
 from datetime import date
 from core.security import get_current_user
 from core.config import get_db
 
-
 async def get_plan_info(current_user: dict = Depends(get_current_user)) -> dict:
-    """Get user's plan info without enforcing limits."""
     pool = get_db()
     if not pool:
         return {"plan_id": "free", "daily_ai_limit": 20, "today_ai_calls": 0, "status": "active"}
 
     try:
         async with pool.acquire() as conn:
-            # Check ai_usage for today
+            plan = await conn.fetchrow("""
+                SELECT p.id, p.daily_ai_limit 
+                FROM plans p 
+                LEFT JOIN user_plans up ON p.id = up.plan_id AND up.user_id = $1
+                ORDER BY up.started_at DESC NULLS LAST LIMIT 1
+            """, current_user["id"])
+            
+            plan_id = plan["id"] if plan else "free"
+            daily_limit = plan["daily_ai_limit"] if plan else 20
+            
             today = date.today().isoformat()
             row = await conn.fetchrow(
                 "SELECT calls_today FROM ai_usage WHERE user_id = $1 AND usage_date = $2",
@@ -36,8 +28,8 @@ async def get_plan_info(current_user: dict = Depends(get_current_user)) -> dict:
             today_calls = row["calls_today"] if row else 0
 
         return {
-            "plan_id": "free",
-            "daily_ai_limit": 20,
+            "plan_id": plan_id,
+            "daily_ai_limit": daily_limit,
             "today_ai_calls": today_calls,
             "status": "active"
         }
@@ -46,21 +38,18 @@ async def get_plan_info(current_user: dict = Depends(get_current_user)) -> dict:
 
 
 async def require_ai_access(current_user: dict = Depends(get_current_user)) -> dict:
-    """
-    Dependency that atomically checks AND increments AI usage.
-    Raises 429 if the user has exceeded their daily limit.
-    Returns usage info dict on success.
-    """
     pool = get_db()
     if not pool:
         return {"allowed": True, "current": 0, "limit": None, "plan": "free"}
 
-    daily_limit = 20  # Free plan limit
     today = date.today().isoformat()
 
     try:
+        plan_info = await get_plan_info(current_user=current_user)
+        daily_limit = plan_info["daily_ai_limit"]
+        plan_id = plan_info["plan_id"]
+
         async with pool.acquire() as conn:
-            # Upsert and increment in one query
             row = await conn.fetchrow(
                 """INSERT INTO ai_usage (user_id, usage_date, calls_today)
                    VALUES ($1, $2, 1)
@@ -75,7 +64,7 @@ async def require_ai_access(current_user: dict = Depends(get_current_user)) -> d
             "allowed": current_calls <= daily_limit,
             "current": current_calls,
             "limit": daily_limit,
-            "plan": "free"
+            "plan": plan_id
         }
 
         if not usage["allowed"]:
@@ -83,7 +72,7 @@ async def require_ai_access(current_user: dict = Depends(get_current_user)) -> d
                 status_code=429,
                 detail={
                     "error": "daily_limit_exceeded",
-                    "message": f"You've used all {daily_limit} AI messages for today on the Free plan.",
+                    "message": f"You've used all {daily_limit} AI messages for today on the {plan_id.title()} plan.",
                     "upgrade_url": "/settings#plan",
                     "usage": usage,
                 },
@@ -92,6 +81,6 @@ async def require_ai_access(current_user: dict = Depends(get_current_user)) -> d
         return usage
 
     except HTTPException:
-        raise  # Re-raise our 429
+        raise
     except Exception:
         return {"allowed": True, "current": 0, "limit": 20, "plan": "free"}
