@@ -329,7 +329,7 @@ const REMINDER_OPTIONS = [
   { value: 1440, label: '1 day before' },
 ];
 
-const today = new Date();
+
 
 /* ── localStorage helpers ── */
 const loadFromStorage = (key, fallback) => {
@@ -396,19 +396,6 @@ export const saveUserStorage = (baseKey, value) => {
 
 /* ── initial tasks — empty for new users ── */
 const INITIAL_TASKS = [];
-
-/* ── initial habits ── */
-function generateConsistency(probability) {
-  const start = new Date(new Date().getFullYear(), 0, 1);
-  const today = new Date();
-  const days = [];
-  let d = new Date(start);
-  while (d <= today) {
-    if (Math.random() < probability) days.push(format(d, 'yyyy-MM-dd'));
-    d = addDays(d, 1);
-  }
-  return days;
-}
 
 const INITIAL_HABITS = [];
 
@@ -496,6 +483,7 @@ export function DataProvider({ children }) {
   const [xp, setXp] = useState(() => loadFromStorage('gamification-xp', 0));
   const [badges, setBadges] = useState(() => loadFromStorage('gamification-badges', []));
   const [xpPopup, setXpPopup] = useState(null); // { amount, reason } — transient
+  const xpTimerRef = useRef(null); // track popup timer for cleanup
 
   // Persist settings to localStorage whenever they change
   useEffect(() => { saveToStorage('theme', theme); }, [theme]);
@@ -610,8 +598,13 @@ export function DataProvider({ children }) {
   const awardXP = useCallback((amount, reason) => {
     setXp(prev => prev + amount);
     setXpPopup({ amount, reason });
-    setTimeout(() => setXpPopup(null), 2500);
+    // Clear any previous timer to avoid stacking popups
+    if (xpTimerRef.current) clearTimeout(xpTimerRef.current);
+    xpTimerRef.current = setTimeout(() => setXpPopup(null), 2500);
   }, []);
+
+  // Cleanup XP popup timer on unmount
+  useEffect(() => () => { if (xpTimerRef.current) clearTimeout(xpTimerRef.current); }, []);
 
   const checkBadges = useCallback((stats) => {
     const newBadges = [];

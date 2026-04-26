@@ -139,6 +139,17 @@ export function AuthProvider({ children }) {
      SIGN UP — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signUp = useCallback(async ({ fullName, email, password }) => {
+    // SECURITY: Validate email format and password strength even in offline mode
+    if (!email || !email.includes('@')) {
+      throw new Error('Invalid email address');
+    }
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
+    }
+    if (!fullName || fullName.trim().length < 2) {
+      throw new Error('Full name is required');
+    }
+    
     if (isFirebaseConfigured) {
       const result = await authService.signUp(email, password, fullName);
       if (!result?.user) throw new Error('Sign up failed - please try again');
@@ -159,7 +170,8 @@ export function AuthProvider({ children }) {
       return authUser;
     }
 
-    // localStorage fallback path
+    // OFFLINE MODE - With validation requirements
+    console.warn('[AuthContext] Running in offline mode - user data is NOT backed up to cloud');
     const users = loadUsers();
     const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (exists) throw new Error('An account with this email already exists');
@@ -173,6 +185,7 @@ export function AuthProvider({ children }) {
       password: hashedPassword,
       salt,
       createdAt: new Date().toISOString(),
+      isOfflineOnly: true, // Mark as offline-only for auditing
     };
 
     clearOldUserData(newUser.id);
@@ -195,7 +208,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const authUser = { id: newUser.id, email: newUser.email };
+    const authUser = { id: newUser.id, email: newUser.email, isOfflineOnly: true };
     setUser(authUser);
     setProfile(prev => ({
       ...prev,
@@ -210,6 +223,14 @@ export function AuthProvider({ children }) {
      SIGN IN — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signIn = useCallback(async ({ email, password }) => {
+    // SECURITY: Validate email format and password strength even in offline mode
+    if (!email || !email.includes('@')) {
+      throw new Error('Invalid email address');
+    }
+    if (!password || password.length < 1) {
+      throw new Error('Password is required');
+    }
+    
     if (isFirebaseConfigured) {
       const result = await authService.signIn(email, password);
       if (!result?.user) throw new Error('Sign in failed — no user returned');
@@ -225,7 +246,8 @@ export function AuthProvider({ children }) {
       return authUser;
     }
 
-    // localStorage fallback path
+    // OFFLINE MODE - localStorage fallback path with validation
+    console.warn('[AuthContext] Using offline mode - data is not synced to cloud');
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!found) throw new Error('No account found with this email');
@@ -243,7 +265,7 @@ export function AuthProvider({ children }) {
       try { localStorage.setItem('mithra-users', JSON.stringify(users)); } catch { }
     }
 
-    const authUser = { id: found.id, email: found.email };
+    const authUser = { id: found.id, email: found.email, isOfflineOnly: found.isOfflineOnly };
     setUser(authUser);
 
     try {
@@ -381,7 +403,7 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   /* ── Helper: cache Firebase user locally for offline access ── */
-  const _cacheUserLocally = async ({ fullName, email, password, id }) => {
+  const _cacheUserLocally = useCallback(async ({ fullName, email, password, id }) => {
     try {
       const users = loadUsers();
       if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
@@ -391,7 +413,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('mithra-users', JSON.stringify(users));
       }
     } catch { }
-  };
+  }, []);
 
   const value = useMemo(() => ({
     user, profile, isAuthenticated, loading,

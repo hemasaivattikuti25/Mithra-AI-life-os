@@ -62,7 +62,7 @@ const AddTaskModal = ({ isOpen, onClose, onSave, taskLists, initialCategory }) =
   const handleSave = () => {
     if (!title.trim()) return;
     onSave({
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       title: title.trim(),
       details: description.trim(),
       listId: category,
@@ -562,14 +562,18 @@ export default function MithraTasks() {
     if (!user) return;
     workspaceService.getWorkspaces(user.id)
       .then(ws => { if (ws.length > 0) setBlendWorkspace(ws[0]); })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('[Tasks] Failed to load workspaces:', err.message);
+      });
   }, [user]);
 
   useEffect(() => {
     if (!blendWorkspace) return;
     workspaceService.getWorkspaceTasks(blendWorkspace.id)
       .then(setBlendTasks)
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('[Tasks] Failed to load workspace tasks:', err.message);
+      });
   }, [blendWorkspace]);
 
   const completeBlendTask = async (taskId) => {
@@ -580,7 +584,8 @@ export default function MithraTasks() {
       });
       setBlendTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (error) {
-      // completeBlendTask failed silently
+      console.error('[Tasks] Failed to complete blend task:', error.message);
+      // Optionally show user feedback here
     }
   };
 
@@ -715,7 +720,7 @@ export default function MithraTasks() {
         setSelectedTask(updated);
       }
     }
-  }, [tasks]);
+  }, [tasks, selectedTask]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

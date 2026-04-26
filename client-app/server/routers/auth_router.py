@@ -13,6 +13,8 @@ import logging
 
 from core.config import get_db
 from core.security import get_current_user
+from core.validators import InputValidator
+from core.errors import ValidationError, MithraError
 
 router = APIRouter()
 logger = logging.getLogger("auth_router")
@@ -33,11 +35,19 @@ async def sync_profile(req: ProfileSync, current_user: dict = Depends(get_curren
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    user_id = current_user["id"]
-    email = current_user.get("email", "")
-    display_name = req.displayName or current_user.get("fullName", email.split("@")[0])
-
     try:
+        # Validate email from token
+        email = current_user.get("email", "")
+        InputValidator.validate_email(email)
+        
+        # Validate optional display name
+        if req.displayName:
+            display_name = InputValidator.validate_string(req.displayName, min_length=1, max_length=100)
+        else:
+            display_name = current_user.get("fullName", email.split("@")[0])
+        
+        user_id = current_user["id"]
+
         async with pool.acquire() as conn:
             # Upsert profile
             await conn.execute(
@@ -50,9 +60,15 @@ async def sync_profile(req: ProfileSync, current_user: dict = Depends(get_curren
                 user_id, email, display_name, req.avatarUrl
             )
         return {"success": True, "userId": user_id}
+    except ValidationError as e:
+        logger.warning(f"Profile sync validation failed: {e}")
+        raise HTTPException(status_code=422, detail=e.message)
+    except MithraError as e:
+        logger.error(f"Profile sync error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Profile sync failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Profile sync failed")
 
 
 @router.delete("/account")
@@ -84,9 +100,12 @@ async def delete_account(current_user: dict = Depends(get_current_user)):
 
         logger.info(f"Account data deleted for user {user_id}")
         return {"success": True, "message": "Account data deleted"}
-    except Exception as e:
-        logger.error(f"Account deletion failed: {e}")
+    except MithraError as e:
+        logger.error(f"Account deletion failed with MithraError: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Account deletion failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Account deletion failed")
 
 
 @router.get("/me")

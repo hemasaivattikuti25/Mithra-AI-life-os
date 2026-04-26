@@ -11,7 +11,7 @@ export default function Terms() {
             <div className="max-w-3xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm mb-8 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-sm mb-8 transition-colors"
                     style={{ color: '#888' }}
                 >
                     <ArrowLeft size={16} /> Back
@@ -36,42 +36,42 @@ export default function Terms() {
 
                     <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#A3A3A3' }}>
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">1. Agreement to Terms</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>1. Agreement to Terms</h2>
                             <p>
                                 By accessing or using Mithra Life OS, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, then you may not access the Service.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">2. User Accounts</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>2. User Accounts</h2>
                             <p>
                                 When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">3. Intellectual Property</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>3. Intellectual Property</h2>
                             <p>
                                 The Service and its original content (excluding Content provided by users), features, and functionality are and will remain the exclusive property of Mithra Life OS and its licensors.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">4. Termination</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>4. Termination</h2>
                             <p>
                                 We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">5. Limitation of Liability</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>5. Limitation of Liability</h2>
                             <p>
                                 In no event shall Mithra Life OS, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">6. Changes</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>6. Changes</h2>
                             <p>
                                 We reserve the right, at our sole discretion, to modify or replace these Terms at any time. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.
                             </p>

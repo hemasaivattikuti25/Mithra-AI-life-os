@@ -12,7 +12,22 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    console.error('[ErrorBoundary] Caught error:', {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Log to monitoring service if available
+    if (window.__mithra_error_logger) {
+      window.__mithra_error_logger({
+        type: 'ERROR_BOUNDARY',
+        error: error.message,
+        componentStack: errorInfo.componentStack,
+        severity: 'error',
+      });
+    }
   }
 
   handleReset = () => {

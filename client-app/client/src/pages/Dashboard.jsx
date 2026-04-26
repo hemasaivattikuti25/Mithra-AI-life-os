@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sun, Moon, CloudSun, Calendar, CheckCircle2, Circle,
@@ -18,6 +18,7 @@ import EmptyState from '../components/EmptyState';
 import PullToRefresh from '../components/PullToRefresh';
 import ShareStatsCard from '../components/ShareStatsCard';
 import WeeklyReport from '../components/WeeklyReport';
+import { PageErrorBoundary } from '../components/ErrorBoundary';
 
 /* ───── animation config ───── */
 const luxuryEase = [0.22, 1, 0.36, 1];
@@ -174,7 +175,7 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
 /* ═══════════════════════════════════════════
    DASHBOARD — Royal Merino + Black Glassmorphism
    ═══════════════════════════════════════════ */
-export default function Dashboard() {
+function Dashboard() {
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSaved, setMoodSaved] = useState(false);
   const [moodHistory, setMoodHistory] = useState(() => {
@@ -199,11 +200,13 @@ export default function Dashboard() {
     try { return localStorage.getItem(getUserScopedKey('focus-sessions')) || '0'; } catch { return '0'; }
   }, []);
 
-  // ── Load mood history from API on mount ──
+  // ── Load mood history from API on mount (with AbortController cleanup) ──
   useEffect(() => {
     if (!isFirebaseConfigured || !user?.id) return;
+    const controller = new AbortController();
     apiFetch('/mood-logs?limit=30')
       .then((res) => {
+        if (controller.signal.aborted) return;
         const data = res.moodLogs || res.data || [];
         if (data.length > 0) {
           const formatted = data.map(r => ({
@@ -215,7 +218,13 @@ export default function Dashboard() {
           localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(formatted));
         }
       })
-      .catch(() => { }); // localStorage cache already loaded in useState
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          console.error('[Dashboard] Failed to load mood history from API:', err);
+        }
+        // localStorage cache already loaded in useState as fallback
+      });
+    return () => controller.abort();
   }, [user?.id]);
 
   /* ── Today's events from real calendar data (deduplicated) ── */
@@ -283,9 +292,15 @@ export default function Dashboard() {
     return [];
   }, [realTasks]);
 
+  // Race-condition guard for toggle operations
+  const togglingRef = useRef(new Set());
+
   const toggleTask = (id) => {
+    if (togglingRef.current.has(id)) return; // prevent double-tap race
+    togglingRef.current.add(id);
     notificationManager.hapticLight();
     if (ctxToggleTask) ctxToggleTask(id);
+    setTimeout(() => togglingRef.current.delete(id), 500);
   };
 
   const handleRefresh = async () => {
@@ -308,7 +323,9 @@ export default function Dashboard() {
         method: 'POST',
         body: JSON.stringify({ mood_value: mood.value, mood_label: mood.label })
       })
-        .catch(() => { });
+        .catch((err) => {
+          console.warn('[Dashboard] Failed to persist mood log to API:', err.message);
+        });
     }
 
     setTimeout(() => setMoodSaved(true), 600);
@@ -481,10 +498,10 @@ export default function Dashboard() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <h3 className="text-white text-sm font-semibold mb-1">Streak Alert!</h3>
+                    <h3 className="text-[var(--text-primary)] text-sm font-semibold mb-1">Streak Alert!</h3>
                     <div className="space-y-1">
                       {streakAlerts.map(a => (
-                        <p key={a.id} className="text-white/60 text-xs">
+                        <p key={a.id} className="text-[var(--text-dim)] text-xs">
                           <span className="font-medium text-orange-400">{a.title}</span> — streak dropped to {a.streak} {a.streak === 0 ? '(lost!)' : `from best of ${a.bestStreak}`}
                         </p>
                       ))}
@@ -506,16 +523,16 @@ export default function Dashboard() {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <h3 className="text-white text-sm font-semibold mb-1">Overdue Tasks</h3>
+                    <h3 className="text-[var(--text-primary)] text-sm font-semibold mb-1">Overdue Tasks</h3>
                     <div className="space-y-1">
                       {overdueTasks.slice(0, 5).map(t => (
-                        <p key={t.id} className="text-white/60 text-xs">
+                        <p key={t.id} className="text-[var(--text-dim)] text-xs">
                           <span className="font-medium text-red-400">{t.title}</span>
-                          <span className="text-white/30"> — due {format(new Date(t.dueDate), 'MMM d')}</span>
+                          <span className="text-[var(--text-dim)] opacity-50"> — due {format(new Date(t.dueDate), 'MMM d')}</span>
                         </p>
                       ))}
                       {overdueTasks.length > 5 && (
-                        <p className="text-white/40 text-xs">...and {overdueTasks.length - 5} more</p>
+                        <p className="text-[var(--text-dim)] text-xs opacity-40">...and {overdueTasks.length - 5} more</p>
                       )}
                     </div>
                   </div>
@@ -784,7 +801,12 @@ export default function Dashboard() {
         {(() => {
           const schedKey = (() => { try { const a = JSON.parse(localStorage.getItem('mithra-auth') || 'null'); return a?.id ? `mithra-${a.id}-smart-schedule-${new Date().toISOString().slice(0, 10)}` : `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } catch { return `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } })();
           let schedData = null;
-          try { schedData = JSON.parse(localStorage.getItem(schedKey) || '{}'); } catch { }
+          try {
+        schedData = JSON.parse(localStorage.getItem(schedKey) || '{}');
+      } catch (err) {
+        console.debug('[Dashboard] Failed to parse schedule data from localStorage:', err.message);
+        schedData = {};
+      }
           const usesLeft = 2 - (schedData?.uses || 0);
           const isActive = schedData?.tasks?.length > 0;
           return (
@@ -1098,5 +1120,13 @@ export default function Dashboard() {
         userName={profile?.fullName?.split(' ')[0] || 'User'}
       />
     </PullToRefresh>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <PageErrorBoundary pageName="Dashboard">
+      <Dashboard />
+    </PageErrorBoundary>
   );
 }

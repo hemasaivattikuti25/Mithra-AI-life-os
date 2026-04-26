@@ -452,7 +452,7 @@ export default function Settings() {
                     onClick={saveProfile}
                     whileTap={{ scale: 0.95 }}
                     disabled={profileSaving}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 text-white disabled:opacity-60"
+                    className="px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60" style={{ color: 'var(--text-primary)' }}
                     style={{ background: 'var(--accent-color)' }}>
                     {profileSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     Save
@@ -609,7 +609,7 @@ export default function Settings() {
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}>
-                <Star size={18} className="text-white" fill="white" />
+                <Star size={18} style={{ color: 'var(--text-primary)' }} fill="currentColor" />
               </div>
               <div>
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Star us on GitHub</div>
@@ -623,7 +623,7 @@ export default function Settings() {
           <div className="w-full flex items-center justify-between p-4 rounded-lg text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))' }}>
-                <Info size={18} className="text-white" />
+                <Info size={18} style={{ color: 'var(--text-primary)' }} />
               </div>
               <div>
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>About</div>
@@ -653,12 +653,12 @@ export default function Settings() {
               <a href="https://www.linkedin.com/in/hemsaivattikuti" target="_blank" rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, #0077b5, #00a0dc)' }}>
-                <Linkedin size={18} className="text-white" />
+                <Linkedin size={18} style={{ color: 'var(--text-primary)' }} />
               </a>
               <a href="https://www.instagram.com/hemasai_chowdary/" target="_blank" rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, #E4405F, #C13584, #833AB4)' }}>
-                <Instagram size={18} className="text-white" />
+                <Instagram size={18} style={{ color: 'var(--text-primary)' }} />
               </a>
             </div>
           </div>
@@ -829,7 +829,7 @@ export default function Settings() {
                       Cancel
                     </button>
                     <button type="submit" disabled={pwLoading}
-                      className="flex-1 py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60" style={{ color: 'var(--text-primary)' }}
                       style={{ background: 'var(--accent-color)' }}>
                       {pwLoading ? <Loader2 size={14} className="animate-spin" /> : 'Update Password'}
                     </button>

@@ -11,7 +11,7 @@ export default function Privacy() {
             <div className="max-w-3xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm mb-8 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-sm mb-8 transition-colors"
                     style={{ color: '#888' }}
                 >
                     <ArrowLeft size={16} /> Back
@@ -36,14 +36,14 @@ export default function Privacy() {
 
                     <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#A3A3A3' }}>
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">1. Introduction</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>1. Introduction</h2>
                             <p>
                                 Welcome to Mithra Life OS ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
                             </p>
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">2. Information We Collect</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>2. Information We Collect</h2>
                             <p className="mb-2">We collect information that you voluntarily provide to us when you register on the application, specifically:</p>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>Personal information (Name, Email address)</li>
@@ -53,7 +53,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">3. Google User Data</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>3. Google User Data</h2>
                             <p className="mb-2">Our application's use and transfer to any other app of information received from Google APIs will adhere to <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
                             <p>Specifically, if you choose to connect your Google Calendar:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
@@ -64,7 +64,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">4. How We Use Your Information</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>4. How We Use Your Information</h2>
                             <p>We use the information we collect or receive:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>To facilitate account creation and logon process.</li>
@@ -75,7 +75,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold text-white mb-3">5. Contact Us</h2>
+                            <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>5. Contact Us</h2>
                             <p>
                                 If you have questions or comments about this policy, you may email us at support@mithra.ai.
                             </p>

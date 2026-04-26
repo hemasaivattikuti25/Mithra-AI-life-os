@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageErrorBoundary } from '../components/ErrorBoundary';
 import {
   ChevronLeft, ChevronRight, Plus, X, Clock, MapPin,
   Calendar as CalIcon, Trash2, GripVertical, Check, AlertTriangle,
@@ -179,15 +180,17 @@ const loadEvents = () => {
         end: new Date(e.end),
       }));
     }
-  } catch { }
+  } catch (err) {
+    console.debug('[Calendar] Failed to parse calendar events from localStorage:', err.message);
+  }
   return null;
 };
 
 const saveEvents = (events) => {
   try {
     localStorage.setItem(getUserScopedKey('calendar-events'), JSON.stringify(events));
-  } catch {
-    // save failed
+  } catch (err) {
+    console.warn('[Calendar] Failed to save events to localStorage:', err.message);
   }
 };
 
@@ -317,7 +320,10 @@ const MiniCalendar = ({ currentDate, onDateClick, events }) => {
               className={clsx(
                 'aspect-square flex flex-col items-center justify-center rounded-full text-xs relative transition-all',
                 !inMonth && 'opacity-20',
-                selected && 'text-white font-bold',
+                selected && 'font-bold',
+                'transition-colors',
+                !selected && 'text-[var(--text-dim)]',
+                selected && 'text-[var(--text-primary)]',
                 todayMark && !selected && 'font-bold',
                 !selected && inMonth && 'text-[var(--text-dim)] hover:bg-[var(--glass-bg-hover)]',
               )}

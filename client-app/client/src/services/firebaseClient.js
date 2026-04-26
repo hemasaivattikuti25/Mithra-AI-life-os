@@ -31,10 +31,15 @@ const firebaseConfig = {
 
 const isConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-if (!isConfigured) {
-  console.warn(
-    '[Mithra] Firebase credentials missing — running in offline mode.\n' +
-    'Set VITE_FIREBASE_* variables in .env to enable cloud sync.'
+// CRITICAL SECURITY: In production, require Firebase auth (no offline fallback)
+// Set VITE_REQUIRE_AUTH=true in production .env to enforce this
+const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === 'true';
+
+if (!isConfigured && REQUIRE_AUTH) {
+  console.error(
+    '[Mithra SECURITY] ❌ AUTHENTICATION DISABLED: Firebase not configured but ' +
+    'VITE_REQUIRE_AUTH=true. User authentication cannot be verified. This is a ' +
+    'CRITICAL SECURITY ISSUE in production. Please set Firebase env variables.'
   );
 }
 
@@ -138,15 +143,15 @@ export async function apiFetch(path, options = {}) {
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
-    // Refresh token before making request (handles expired tokens)
-    let token = await authService.getIdToken();
-    if (token) {
+    // Get fresh ID token (force refresh handles expired tokens automatically)
+    let token = null;
+    if (auth?.currentUser) {
       try {
-        // Force refresh: getIdToken(true) forces a token refresh
         token = await auth.currentUser.getIdToken(true);
       } catch (e) {
-        // Token refresh failed, use what we have
-        console.debug('Token refresh failed:', e.message);
+        console.debug('[Mithra] Token refresh failed:', e.message);
+        // Fall back to potentially stale token
+        try { token = await auth.currentUser.getIdToken(); } catch { /* no token */ }
       }
     }
 

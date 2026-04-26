@@ -43,18 +43,6 @@ async def lifespan(app: FastAPI):
     
     # Initialize APScheduler for background tasks
     scheduler = AsyncIOScheduler()
-    
-    # Add periodic Google Calendar sync job (every 15 minutes)
-    # scheduler.add_job(
-    #     sync_all_user_calendars,
-    #     'interval',
-    #     minutes=15,
-    #     id='google_calendar_sync',
-    #     name='Google Calendar Sync',
-    #     replace_existing=True
-    # )
-    
-    # Start scheduler
     scheduler.start()
     app.state.scheduler = scheduler
 

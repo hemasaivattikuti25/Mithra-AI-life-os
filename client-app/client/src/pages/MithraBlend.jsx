@@ -160,7 +160,9 @@ export default function MithraBlend() {
                     setWorkspaceTasks(t);
                     setWorkspaceEvents(ev);
                 }
-            } catch { }
+            } catch (err) {
+                console.warn('[MithraBlend] Failed to load workspace details:', err.message);
+            }
         };
         loadDetails();
         return () => { cancelled = true; };
@@ -469,8 +471,7 @@ export default function MithraBlend() {
                     </button>
                     <button
                         onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setCreatedWs(null); }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white transition-opacity hover:opacity-90"
-                        style={{ background: 'var(--accent-color)' }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-90" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}
                     >
                         <Plus size={14} /> New Blend
                     </button>
@@ -537,8 +538,7 @@ export default function MithraBlend() {
                                             style={{ border: '1px solid var(--glass-border)' }}
                                         />
                                         <button onClick={handleCreate} disabled={creating || !newName.trim()}
-                                            className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
-                                            style={{ background: 'var(--accent-color)' }}>
+                                            className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                                             {creating ? <Loader2 size={16} className="animate-spin" /> : 'Create'}
                                         </button>
                                     </div>
@@ -558,8 +558,7 @@ export default function MithraBlend() {
                                             {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied!' : 'Copy invite link'}
                                         </button>
                                         <button onClick={() => { setShowCreate(false); setCreatedWs(null); }}
-                                            className="px-3 py-2 rounded-xl text-xs font-medium text-white"
-                                            style={{ background: 'var(--accent-color)' }}>
+                                            className="px-3 py-2 rounded-xl text-xs font-medium" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                                             Done
                                         </button>
                                     </div>
@@ -587,8 +586,8 @@ export default function MithraBlend() {
                                     style={{ border: '1px solid var(--glass-border)' }}
                                 />
                                 <button onClick={handleJoin} disabled={joining || !joinInput.trim()}
-                                    className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
-                                    style={{ background: 'var(--accent-color)' }}>
+                                    className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
+                                    style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                                     {joining ? <Loader2 size={16} className="animate-spin" /> : 'Join'}
                                 </button>
                             </div>
@@ -659,8 +658,8 @@ export default function MithraBlend() {
                                             Shared Habits ({workspaceHabits.length})
                                         </h3>
                                         <button onClick={() => setAddingHabit(!addingHabit)}
-                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
-                                            style={{ background: 'var(--accent-color)' }}>
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
+                                            style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                                             <Plus size={12} /> Add Habit
                                         </button>
                                     </div>
@@ -674,8 +673,7 @@ export default function MithraBlend() {
                                                         placeholder="Habit title..." autoFocus
                                                         className="flex-1 px-3 py-2 rounded-lg text-sm bg-transparent text-[var(--text-primary)] outline-none"
                                                         style={{ border: '1px solid var(--glass-border)' }} />
-                                                    <button onClick={handleAddHabit} className="px-3 py-2 rounded-lg text-xs font-medium text-white"
-                                                        style={{ background: 'var(--accent-color)' }}>Add</button>
+                                                    <button onClick={handleAddHabit} className="px-3 py-2 rounded-lg text-xs font-medium" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>Add</button>
                                                 </div>
                                             </motion.div>
                                         )}
@@ -697,7 +695,7 @@ export default function MithraBlend() {
                                                             background: done ? 'var(--accent-color)' : 'transparent',
                                                             border: `2px solid ${done ? 'var(--accent-color)' : 'var(--glass-border)'}`,
                                                         }}>
-                                                        {done && <Check size={12} className="text-white" />}
+                                                        {done && <Check size={12} style={{ color: 'var(--text-primary)' }} />}
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <p className={`text-sm font-medium ${done ? 'line-through opacity-40' : ''}`}
@@ -722,8 +720,8 @@ export default function MithraBlend() {
                                             Shared Tasks ({workspaceTasks.length})
                                         </h3>
                                         <button onClick={() => setAddingTask(!addingTask)}
-                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
-                                            style={{ background: 'var(--accent-color)' }}>
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
+                                            style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>
                                             <Plus size={12} /> Add Task
                                         </button>
                                     </div>
@@ -737,8 +735,7 @@ export default function MithraBlend() {
                                                         placeholder="Task title..." autoFocus
                                                         className="flex-1 px-3 py-2 rounded-lg text-sm bg-transparent text-[var(--text-primary)] outline-none"
                                                         style={{ border: '1px solid var(--glass-border)' }} />
-                                                    <button onClick={handleAddTask} className="px-3 py-2 rounded-lg text-xs font-medium text-white"
-                                                        style={{ background: 'var(--accent-color)' }}>Add</button>
+                                                    <button onClick={handleAddTask} className="px-3 py-2 rounded-lg text-xs font-medium" style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>Add</button>
                                                 </div>
                                             </motion.div>
                                         )}
@@ -768,7 +765,7 @@ export default function MithraBlend() {
                                                         }}
                                                         title="Mark complete"
                                                     >
-                                                        {t.completed && <Check size={12} className="text-white" />}
+                                                        {t.completed && <Check size={12} style={{ color: 'var(--text-primary)' }} />}
                                                     </button>
                                                     {/* Task info */}
                                                     <div className="flex-1 min-w-0">
@@ -784,7 +781,7 @@ export default function MithraBlend() {
                                                         <div className="flex items-center gap-1 shrink-0">
                                                             <button
                                                                 onClick={() => { setNewTaskTitle(t.title); setAddingTask(true); }}
-                                                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all"
+                                                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ backgroundColor: 'var(--hover-bg)', color: 'var(--text-primary)' }}
                                                                 title="Edit"
                                                             >
                                                                 <Pencil size={12} style={{ color: 'var(--text-dim)' }} />
@@ -845,8 +842,8 @@ export default function MithraBlend() {
                                                     <div className="flex justify-end">
                                                         <button onClick={handleAddEvent}
                                                             disabled={!newEventTitle.trim() || !newEventStart || !newEventEnd}
-                                                            className="px-3 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-40"
-                                                            style={{ background: 'var(--accent-color)' }}>Add Event</button>
+                                                            className="px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-40"
+                                                            style={{ background: 'var(--accent-color)', color: 'var(--text-primary)' }}>Add Event</button>
                                                     </div>
                                                 </GlassCard>
                                             </motion.div>
@@ -939,8 +936,8 @@ export default function MithraBlend() {
                                                         className="flex-1 px-2 py-1.5 rounded-lg text-xs bg-transparent text-[var(--text-primary)] outline-none"
                                                         style={{ border: '1px solid rgba(239,68,68,0.3)' }} />
                                                     <button onClick={handleDelete} disabled={deleteInput !== activeWorkspace.name}
-                                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-30"
-                                                        style={{ background: '#ef4444' }}>Delete</button>
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30"
+                                                        style={{ background: '#ef4444', color: 'white' }}>Delete</button>
                                                     <button onClick={() => { setConfirmDelete(false); setDeleteInput(''); }}
                                                         className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-dim)]">Cancel</button>
                                                 </div>

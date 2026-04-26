@@ -153,9 +153,10 @@ export default function Onboarding({ onComplete }) {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleNext}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-semibold text-sm transition-all"
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-sm transition-all"
           style={{
             background: getSlideColor(slide.color),
+            color: 'var(--text-primary)',
             boxShadow: `0 0 20px ${slide.color.startsWith('var') ? 'var(--accent-glow)' : `${slide.color}33`}`
           }}
         >

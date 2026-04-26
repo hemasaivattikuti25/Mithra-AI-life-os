@@ -5,8 +5,10 @@ import uuid
 import json
 
 from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate, EventCreate
-from core.security import get_current_user
+from core.security import get_current_user, check_resource_ownership
 from core.config import get_db, get_model, get_embedding
+from core.validators import InputValidator, DataValidator
+from core.errors import ValidationError, MithraError, PermissionError
 
 router = APIRouter()
 
@@ -98,10 +100,18 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = current_user["id"]
-    task_id = str(uuid.uuid4())
-    
     try:
+        # Validate task data
+        InputValidator.validate_string(task.title, min_length=1, max_length=500, field_name="title")
+        InputValidator.validate_string(task.details or "", max_length=10000, field_name="details")
+        InputValidator.validate_enum(task.priority or "medium", ["low", "medium", "high"], field_name="priority")
+        
+        if task.subtasks:
+            InputValidator.validate_array(task.subtasks, max_length=50, field_name="subtasks")
+        
+        user_id = current_user["id"]
+        task_id = str(uuid.uuid4())
+        
         async with pool.acquire() as conn:
             await conn.execute(
                 """INSERT INTO tasks (id, user_id, title, details, list_id, priority, 
@@ -112,8 +122,12 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
                 json.dumps(task.subtasks), task.workspaceId
             )
         return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
-    except Exception as e:
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Task creation failed")
 
 @router.put("/tasks/{task_id}")
 async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depends(get_current_user)):
@@ -123,6 +137,15 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
         raise HTTPException(status_code=503, detail="Database unavailable")
     
     try:
+        # Validate task data
+        InputValidator.validate_string(task.title, min_length=1, max_length=500, field_name="title")
+        InputValidator.validate_string(task.details or "", max_length=10000, field_name="details")
+        InputValidator.validate_enum(task.priority or "medium", ["low", "medium", "high"], field_name="priority")
+        InputValidator.validate_uuid(task_id, field_name="task_id")
+        
+        if task.subtasks:
+            InputValidator.validate_array(task.subtasks, max_length=50, field_name="subtasks")
+        
         async with pool.acquire() as conn:
             result = await conn.execute(
                 """UPDATE tasks SET title=$1, details=$2, list_id=$3, priority=$4,
@@ -137,6 +160,14 @@ async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depen
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Task not found or access denied")
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPException:
+        raise
+    except MithraError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Task update failed")
             
         return {"task": {**task.dict(), "id": task_id, "userId": current_user["id"]}}
     except HTTPException:
@@ -152,20 +183,42 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
         raise HTTPException(status_code=503, detail="Database unavailable")
     
     try:
+        # Validate task_id
+        InputValidator.validate_uuid(task_id, field_name="task_id")
+        
         async with pool.acquire() as conn:
+            # First verify ownership/permission
+            task_owner = await conn.fetchval(
+                """SELECT user_id FROM tasks WHERE id=$1""",
+                task_id
+            )
+            
+            if not task_owner:
+                raise HTTPException(status_code=404, detail="Task not found")
+            
+            # Check ownership
+            if task_owner != current_user["id"]:
+                raise PermissionError(f"Access denied to task {task_id}")
+            
+            # Delete the task
             result = await conn.execute(
-                """DELETE FROM tasks WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
-                   SELECT workspace_id FROM workspace_members WHERE user_id=$2
-                ))""",
+                """DELETE FROM tasks WHERE id=$1 AND user_id=$2""",
                 task_id, current_user["id"]
             )
             if result == "DELETE 0":
-                raise HTTPException(status_code=404, detail="Task not found or access denied")
+                raise HTTPException(status_code=500, detail="Delete operation failed")
+        
         return {"deleted": task_id}
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="You don't have permission to delete this task")
     except HTTPException:
         raise
-    except Exception as e:
+    except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Task deletion failed")
 
 # ─── NOTIFICATION SETTINGS ───
 @router.get("/notifications")
@@ -252,11 +305,18 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = current_user["id"]
-    entry_id = str(uuid.uuid4())
-    entry_date = entry.date or date.today().isoformat()
-    
     try:
+        # Validate journal entry
+        InputValidator.validate_string(entry.content, min_length=1, max_length=10000, field_name="content")
+        InputValidator.validate_enum(entry.mood or "neutral", ["very_sad", "sad", "neutral", "happy", "very_happy"], field_name="mood")
+        
+        if entry.tags:
+            InputValidator.validate_array(entry.tags, max_length=10, field_name="tags")
+        
+        user_id = current_user["id"]
+        entry_id = str(uuid.uuid4())
+        entry_date = entry.date or date.today().isoformat()
+        
         embedding = get_embedding(entry.content)
         
         async with pool.acquire() as conn:
@@ -278,8 +338,12 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
             "createdAt": datetime.now().isoformat()
         }
         return {"entry": return_entry}
-    except Exception as e:
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Journal entry creation failed")
 
 @router.put("/journal/{entry_id}")
 async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict = Depends(get_current_user)):
@@ -384,10 +448,21 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = current_user["id"]
-    habit_id = str(uuid.uuid4())
-    
     try:
+        # Validate habit data
+        InputValidator.validate_string(habit.title, min_length=1, max_length=500, field_name="title")
+        InputValidator.validate_enum(habit.category, ["Work", "Health", "Personal", "Learning", "Mindfulness"], field_name="category")
+        InputValidator.validate_enum(habit.frequency or "daily", ["daily", "weekly", "monthly"], field_name="frequency")
+        
+        if habit.repeat_days:
+            InputValidator.validate_array(habit.repeat_days, max_length=7, field_name="repeat_days")
+        
+        if habit.streak_goal:
+            InputValidator.validate_integer(habit.streak_goal, min_value=1, max_value=365, field_name="streak_goal")
+        
+        user_id = current_user["id"]
+        habit_id = str(uuid.uuid4())
+        
         async with pool.acquire() as conn:
             await conn.execute(
                 """INSERT INTO habits (id, user_id, title, category, color, streak, longest_streak,
@@ -420,8 +495,12 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
             "focusDuration": habit.focus_duration,
             "workspaceId": habit.workspaceId,
         }}
-    except Exception as e:
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Habit creation failed")
 
 @router.put("/habits/{habit_id}")
 async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = Depends(get_current_user)):

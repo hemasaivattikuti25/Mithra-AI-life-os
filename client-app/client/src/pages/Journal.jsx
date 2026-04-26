@@ -11,6 +11,7 @@ import { useData, getUserScopedKey } from '../context/DataContext';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import { useAuth } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
+import { PageErrorBoundary } from '../components/ErrorBoundary';
 
 /* ═══════════════════════════════════════════════════════════════
    MOOD EMOJI MAP
@@ -261,7 +262,7 @@ const JournalCard = ({ entry, onClick, onEdit, onDelete, index, isLight }) => {
 /* ═══════════════════════════════════════════════════════════════
    MAIN JOURNAL PAGE
    ═══════════════════════════════════════════════════════════════ */
-export default function MithraJournal() {
+function MithraJournal() {
   const { theme } = useData();
   const { user } = useAuth();
   const isLight = theme === 'light';
@@ -283,24 +284,25 @@ export default function MithraJournal() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ── PRIMARY: Load from API on mount (localStorage is cache only) ──
+  // ── PRIMARY: Load from API on mount (with AbortController to prevent memory leaks) ──
   useEffect(() => {
     if (!isFirebaseConfigured || !user?.id) return;
+    const controller = new AbortController();
 
     const fetchFromAPI = async () => {
       try {
         setIsSyncing(true);
         const res = await apiFetch('/journal?limit=100');
+        if (controller.signal.aborted) return;
         const cloudEntries = res.entries || res.journalEntries || res.data || [];
 
         const formatted = (cloudEntries || []).map(e => {
-          // Safely coerce date: API returns a string like '2025-02-20'
           const parsedDate = e.date ? new Date(e.date) : new Date();
           return {
             id: e.id,
             title: (e.content || '').split('\n')[0]?.slice(0, 80) || 'Untitled',
             body: e.content || '',
-            mood: e.mood ? e.mood * 2 : 5,  // DB 1-5 → local 1-10
+            mood: e.mood ? e.mood * 2 : 5,
             tags: (e.tags || []).map(t => t.startsWith('#') ? t : `#${t}`),
             date: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
             color: (e.mood && e.mood >= 4) ? 'var(--accent-color)' : 'var(--text-primary)',
@@ -309,17 +311,21 @@ export default function MithraJournal() {
           };
         });
 
-        setEntries(formatted); // API is truth — replace, don't merge
-        // Update localStorage cache
-        localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(formatted));
+        if (!controller.signal.aborted) {
+          setEntries(formatted);
+          localStorage.setItem(getUserScopedKey('journal-entries'), JSON.stringify(formatted));
+        }
       } catch (err) {
-        // localStorage cache already loaded in useState — no action needed
+        if (!controller.signal.aborted) {
+          // localStorage cache already loaded in useState — no action needed
+        }
       } finally {
-        setIsSyncing(false);
+        if (!controller.signal.aborted) setIsSyncing(false);
       }
     };
 
     fetchFromAPI();
+    return () => controller.abort();
   }, [user?.id]);
 
   // NOTE: localStorage is NO LONGER auto-updated on every entry change.
@@ -694,10 +700,18 @@ export default function MithraJournal() {
             whileTap={{ scale: 0.88 }}
             onClick={() => setEditorOpen(true)}
           >
-            <Plus size={24} className="text-white" />
+            <Plus size={24} style={{ color: 'var(--text-primary)' }} />
           </motion.button>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function MithraJournalPage() {
+  return (
+    <PageErrorBoundary pageName="Journal">
+      <MithraJournal />
+    </PageErrorBoundary>
   );
 }

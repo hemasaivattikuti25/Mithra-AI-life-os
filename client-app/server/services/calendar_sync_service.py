@@ -225,6 +225,22 @@ class GoogleCalendarService:
         else:
             return mithra_event
     
+    def sync_events(self) -> List[Dict[str, Any]]:
+        """
+        Simplified sync method that returns just the events list.
+        
+        Returns:
+            List[dict]: List of events synced from Google Calendar
+            
+        Raises:
+            Exception: If sync fails
+        """
+        result = self.sync_events_from_google()
+        if not result.get('success'):
+            logger.error(f"Sync failed: {result.get('error')}")
+            raise Exception(result.get('error', 'Failed to sync events'))
+        return result.get('events', [])
+    
     def schedule_sync(self, interval_minutes: int = 15) -> None:
         """
         Schedule periodic sync between Mithra and Google Calendar.
