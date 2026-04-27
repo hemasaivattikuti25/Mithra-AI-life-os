@@ -1,148 +1,97 @@
 <div align="center">
-  <img src="./client-app/client/public/assets/logo.png" alt="Mithra Life OS" width="120" />
-  <h1>Mithra Life OS</h1>
-  <p><b>Your AI-Powered Life Operating System</b></p>
-  <p><i>Tasks · Habits · Journal · Calendar · AI Companion — all in one place.</i></p>
+  <img src="./client-app/client/public/assets/logo.png" alt="Mithra Life OS" width="120" style="border-radius: 20%; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);" />
+  <h1>Mithra Life OS v2</h1>
+  <p><b>An AI-Native Productivity Platform</b></p>
 
-  [![Live App](https://img.shields.io/badge/🚀_Live_App-mithra--lifeos.com-00E5FF?style=for-the-badge)](https://mithra-lifeos.com)
-  [![Stars](https://img.shields.io/github/stars/hemasaivattikuti25/Mithra-AI-life-os?style=for-the-badge&color=00E5FF)](https://github.com/hemasaivattikuti25/Mithra-AI-life-os/stargazers)
-  [![License](https://img.shields.io/badge/License-MIT-00E5FF?style=for-the-badge)](LICENSE)
+  [![Active Users](https://img.shields.io/badge/Active_Users-900%2B-00E5FF?style=for-the-badge&logo=users)](#)
+  [![Live App](https://img.shields.io/badge/Live_Platform-mithra--lifeos.com-000000?style=for-the-badge&logo=vercel)](https://mithra-lifeos.com)
+  [![Backend](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#)
+  [![Database](https://img.shields.io/badge/pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
+
+  <p><i>A production-grade, context-aware Life OS featuring a custom Retrieval-Augmented Generation (RAG) pipeline, deterministic AI agents, and real-time habit tracking.</i></p>
 </div>
 
 <br />
 
-## 🧠 What is Mithra?
+## 🚀 Overview
 
-**Mithra** is an AI-native life operating system that replaces 5+ productivity apps with a single, unified platform. It combines task management, habit tracking, smart scheduling, mood journaling, and an AI companion called **Dost** — all working together to help you become the best version of yourself.
+Mithra Life OS is a comprehensive productivity ecosystem built to replace disjointed task managers, habit trackers, and journaling apps. More than just a unified dashboard, Mithra leverages an asynchronous Python backend and `pgvector` to provide users with **Dost AI** — an intelligent companion that possesses semantic memory of the user's life and can execute agentic database actions.
 
-> *"I built Mithra because I believe everyone deserves to be productive, organized, and self-aware — without juggling five different apps."*
-> — **Hemasai Vattikuti**, Founder
-
----
-
-## ✨ Features
-
-| Feature | Description |
-| :--- | :--- |
-| **🚀 Mission Control** | Unified dashboard with real-time productivity trends, streak counters, AI usage metrics, and focus sessions |
-| **✅ Smart Tasks** | Nested subtasks, priority flagging, drag-and-drop reordering, recurring schedules, and starred tasks |
-| **🔥 Habit Focus Hub** | GitHub-style heatmap streaks, multi-session focus timer, streak freeze protection, and daily tracking |
-| **🤝 Mithra Blend** | Real-time shared workspaces — link habits with friends and track aggregate scores together |
-| **📓 Zen Journal** | AI-analyzed daily entries with mood trajectory mapping and rich text editing |
-| **🧠 Dost AI** | Context-aware AI companion that knows your tasks, habits, mood, and schedule — gives personalized advice |
-| **📅 Smart Calendar** | Event management with time-blocking and task scheduling |
-| **📊 Life Analytics** | Correlate sleep, mood, and productivity with interactive charts |
+Currently serving **900+ active signups** with a 99.9% uptime.
 
 ---
 
-## 🛠️ Tech Stack
+## 🧠 Applied AI Architecture (Dost AI)
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 18, Vite 5, Framer Motion, CSS Variables, Capacitor (Android/iOS) |
-| **Backend** | Python 3.11, FastAPI, Uvicorn, asyncpg |
-| **Database** | Neon PostgreSQL (serverless), pgvector for AI embeddings |
-| **Auth** | Firebase Auth (Email/Password + Google OAuth) |
-| **AI Engine** | RAG pipeline, context-aware prompts, semantic search, vector embeddings |
-| **Deployment** | Vercel (Frontend) · Render (Backend) |
-| **CI/CD** | GitHub Actions (lint, test, deploy) |
+Dost AI is not a standard LLM wrapper. It is a highly optimized context-aware agent.
+
+* **RAG Pipeline (`pgvector`)**: Journal entries are processed through an embedding model and stored natively in PostgreSQL. When users query the AI, a semantic Cosine Distance search (`<=>`) retrieves the most relevant memories.
+* **Dynamic Context Injection**: The async FastAPI backend injects real-time state data (pending tasks, habit heatmaps, daily mood) directly into the system prompt, giving Dost true situational awareness.
+* **Agentic Capabilities**: The AI is strictly instructed to output deterministic JSON schemas alongside natural language. This allows Dost to autonomously execute backend mutations (e.g., creating tasks, logging moods) without manual user input.
 
 ---
 
-## 🚀 Getting Started
+## ⚡ Technical Stack
 
-### Prerequisites
-- **Node.js** v18+ · **Python** 3.10+
-- **Firebase** project (free tier)
-- **Neon** PostgreSQL database (free tier)
-- AI API Key for Dost AI features
+Mithra is engineered for scale, speed, and clean code architecture.
 
-### Backend
+### **Backend (FastAPI)**
+* **Asynchronous Routing**: Non-blocking endpoints using `asyncpg` for high-throughput database interactions.
+* **Zero-Trust Security**: Firebase Admin SDK validates JWTs on every API request, ensuring strict data isolation per user.
+* **Modular Design**: Domain-driven routing (`tasks_router`, `chat_router`, etc.) to decouple business logic.
+
+### **Frontend (React + Vite)**
+* **State Management**: Centralized React Context providers for Auth, Habits, and Tasks.
+* **Premium UX**: Smooth transitions using `framer-motion` and a bespoke glassmorphic design system.
+* **Data Visualization**: Custom GitHub-style habit heatmaps and productivity charts.
+
+---
+
+## 🛠️ Local Development
+
+### 1. Backend Setup
 ```bash
 git clone https://github.com/hemasaivattikuti25/Mithra-AI-life-os.git
 cd Mithra-AI-life-os/client-app/server
 
+# Create virtual environment
 python -m venv .venv && source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-cp .env.example .env   # Fill in your credentials
+
+# Set up environment variables (.env)
+# NEON_DATABASE_URL=...
+# FIREBASE_SERVICE_ACCOUNT_JSON=...
+# GEMINI_API_KEY=...
+
+# Run the server
 uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
+### 2. Frontend Setup
 ```bash
 cd ../client
+
+# Install Node modules
 npm install
-cp .env.example .env   # Fill in Firebase config
+
+# Set up environment variables (.env)
+# VITE_FIREBASE_API_KEY=...
+# VITE_API_URL=http://localhost:8000
+
+# Start Vite dev server
 npm run dev
 ```
-
----
-
-## 🔐 Environment Variables
-
-### Server (`/client-app/server/.env`)
-| Variable | Description |
-| :--- | :--- |
-| `NEON_DATABASE_URL` | Neon PostgreSQL connection string |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin SDK JSON key |
-| `GEMINI_API_KEY` | AI engine API key |
-| `ENCRYPTION_KEY` | Fernet key for token encryption |
-| `ENVIRONMENT` | `development` or `production` |
-
-### Client (`/client-app/client/.env`)
-| Variable | Description |
-| :--- | :--- |
-| `VITE_FIREBASE_API_KEY` | Firebase Web API key |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain |
-| `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID |
-| `VITE_API_URL` | Backend URL (`http://localhost:8000` or Render URL) |
-
----
-
-## 🗂️ Project Structure
-
-```
-Mithra-AI-life-os/
-├── client-app/
-│   ├── client/                  # React Frontend (Vite)
-│   │   ├── public/              # Static assets, manifest
-│   │   └── src/
-│   │       ├── components/      # Reusable UI components
-│   │       ├── context/         # Auth & Data providers
-│   │       ├── pages/           # Route-level views
-│   │       └── services/        # API layer, sync engine
-│   └── server/                  # FastAPI Backend
-│       ├── core/                # Config, security, rate limiting
-│       ├── routers/             # REST API endpoints
-│       ├── schemas/             # Pydantic models
-│       ├── services/ai/         # AI engine (chat, planner, memory)
-│       ├── migrations/          # SQL migration scripts
-│       └── main.py              # Application entry point
-├── .github/workflows/           # CI/CD pipeline
-├── render.yaml                  # Render deployment config
-└── README.md
-```
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Here's how:
-
-1. **Fork** this repository
-2. **Create** your feature branch (`git checkout -b feature/awesome-feature`)
-3. **Commit** your changes (`git commit -m 'Add awesome feature'`)
-4. **Push** to the branch (`git push origin feature/awesome-feature`)
-5. **Open** a Pull Request
 
 ---
 
 ## 👨‍💻 About the Founder
 
 <div align="center">
-  <img src="./client-app/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="150" style="border-radius: 50%;" />
+  <img src="./client-app/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="150" style="border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.5);" />
   <h3>Hemasai Vattikuti</h3>
-  <p><i>Founder & Developer</i></p>
+  <p><i>Applied AI Engineer & Founder</i></p>
 </div>
 
 I built Mithra because I believe everyone deserves to be productive, organized, and self-aware. Too many people struggle with scattered tools and no real insight into their own patterns. Mithra is the system I wished I had — an AI-powered life OS that doesn't just store your tasks, but actually understands your habits, analyzes your mood, and helps you become the best version of yourself.
@@ -150,7 +99,6 @@ I built Mithra because I believe everyone deserves to be productive, organized, 
 [![Portfolio](https://img.shields.io/badge/Portfolio-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://hemasai-vattikuti-portfolio.vercel.app)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemasaivattikuti)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hemasaivattikuti25)
-[![Resume](https://img.shields.io/badge/Resume-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/file/d/1yU0EMubbWwE8Z2iSmmkMY7_AfY-hAH0U/view)
 
 ---
 
@@ -158,9 +106,7 @@ I built Mithra because I believe everyone deserves to be productive, organized, 
 
 MIT License — see [LICENSE](LICENSE) for details.
 
----
-
 <div align="center">
-  <p><b>⭐ Star this repo if Mithra helps you stay organized!</b></p>
-  <p>Built with ❤️ in India 🇮🇳</p>
+  <p><b>⭐ Star this repo if you find the architecture interesting!</b></p>
+  <p>Built with ❤️ by Hemasai</p>
 </div>
