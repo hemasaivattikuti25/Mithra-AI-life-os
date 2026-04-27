@@ -15,57 +15,7 @@ from . import ai_gateway
 logger = logging.getLogger("mithra.memory_engine")
 
 
-async def save_journal_memory(
-    user_id: str,
-    journal_text: str,
-    journal_date: str,
-    mood_score: int,
-    db_pool,
-) -> bool:
-    """
-    Save a journal entry with its embedding for RAG retrieval.
 
-    Args:
-        user_id: User's unique ID
-        journal_text: The journal content
-        journal_date: Date of the entry (YYYY-MM-DD)
-        mood_score: Mood score (1-5 or 1-10)
-        db_pool: asyncpg connection pool
-
-    Returns:
-        True on success, False on failure
-    """
-    if not db_pool:
-        logger.warning("[Memory] No DB pool available")
-        return False
-
-    try:
-        # Truncate text to save tokens
-        truncated_text = journal_text[:500] if len(journal_text) > 500 else journal_text
-
-        # Generate embedding
-        embedding = await ai_gateway.create_embedding(truncated_text)
-
-        # Convert embedding list to pgvector format
-        embedding_str = str(embedding)
-
-        async with db_pool.acquire() as conn:
-            # Update the journal entry with embedding
-            await conn.execute(
-                """UPDATE journal_entries
-                   SET embedding = $1::vector
-                   WHERE user_id = $2 AND date = $3""",
-                embedding_str.replace("[", "{").replace("]", "}"),
-                user_id,
-                journal_date,
-            )
-
-        logger.info(f"[Memory] Saved embedding for journal {journal_date}")
-        return True
-
-    except Exception as e:
-        logger.warning(f"[Memory] Failed to save journal embedding: {e}")
-        return False
 
 
 async def retrieve_relevant_memories(

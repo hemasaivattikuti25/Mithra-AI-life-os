@@ -27,5 +27,5 @@ class GoogleCalendarService:
     def sync_events_from_google(self):
         return {"success": False, "events": [], "error": "OAuth not configured"}
 
-    def push_event_to_google(self, event_data):
+    def push_event_to_google(self, _event_data):
         return {"success": False, "error": "OAuth not configured"}

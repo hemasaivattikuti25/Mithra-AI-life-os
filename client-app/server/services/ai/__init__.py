@@ -14,7 +14,7 @@ from .ai_gateway import (
 from .chat_engine import ChatEngine
 from .parser_engine import parse_task_from_text, parse_habit_from_text, parse_event_from_text
 from .planner_engine import get_or_generate_plan
-from .memory_engine import build_memory_context, save_journal_memory
+from .memory_engine import build_memory_context
 
 __all__ = [
     # Gateway
@@ -32,5 +32,4 @@ __all__ = [
     "parse_event_from_text",
     "get_or_generate_plan",
     "build_memory_context",
-    "save_journal_memory",
 ]
