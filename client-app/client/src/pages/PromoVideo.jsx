@@ -352,7 +352,7 @@ export default function PromoVideo() {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#060810] text-white font-sans overflow-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
+       <div className="fixed inset-0 bg-[#060810] text-white font-sans overflow-hidden" style={{ fontFamily: "'Outfit', sans-serif" }} data-theme="dark">
             {/* Top Navigation Bar */}
             <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
                 <Link to="/" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 font-medium bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">

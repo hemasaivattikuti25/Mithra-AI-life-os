@@ -422,7 +422,7 @@ export default function LandingPage() {
     const { isAuthenticated } = useAuth();
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-gray-200 selection:bg-cyan-500/30 font-sans">
+        <div className="min-h-screen bg-[#0a0a0a] text-gray-200 selection:bg-cyan-500/30 font-sans" data-theme="dark">
             <AnimatedBackground />
             <Navbar isAuthenticated={isAuthenticated} navigate={navigate} />
             <main>
