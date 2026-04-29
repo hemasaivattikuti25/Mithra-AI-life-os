@@ -88,7 +88,7 @@ const PasswordStrength = ({ password }) => {
       <div className="flex gap-1 mb-1.5">
         {[1, 2, 3, 4, 5].map(i => (
           <div key={i} className="flex-1 h-1 rounded-full transition-all duration-500"
-            style={{ background: i <= strength ? colors[strength] : 'rgba(255,255,255,0.06)' }} />
+            style={{ background: i <= strength ? colors[strength] : 'var(--glass-border)' }} />
         ))}
       </div>
       <p className="text-[10px] font-medium tracking-wide" style={{ color: colors[strength] }}>
@@ -410,9 +410,9 @@ export default function AuthPage({ isPasswordReset = false }) {
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
                       <span className="text-[11px] text-white/30 uppercase tracking-widest">or</span>
-                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
                     </div>
 
                     {/* Google Sign In */}
@@ -495,16 +495,16 @@ export default function AuthPage({ isPasswordReset = false }) {
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
                       <span className="text-[11px] text-white/30 uppercase tracking-widest">or</span>
-                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="flex-1 h-px" style={{ background: 'var(--glass-border)' }} />
                     </div>
 
                     {/* Google Sign Up */}
                     <motion.button type="button" onClick={handleGoogleSignIn} disabled={googleLoading}
-                      className="w-full py-3.5 rounded-2xl text-white/80 font-medium text-sm relative overflow-hidden group disabled:opacity-60 flex items-center justify-center gap-3"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                      whileHover={{ scale: 1.01, background: 'rgba(255,255,255,0.07)' }}
+                      className="w-full py-3.5 rounded-2xl text-[var(--text-primary)] font-medium text-sm relative overflow-hidden group disabled:opacity-60 flex items-center justify-center gap-3"
+                      style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+                      whileHover={{ scale: 1.01, background: 'var(--glass-bg-hover)' }}
                       whileTap={{ scale: 0.98 }}>
                       {googleLoading ? <Loader2 size={18} className="animate-spin" /> : (
                         <>
