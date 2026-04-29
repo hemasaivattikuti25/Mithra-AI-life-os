@@ -297,6 +297,53 @@
   background-color: rgba(15, 23, 42, 0.08) !important;
 }
 
+[data-theme="light"] .bg-white\/20 {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .bg-white\/90 {
+  background-color: rgba(15, 23, 42, 0.07) !important;
+}
+
+[data-theme="light"] .bg-white\/\[0\.02\] {
+  background-color: rgba(15, 23, 42, 0.02) !important;
+}
+
+[data-theme="light"] .bg-white\/\[0\.03\] {
+  background-color: rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .bg-white\/\[0\.05\] {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+/* border-white/* — invisible hairlines on light bg */
+[data-theme="light"] .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme="light"] .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+[data-theme="light"] .hover\:border-white\/10:hover {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .hover\:border-white\/20:hover {
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+/* Inline-style white color safety net — buttons/badges on accent bg keep white */
+[data-theme="light"] .bg-\[var\(--accent-color\)\] .text-white,
+[data-theme="light"] .bg-\[var\(--accent-color\)\] * {
+  color: #fff !important;
+}
+
 /* Hover variant overrides */
 [data-theme="light"] .hover\:bg-\[\#C2185B\]\/10:hover {
   background-color: rgb(var(--color-visor) / 0.08) !important;
@@ -372,6 +419,82 @@
 
 [data-theme="light"] .hover\:text-\[\#F2EBE3\]\/70:hover {
   color: rgba(45, 27, 30, 0.72) !important;
+}
+
+/* ═══════════════════════════════════════
+   LIGHT THEME — text-white fixes
+   text-white / text-white/* are invisible on light bg.
+   Map them to dark slate equivalents.
+   ═══════════════════════════════════════ */
+[data-theme="light"] .text-white {
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] .text-white\/5 {
+  color: rgba(15, 23, 42, 0.05) !important;
+}
+[data-theme="light"] .text-white\/10 {
+  color: rgba(15, 23, 42, 0.1) !important;
+}
+[data-theme="light"] .text-white\/20 {
+  color: rgba(15, 23, 42, 0.2) !important;
+}
+[data-theme="light"] .text-white\/25 {
+  color: rgba(15, 23, 42, 0.25) !important;
+}
+[data-theme="light"] .text-white\/30 {
+  color: rgba(15, 23, 42, 0.38) !important;
+}
+[data-theme="light"] .text-white\/40 {
+  color: rgba(15, 23, 42, 0.48) !important;
+}
+[data-theme="light"] .text-white\/50 {
+  color: rgba(15, 23, 42, 0.58) !important;
+}
+[data-theme="light"] .text-white\/60 {
+  color: rgba(15, 23, 42, 0.65) !important;
+}
+[data-theme="light"] .text-white\/70 {
+  color: rgba(15, 23, 42, 0.72) !important;
+}
+[data-theme="light"] .text-white\/75 {
+  color: rgba(15, 23, 42, 0.78) !important;
+}
+[data-theme="light"] .text-white\/80 {
+  color: rgba(15, 23, 42, 0.82) !important;
+}
+[data-theme="light"] .text-white\/90 {
+  color: rgba(15, 23, 42, 0.9) !important;
+}
+
+/* Hover variants */
+[data-theme="light"] .hover\:text-white:hover {
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] .hover\:text-white\/50:hover {
+  color: rgba(15, 23, 42, 0.58) !important;
+}
+[data-theme="light"] .hover\:text-white\/60:hover {
+  color: rgba(15, 23, 42, 0.65) !important;
+}
+[data-theme="light"] .hover\:text-white\/70:hover {
+  color: rgba(15, 23, 42, 0.72) !important;
+}
+[data-theme="light"] .hover\:text-white\/80:hover {
+  color: rgba(15, 23, 42, 0.85) !important;
+}
+
+/* gray-400 / gray-300 are also too light on white bg */
+[data-theme="light"] .text-gray-400 {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+[data-theme="light"] .text-gray-300 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+[data-theme="light"] .hover\:text-gray-400:hover {
+  color: rgba(15, 23, 42, 0.55) !important;
+}
+[data-theme="light"] .hover\:text-gray-300:hover {
+  color: rgba(15, 23, 42, 0.65) !important;
 }
 
 /* ═══════════════════════════════════════
