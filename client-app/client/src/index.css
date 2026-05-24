@@ -55,12 +55,16 @@
   --selection-bg: rgba(34, 211, 238, 0.3);
   --selection-text: #050505;
 
+  /* Dynamic text-white mapping system */
+  --text-white: #ffffff;
+  --text-white-rgb: 255, 255, 255;
+
   /* Glass System (Dark) */
   --glass-bg: rgba(10, 12, 16, 0.7);
   --glass-bg-hover: rgba(15, 20, 25, 0.85);
-  --glass-border: transparent;
-  /* Seamless */
-  --glass-border-hover: rgba(34, 211, 238, 0.1);
+  --glass-border: rgba(242, 235, 227, 0.08);
+  /* Subtle visible border in dark mode */
+  --glass-border-hover: rgba(34, 211, 238, 0.15);
   /* Subtle hover hint */
   --glass-blur: 16px;
   --glass-blur-heavy: 32px;
@@ -69,8 +73,8 @@
   --merino-glow: rgba(242, 235, 227, 0.02);
   --visor-glow: rgba(34, 211, 238, 0.05);
   /* Reduced */
-  --accent-glow: rgba(34, 211, 238, 0.08);
-  /* Reduced */
+  --accent-glow: rgba(34, 211, 238, 0.12);
+  /* Slightly more visible */
 
   /* Dynamic Accents (set by JS, defaults here) */
   --accent-color: #22d3ee;
@@ -90,24 +94,30 @@
   --color-surface: 255 255 255;
 
   /* Semantic Mappings */
-  --body-bg: #F8FAFC;
-  --surface-bg: #ffffff;
-  --nav-bg: rgba(248, 250, 252, 0.95);
+  --body-bg: #E8EDF3;
+  /* Richer, less blinding light bg */
+  --surface-bg: #F5F7FA;
+  --nav-bg: rgba(232, 237, 243, 0.96);
   --text-primary: #0F172A;
-  --text-dim: rgba(15, 23, 42, 0.75);
+  --text-dim: #334155;
   --selection-bg: rgba(6, 182, 212, 0.15);
   --selection-text: #050505;
 
-  /* Glass System */
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-bg-hover: rgba(241, 245, 249, 0.95);
-  --glass-border: rgba(15, 23, 42, 0.06);
-  --glass-border-hover: rgba(6, 182, 212, 0.2);
+  /* Dynamic text-white mapping system */
+  --text-white: #0F172A;
+  --text-white-rgb: 15, 23, 42;
 
-  /* Glows */
+  /* Glass System — proper contrast on light bg */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-hover: rgba(248, 250, 252, 0.92);
+  --glass-border: rgba(15, 23, 42, 0.10);
+  /* More visible border */
+  --glass-border-hover: rgba(6, 182, 212, 0.3);
+
+  /* Glows — more visible in light mode */
   --merino-glow: rgba(15, 23, 42, 0.04);
-  --visor-glow: rgba(6, 182, 212, 0.1);
-  --accent-glow: rgba(6, 182, 212, 0.15);
+  --visor-glow: rgba(6, 182, 212, 0.12);
+  --accent-glow: rgba(6, 182, 212, 0.18);
 
   /* Dynamic Accents */
   --accent-color: #06b6d4;
@@ -129,12 +139,12 @@
   --text-dim: rgba(242, 235, 227, 0.6);
   --glass-bg: rgba(10, 12, 16, 0.7);
   --glass-bg-hover: rgba(15, 20, 25, 0.85);
-  --glass-border: transparent;
-  --glass-border-hover: rgba(34, 211, 238, 0.1);
+  --glass-border: rgba(242, 235, 227, 0.08);
+  --glass-border-hover: rgba(34, 211, 238, 0.15);
   --accent-color: #22d3ee;
   --accent-soft: #0891b2;
   --accent-secondary: #38bdf8;
-  --accent-glow: rgba(34, 211, 238, 0.08);
+  --accent-glow: rgba(34, 211, 238, 0.12);
   --color-visor: 34 211 238;
   --color-merino: 242 235 227;
   --color-black: 5 5 5;
@@ -390,13 +400,45 @@
   border-color: rgba(15, 23, 42, 0.18) !important;
 }
 
-/* Inline-style white color safety net — buttons/badges on accent/dark bg keep white */
+/* Safety net for buttons/badges on accent/dark backgrounds to keep white text in light mode */
 [data-theme="light"] .bg-\[var\(--accent-color\)\] .text-white,
 [data-theme="light"] .bg-\[var\(--accent-color\)\] *,
-[data-theme="light"] button[class*="bg-"]:not(.bg-white):not(.bg-transparent):not(.bg-slate-50):not(.bg-gray-50) .text-white,
-[data-theme="light"] button[class*="bg-"]:not(.bg-white):not(.bg-transparent):not(.bg-slate-50):not(.bg-gray-50),
-[data-theme="light"] button[style*="background"]:not([style*="transparent"]):not([style*="var(--glass-border)"]):not([style*="#fff"]):not([style*="#FFF"]) .text-white,
-[data-theme="light"] button[style*="background"]:not([style*="transparent"]):not([style*="var(--glass-border)"]):not([style*="#fff"]):not([style*="#FFF"]),
+[data-theme="light"] button.bg-accent,
+[data-theme="light"] button[class*="bg-accent-visor"],
+[data-theme="light"] button[class*="bg-blue-"],
+[data-theme="light"] button[class*="bg-green-"],
+[data-theme="light"] button[class*="bg-purple-"],
+[data-theme="light"] button[class*="bg-indigo-"],
+[data-theme="light"] button[class*="bg-red-"],
+[data-theme="light"] button.bg-black,
+[data-theme="light"] button[class*="bg-slate-800"],
+[data-theme="light"] button[class*="bg-slate-900"],
+[data-theme="light"] button[class*="bg-gray-800"],
+[data-theme="light"] button[class*="bg-gray-900"] {
+  color: #fff !important;
+}
+
+[data-theme="light"] button.bg-accent *,
+[data-theme="light"] button[class*="bg-accent-visor"] *,
+[data-theme="light"] button[class*="bg-blue-"] *,
+[data-theme="light"] button[class*="bg-green-"] *,
+[data-theme="light"] button[class*="bg-purple-"] *,
+[data-theme="light"] button[class*="bg-indigo-"] *,
+[data-theme="light"] button[class*="bg-red-"] *,
+[data-theme="light"] button.bg-black *,
+[data-theme="light"] button[class*="bg-slate-800"] *,
+[data-theme="light"] button[class*="bg-slate-900"] *,
+[data-theme="light"] button[class*="bg-gray-800"] *,
+[data-theme="light"] button[class*="bg-gray-900"] * {
+  color: #fff !important;
+}
+
+/* Selected calendar cells or lists using dynamic accent style */
+[data-theme="light"] button[style*="var(--accent-color)"],
+[data-theme="light"] button[style*="var(--accent-color)"] * {
+  color: #fff !important;
+}
+
 [data-theme="light"] .bg-green-500,
 [data-theme="light"] .bg-green-500 *,
 [data-theme="light"] .bg-emerald-500,
@@ -503,80 +545,120 @@
   color: rgba(45, 27, 30, 0.72) !important;
 }
 
+/* Reset --text-white back to white inside dark components under light mode */
+[data-theme="light"] .bg-accent,
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-\[\#111\],
+[data-theme="light"] .bg-\[\#121212\],
+[data-theme="light"] .bg-\[\#1a1a1a\],
+[data-theme="light"] .bg-\[\#0a0a0a\],
+[data-theme="light"] .bg-\[\#0A0A0A\],
+[data-theme="light"] .bg-\[\#0A0C10\],
+[data-theme="light"] .bg-\[\#C2185B\],
+[data-theme="light"] .bg-\[\#9B1B30\],
+[data-theme="light"] [class*="bg-slate-800"],
+[data-theme="light"] [class*="bg-slate-900"],
+[data-theme="light"] [class*="bg-gray-800"],
+[data-theme="light"] [class*="bg-gray-900"],
+[data-theme="light"] [class*="bg-blue-600"],
+[data-theme="light"] [class*="bg-purple-500"],
+[data-theme="light"] [class*="bg-purple-600"],
+[data-theme="light"] [class*="bg-indigo-500"],
+[data-theme="light"] [class*="bg-indigo-600"],
+[data-theme="light"] [class*="bg-red-500"],
+[data-theme="light"] [class*="bg-emerald-500"],
+[data-theme="light"] [class*="bg-green-500"],
+[data-theme="light"] [class*="bg-orange-500"],
+[data-theme="light"] [class*="bg-amber-500"],
+[data-theme="light"] [class*="from-"],
+[data-theme="light"] [class*="to-"],
+[data-theme="light"] button[style*="background-color: var(--accent-color)"],
+[data-theme="light"] button[style*="backgroundColor: var(--accent-color)"],
+[data-theme="light"] [style*="background: var(--accent-color)"],
+[data-theme="light"] [style*="backgroundColor: var(--accent-color)"],
+[data-theme="light"] [style*="background-color: var(--accent-color)"] {
+  --text-white: #ffffff;
+  --text-white-rgb: 255, 255, 255;
+}
+
+[data-theme="light"] [data-theme="dark"] {
+  --text-white: #ffffff;
+  --text-white-rgb: 255, 255, 255;
+}
+
 /* ═══════════════════════════════════════
    LIGHT THEME — text-white fixes
-   text-white / text-white/* are invisible on light bg.
-   Map them to dark slate equivalents.
+   Uses custom property mapping to adjust contrast dynamically
    ═══════════════════════════════════════ */
 [data-theme="light"] .text-white {
-  color: var(--text-primary) !important;
+  color: var(--text-white) !important;
 }
 [data-theme="light"] .text-white\/5 {
-  color: rgba(15, 23, 42, 0.05) !important;
+  color: rgba(var(--text-white-rgb), 0.15) !important;
 }
 [data-theme="light"] .text-white\/10 {
-  color: rgba(15, 23, 42, 0.1) !important;
+  color: rgba(var(--text-white-rgb), 0.25) !important;
 }
 [data-theme="light"] .text-white\/20 {
-  color: rgba(15, 23, 42, 0.2) !important;
+  color: rgba(var(--text-white-rgb), 0.4) !important;
 }
 [data-theme="light"] .text-white\/25 {
-  color: rgba(15, 23, 42, 0.25) !important;
+  color: rgba(var(--text-white-rgb), 0.45) !important;
 }
 [data-theme="light"] .text-white\/30 {
-  color: rgba(15, 23, 42, 0.38) !important;
+  color: rgba(var(--text-white-rgb), 0.55) !important;
 }
 [data-theme="light"] .text-white\/40 {
-  color: rgba(15, 23, 42, 0.48) !important;
+  color: rgba(var(--text-white-rgb), 0.65) !important;
 }
 [data-theme="light"] .text-white\/50 {
-  color: rgba(15, 23, 42, 0.58) !important;
+  color: rgba(var(--text-white-rgb), 0.75) !important;
 }
 [data-theme="light"] .text-white\/60 {
-  color: rgba(15, 23, 42, 0.65) !important;
+  color: rgba(var(--text-white-rgb), 0.8) !important;
 }
 [data-theme="light"] .text-white\/70 {
-  color: rgba(15, 23, 42, 0.72) !important;
+  color: rgba(var(--text-white-rgb), 0.85) !important;
 }
 [data-theme="light"] .text-white\/75 {
-  color: rgba(15, 23, 42, 0.78) !important;
+  color: rgba(var(--text-white-rgb), 0.88) !important;
 }
 [data-theme="light"] .text-white\/80 {
-  color: rgba(15, 23, 42, 0.82) !important;
+  color: rgba(var(--text-white-rgb), 0.9) !important;
 }
 [data-theme="light"] .text-white\/90 {
-  color: rgba(15, 23, 42, 0.9) !important;
+  color: rgba(var(--text-white-rgb), 0.95) !important;
 }
 
 /* Hover variants */
 [data-theme="light"] .hover\:text-white:hover {
-  color: var(--text-primary) !important;
+  color: var(--text-white) !important;
 }
 [data-theme="light"] .hover\:text-white\/50:hover {
-  color: rgba(15, 23, 42, 0.58) !important;
+  color: rgba(var(--text-white-rgb), 0.75) !important;
 }
 [data-theme="light"] .hover\:text-white\/60:hover {
-  color: rgba(15, 23, 42, 0.65) !important;
+  color: rgba(var(--text-white-rgb), 0.8) !important;
 }
 [data-theme="light"] .hover\:text-white\/70:hover {
-  color: rgba(15, 23, 42, 0.72) !important;
+  color: rgba(var(--text-white-rgb), 0.85) !important;
 }
 [data-theme="light"] .hover\:text-white\/80:hover {
-  color: rgba(15, 23, 42, 0.85) !important;
+  color: rgba(var(--text-white-rgb), 0.9) !important;
 }
 
-/* gray-400 / gray-300 are also too light on white bg */
+/* gray-400 / gray-300 contrast fixes for glassy text */
 [data-theme="light"] .text-gray-400 {
-  color: rgba(15, 23, 42, 0.5) !important;
+  color: #475569 !important;
 }
 [data-theme="light"] .text-gray-300 {
-  color: rgba(15, 23, 42, 0.6) !important;
+  color: #334155 !important;
 }
 [data-theme="light"] .hover\:text-gray-400:hover {
-  color: rgba(15, 23, 42, 0.55) !important;
+  color: #334155 !important;
 }
 [data-theme="light"] .hover\:text-gray-300:hover {
-  color: rgba(15, 23, 42, 0.65) !important;
+  color: #1e293b !important;
 }
 
 /* ═══════════════════════════════════════
@@ -996,4 +1078,133 @@ input[type="range"].reminder-slider::-moz-range-track {
 .animate-float {
   animation: float 6s ease-in-out infinite;
   will-change: transform;
+}
+
+/* ═══════════════════════════════════════
+   LIGHT THEME — CRITICAL VISIBILITY FIXES
+   Ensure all buttons, cards, and text are visible
+   ═══════════════════════════════════════ */
+
+/* Glass-card borders are visible in light mode */
+[data-theme="light"] .glass-card {
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  box-shadow: 0 1px 12px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.05);
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Ensure glass-heavy has proper contrast in light mode */
+[data-theme="light"] .glass-heavy {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Accent glow buttons — visible in light mode */
+[data-theme="light"] [class*="bg-[var(--accent-glow)]"],
+[data-theme="light"] .bg-\[var\(--accent-glow\)\] {
+  background-color: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+/* Buttons with accent-glow background should have visible text */
+[data-theme="light"] button.bg-\[var\(--accent-glow\)\],
+[data-theme="light"] a.bg-\[var\(--accent-glow\)\] {
+  background-color: rgba(6, 182, 212, 0.12) !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  color: var(--accent-soft) !important;
+}
+
+/* Surface-bg containers need visible borders in light mode */
+[data-theme="light"] .bg-\[var\(--surface-bg\)\] {
+  border-color: rgba(15, 23, 42, 0.07) !important;
+}
+
+/* Glass bg containers */
+[data-theme="light"] .bg-\[var\(--glass-bg\)\] {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+/* Fix text-dim on glassy backgrounds — must be readable */
+[data-theme="light"] .glass-card .text-\[var\(--text-dim\)\],
+[data-theme="light"] .glass-heavy .text-\[var\(--text-dim\)\] {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* text-white/30 was invisible on white bg — use readable slate instead */
+[data-theme="light"] .text-white\/30 {
+  color: rgba(15, 23, 42, 0.55) !important;
+}
+[data-theme="light"] .text-white\/20 {
+  color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Opacity-based text helpers in light mode */
+[data-theme="light"] [class*="opacity-40"],
+[data-theme="light"] [class*="opacity-35"],
+[data-theme="light"] [class*="opacity-30"],
+[data-theme="light"] [class*="opacity-20"] {
+  /* Don't override — let the color do the work */
+}
+
+/* Calendar date cells — visible in light mode */
+[data-theme="light"] .rounded-lg.border-\[var\(--glass-border\)\] {
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+
+/* Fix accent-color borders */
+[data-theme="light"] .border-\[var\(--accent-color\)\]\/25 {
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+[data-theme="light"] .border-\[var\(--accent-color\)\]\/15 {
+  border-color: rgba(6, 182, 212, 0.25) !important;
+}
+[data-theme="light"] .border-\[var\(--accent-color\)\]\/30 {
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+/* Habits & Tasks "Add" button visibility */
+[data-theme="light"] .text-accent-visor {
+  color: #0891b2 !important;
+}
+
+/* Glass-input in light mode */
+[data-theme="light"] .glass-input {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  color: #0F172A !important;
+}
+
+/* Make scroll-bar visible in light mode */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.22) !important;
+}
+
+/* Dark theme — ensure glass-card borders are always visible */
+:root .glass-card {
+  border: 1px solid rgba(242, 235, 227, 0.08);
+}
+
+/* Completed task text visible in light mode */
+[data-theme="light"] .line-through {
+  color: rgba(15, 23, 42, 0.4) !important;
+}
+
+/* Background blur cards — ensure they look good in light */
+[data-theme="light"] .backdrop-blur-xl {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* Dropdown and modal overlays */
+[data-theme="light"] .bg-\[var\(--body-bg\)\] {
+  background-color: #E8EDF3 !important;
+}
+
+/* Pulse-slow animation for light mode bg blobs */
+@keyframes animate-pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.65; }
+}
+.animate-pulse-slow {
+  animation: animate-pulse-slow 5s ease-in-out infinite;
 }

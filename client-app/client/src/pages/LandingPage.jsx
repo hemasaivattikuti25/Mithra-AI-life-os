@@ -47,7 +47,11 @@ const Navbar = ({ isAuthenticated, navigate, theme, toggleTheme }) => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={toggleTheme}
-                        className="p-2 rounded-full bg-[var(--glass-border)] text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors border border-[var(--glass-border)]"
+                        className="p-2 rounded-full text-[var(--text-primary)] hover:scale-105 transition-all"
+                        style={{ 
+                            background: 'var(--glass-bg)',
+                            border: '1px solid var(--glass-border, rgba(128,128,128,0.2))'
+                        }}
                         aria-label="Toggle Theme"
                     >
                         {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -438,296 +442,65 @@ const AIDemo = () => {
 };
 
 // --- Founder Section ---
-const Founder = () => {
-    const [activeTab, setActiveTab] = useState('about');
-
-    const tabs = [
-        { id: 'about', label: 'About & Vision', icon: Brain },
-        { id: 'experience', label: 'Experience & Projects', icon: Briefcase },
-        { id: 'skills', label: 'Skills & Stack', icon: Code },
-        { id: 'education', label: 'Education & Honors', icon: GraduationCap }
-    ];
-
-    return (
-        <section id="founder" className="py-24 px-6 relative z-10">
-            <div className="max-w-6xl mx-auto">
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-16"
-                >
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                        Meet the <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Founder & Engineer</span>
-                    </h2>
-                    <p className="text-[var(--text-dim)] max-w-xl mx-auto">
-                        The developer behind Mithra Life OS, building high-availability distributed backends and AI-native applications.
-                    </p>
-                </motion.div>
-
-                <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.8 }}
-                    className="relative rounded-3xl border border-[var(--glass-border)] bg-[var(--surface-bg)] backdrop-blur-xl overflow-hidden p-6 sm:p-10 shadow-2xl"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none" />
-                    
-                    <div className="relative grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-                        {/* Profile Info Left Panel */}
-                        <div className="lg:col-span-4 flex flex-col items-center text-center lg:items-start lg:text-left border-b lg:border-b-0 lg:border-r border-[var(--glass-border)] pb-8 lg:pb-0 lg:pr-8">
-                            <div className="relative mb-6">
-                                <div className="absolute -inset-1.5 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full blur-md opacity-60 animate-pulse-slow" />
-                                <img
-                                    src="/assets/hemasai.jpeg"
-                                    alt="Hemasai Vattikuti"
-                                    className="relative w-36 h-36 rounded-full object-cover border-4 border-[#0A0C10] shadow-2xl"
-                                />
-                            </div>
-                            <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                                Hemasai Vattikuti
-                            </h3>
-                            <p className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider">Backend & Applied AI Engineer</p>
-                            
-                            <p className="text-xs text-[var(--text-dim)] mb-6 max-w-xs leading-relaxed">
-                                Building high-availability distributed systems, zero-trust backend architectures, and production LLM integrations.
-                            </p>
-
-                            {/* Contact Info */}
-                            <div className="flex flex-col gap-2.5 w-full text-xs text-[var(--text-dim)] mb-6">
-                                <a href="mailto:hemasaivattikuti2727@gmail.com" className="flex items-center justify-center lg:justify-start gap-2.5 hover:text-cyan-400 transition-colors">
-                                    <Mail size={14} className="text-cyan-400 shrink-0" />
-                                    <span>hemasaivattikuti2727@gmail.com</span>
-                                </a>
-                                <a href="tel:+9179937407469" className="flex items-center justify-center lg:justify-start gap-2.5 hover:text-cyan-400 transition-colors">
-                                    <Phone size={14} className="text-cyan-400 shrink-0" />
-                                    <span>+91 79937407469</span>
-                                </a>
-                                <div className="flex items-center justify-center lg:justify-start gap-2.5">
-                                    <Globe size={14} className="text-cyan-400 shrink-0" />
-                                    <span>mithra-lifeos.com</span>
-                                </div>
-                            </div>
-
-                            {/* Links Buttons */}
-                            <div className="flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-auto">
-                                <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
-                                    GitHub
-                                </a>
-                                <a href="https://www.linkedin.com/in/hemasaivattikuti" target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
-                                    LinkedIn
-                                </a>
-                                <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
-                                    Portfolio
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Interactive Area Right Panel */}
-                        <div className="lg:col-span-8 flex flex-col h-full min-h-[380px] w-full">
-                            {/* Tabs Header */}
-                            <div className="flex flex-wrap gap-1.5 bg-[var(--glass-bg)] p-1 rounded-2xl border border-[var(--glass-border)] mb-6">
-                                {tabs.map(tab => {
-                                    const TabIcon = tab.icon;
-                                    const isActive = activeTab === tab.id;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all relative ${
-                                                isActive ? 'text-black bg-white shadow-sm' : 'text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)]'
-                                            }`}
-                                        >
-                                            <TabIcon size={14} />
-                                            <span>{tab.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Tab Content Container */}
-                            <div className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-5 sm:p-6 min-h-[320px] flex flex-col justify-between">
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={activeTab}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="h-full flex flex-col justify-between"
-                                    >
-                                        {activeTab === 'about' && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-base font-bold text-white flex items-center gap-2">
-                                                    <Brain size={16} className="text-cyan-400" />
-                                                    The Vision Behind Mithra Life OS
-                                                </h4>
-                                                <p className="text-sm text-[var(--text-dim)] leading-relaxed">
-                                                    I built Mithra because I believe everyone deserves a unified place to remain productive, organized, and self-aware. Scattered apps and disjointed trackers create mental friction. Mithra is a high-availability, AI-native operating system that automates and simplifies personal growth.
-                                                </p>
-                                                <p className="text-sm text-[var(--text-dim)] leading-relaxed">
-                                                    Combining RAG-style semantic vector search (powered by 768-dimensional Gemini embeddings stored in PostgreSQL pgvector), zero-trust Row-Level Security (RLS) for absolute privacy, and a conversational AI copilot (Dost AI), Mithra elevates daily productivity into an effortless, insightful experience.
-                                                </p>
-                                                <div className="p-3.5 bg-cyan-500/5 border border-cyan-500/10 rounded-xl mt-4">
-                                                    <p className="text-xs text-cyan-400 font-medium">
-                                                        ⚡ Milestones: Live AI platform with 1000+ active users tracking habits, managing tasks, and building accountability workspaces via Mithra Blend.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'experience' && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-base font-bold text-white flex items-center gap-2">
-                                                    <Briefcase size={16} className="text-cyan-400" />
-                                                    Experience Highlights & Shipped Code
-                                                </h4>
-                                                <div className="space-y-5 max-h-[250px] overflow-y-auto pr-1">
-                                                    {/* DRDO */}
-                                                    <div className="relative pl-4 border-l-2 border-cyan-500/30">
-                                                        <div className="absolute -left-[5.5px] top-1.5 w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                                                        <div className="flex justify-between items-start flex-wrap gap-1 mb-1">
-                                                            <h5 className="text-sm font-bold text-white">Project Intern · Backend & Distributed Systems</h5>
-                                                            <span className="text-[10px] text-cyan-400 font-mono">Aug – Nov 2025</span>
-                                                        </div>
-                                                        <p className="text-xs text-[var(--text-primary)] font-semibold mb-1">Defence Research and Development Laboratory (DRDL – DRDO), Ministry of Defence</p>
-                                                        <ul className="list-disc list-inside text-xs text-[var(--text-dim)] space-y-1 pl-1 leading-relaxed">
-                                                            <li>Architected a 3-node MongoDB Replica Set with automatic PRIMARY election and sub-10s failover under Scientist ‘E’.</li>
-                                                            <li>Built a production-grade FastAPI backend with JWT auth, role-based access control (RBAC), and custom rate limiting.</li>
-                                                            <li>Dockerized full stack (3×MongoDB + FastAPI + React/Nginx) with 30s polling background health monitors.</li>
-                                                        </ul>
-                                                    </div>
-
-                                                    {/* Embrizon */}
-                                                    <div className="relative pl-4 border-l-2 border-cyan-500/30">
-                                                        <div className="absolute -left-[5.5px] top-1.5 w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                                                        <div className="flex justify-between items-start flex-wrap gap-1 mb-1">
-                                                            <h5 className="text-sm font-bold text-white">Artificial Intelligence Intern</h5>
-                                                            <span className="text-[10px] text-cyan-400 font-mono">Nov 2024 – Jan 2025</span>
-                                                        </div>
-                                                        <p className="text-xs text-[var(--text-primary)] font-semibold mb-1">Embrizon Technologies Pvt. Ltd. (Remote)</p>
-                                                        <ul className="list-disc list-inside text-xs text-[var(--text-dim)] pl-1 leading-relaxed">
-                                                            <li>Built custom chatbot training pipelines and FastAPI backends; received Letter of Recommendation from Founder & CEO.</li>
-                                                        </ul>
-                                                    </div>
-
-                                                    {/* Projects */}
-                                                    <div className="relative pl-4 border-l-2 border-cyan-500/30">
-                                                        <div className="absolute -left-[5.5px] top-1.5 w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                                                        <div className="flex justify-between items-start flex-wrap gap-1 mb-1">
-                                                            <h5 className="text-sm font-bold text-white">Featured Project: Projectile Simulator</h5>
-                                                            <span className="text-[10px] text-cyan-400 font-mono">Jan 2026</span>
-                                                        </div>
-                                                        <p className="text-xs text-[var(--text-primary)] font-semibold mb-1">JavaScript · Vercel · Physics Simulation</p>
-                                                        <ul className="list-disc list-inside text-xs text-[var(--text-dim)] pl-1 leading-relaxed">
-                                                            <li>Real-time physics simulator built for Simverse Hackathon; placed 7th of 200+ participants at VIT-AP and awarded goodies prize.</li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'skills' && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-base font-bold text-white flex items-center gap-2">
-                                                    <Code size={16} className="text-cyan-400" />
-                                                    Engineered Skillset
-                                                </h4>
-                                                
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-400 mb-2 block">AI / LLMs</span>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {['LangChain', 'Agentic AI', 'RAG', 'Vector Embeddings', 'Semantic Search', 'Prompt Engineering', 'OpenAI API', 'Hugging Face'].map(s => (
-                                                                <span key={s} className="px-2 py-1 rounded-lg bg-[var(--surface-bg)] border border-[var(--glass-border)] text-[10px] text-[var(--text-primary)]">{s}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-400 mb-2 block">Backend & Containers</span>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {['Python', 'FastAPI', 'JWT Auth', 'RBAC', 'Rate Limiting', 'Async Programming', 'REST APIs', 'Docker'].map(s => (
-                                                                <span key={s} className="px-2 py-1 rounded-lg bg-[var(--surface-bg)] border border-[var(--glass-border)] text-[10px] text-[var(--text-primary)]">{s}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-400 mb-2 block">Databases & Clouds</span>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {['PostgreSQL', 'MongoDB Replica Sets', 'Failover Sets', 'Supabase', 'pgvector'].map(s => (
-                                                                <span key={s} className="px-2 py-1 rounded-lg bg-[var(--surface-bg)] border border-[var(--glass-border)] text-[10px] text-[var(--text-primary)]">{s}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-400 mb-2 block">Tools & Architecture</span>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {['React.js', 'JavaScript', 'Git', 'Vercel', 'Google Cloud', 'Row-Level Security', 'Zero-Trust', 'High Availability'].map(s => (
-                                                                <span key={s} className="px-2 py-1 rounded-lg bg-[var(--surface-bg)] border border-[var(--glass-border)] text-[10px] text-[var(--text-primary)]">{s}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'education' && (
-                                            <div className="space-y-4">
-                                                <h4 className="text-base font-bold text-white flex items-center gap-2">
-                                                    <GraduationCap size={16} className="text-cyan-400" />
-                                                    Academic Background & Hackathons
-                                                </h4>
-                                                
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-start flex-wrap gap-1">
-                                                        <div>
-                                                            <h5 className="text-sm font-bold text-white">Vellore Institute of Technology — Andhra Pradesh (VIT-AP)</h5>
-                                                            <p className="text-xs text-[var(--text-dim)]">B.Tech, Computer Science and Engineering (2023 – 2027)</p>
-                                                        </div>
-                                                        <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-2.5 py-0.5 rounded-full">Amaravati, AP</span>
-                                                    </div>
-                                                    <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                                                        <strong>Coursework:</strong> Data Structures & Algorithms, Machine Learning, Natural Language Processing (NLP), DBMS, Linear Algebra, Web Technologies.
-                                                    </p>
-
-                                                    <div className="border-t border-[var(--glass-border)] pt-3 mt-1">
-                                                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-400 mb-2 block">Honors & Achievements</span>
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-2 text-xs">
-                                                                <Award size={14} className="text-yellow-500 shrink-0" />
-                                                                <span className="text-[var(--text-primary)]"><strong>4th Place</strong> — Google Cloud Hackathon | GoogleDevs Sprint 2K25 (VIT-AP, 486 participants)</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-xs">
-                                                                <Award size={14} className="text-yellow-500 shrink-0" />
-                                                                <span className="text-[var(--text-primary)]"><strong>7th Place</strong> — Simverse Hackathon (VIT-AP, 200+ participants, Goodies Prize)</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-xs">
-                                                                <Award size={14} className="text-cyan-400 shrink-0" />
-                                                                <span className="text-[var(--text-dim)]">GSSoC 2025 Tech Contributor | GirlScript Summer of Code (DataSentience-AIML)</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                </AnimatePresence>
-                            </div>
+const Founder = () => (
+    <section id="founder" className="py-24 px-6 relative z-10">
+        <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+                <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    Meet the <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Founder & Developer</span>
+                </h2>
+            </div>
+            <div className="relative rounded-3xl border border-[var(--glass-border)] bg-[var(--surface-bg)] backdrop-blur-xl overflow-hidden p-8 sm:p-12 shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none" />
+                <div className="relative flex flex-col lg:flex-row items-center gap-10">
+                    {/* Photo */}
+                    <div className="shrink-0">
+                        <div className="relative">
+                            <div className="absolute -inset-1.5 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full blur-md opacity-60 animate-pulse-slow" />
+                            <img
+                                src="/assets/hemasai.jpeg"
+                                alt="Hemasai Vattikuti"
+                                className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover border-4 border-[#0A0C10] shadow-2xl"
+                            />
                         </div>
                     </div>
-                </motion.div>
+
+                    {/* Story */}
+                    <div className="flex-1 text-center lg:text-left">
+                        <h3 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                            Hemasai Vattikuti
+                        </h3>
+                        <p className="text-cyan-400 text-sm font-semibold mb-5 tracking-wide uppercase">Backend & Applied AI Engineer</p>
+                        
+                        <p className="text-[var(--text-primary)] opacity-80 leading-relaxed mb-4">
+                            I built Mithra Life OS because I believe everyone deserves a unified, AI-native space to optimize their productivity, build habits, and gain self-awareness without fighting scattered apps.
+                        </p>
+                        
+                        <p className="text-[var(--text-dim)] leading-relaxed mb-6">
+                            As a B.Tech Computer Science student at VIT-AP (class of 2027) with coursework spanning Machine Learning, NLP, and Data Structures, I specialize in building high-availability backends and production LLM integrations. Previously, I engineered FastAPI backends and fault-tolerant MongoDB replica sets for a mission-critical Defence Asset Management System at DRDL–DRDO, and designed custom AI training pipelines at Embrizon. Shipping Mithra is my way of putting advanced, zero-trust productivity systems in the hands of users worldwide.
+                        </p>
+
+                        {/* Social Links */}
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3">
+                            <a href="https://github.com/hemasaivattikuti25" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--glass-bg)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
+                                <Globe size={14} /> GitHub
+                            </a>
+                            <a href="https://www.linkedin.com/in/hemasaivattikuti" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--glass-bg)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
+                                <Users size={14} /> LinkedIn
+                            </a>
+                            <a href="https://hemasai-vattikuti-portfolio.vercel.app" target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--glass-bg)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-all">
+                                <Zap size={14} /> Portfolio
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </section>
-    );
-};
+        </div>
+    </section>
+);
 
 // --- Footer ---
 const Footer = () => (
