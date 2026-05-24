@@ -1953,7 +1953,10 @@ export default function DostMode() {
 
       {/* ─── QUICK ACTIONS BAR ─── */}
       <div className="px-4 md:px-6 py-2.5 flex gap-2 overflow-x-auto scrollbar-hide z-10"
-        style={{ backgroundColor: 'var(--glass-bg)' }}>
+        style={{ 
+          backgroundColor: 'var(--surface-bg)',
+          borderTop: '1px solid var(--glass-border)'
+        }}>
         {[
           { label: '📊 Summary', cmd: 'Summarize my day' },
           { label: '🔥 Habits', cmd: 'How are my habits?' },
@@ -2010,8 +2013,12 @@ export default function DostMode() {
                 }, 50);
               }
             }}
-            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-accent-visor/5 transition-all flex-shrink-0 font-medium"
-            style={{ background: 'var(--glass-bg)' }}
+            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full text-[var(--text-dim)] hover:text-[var(--text-primary)] hover:bg-accent-visor/10 transition-all flex-shrink-0 font-medium"
+            style={{ 
+              background: 'var(--glass-bg)',
+              border: '1px solid var(--glass-border)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+            }}
           >
             {q.label}
           </button>

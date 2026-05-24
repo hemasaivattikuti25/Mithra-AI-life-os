@@ -1094,11 +1094,13 @@ function Dashboard() {
           animate="visible"
           onClick={() => setShowShareStats(true)}
           whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.01 }}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm transition-all"
           style={{
-            background: 'linear-gradient(135deg, var(--accent-glow), transparent)',
-            border: '1px solid var(--glass-border)',
+            background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(14,165,233,0.10))',
+            border: '1.5px solid rgba(6,182,212,0.40)',
             color: 'var(--accent-color)',
+            boxShadow: '0 2px 16px rgba(6,182,212,0.12)',
           }}
         >
           <Share2 size={18} />

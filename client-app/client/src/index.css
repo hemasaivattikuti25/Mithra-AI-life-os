@@ -94,10 +94,10 @@
   --color-surface: 255 255 255;
 
   /* Semantic Mappings */
-  --body-bg: #E8EDF3;
-  /* Richer, less blinding light bg */
-  --surface-bg: #F5F7FA;
-  --nav-bg: rgba(232, 237, 243, 0.96);
+  --body-bg: #B8C4D4;
+  /* Rich slate-blue — much darker so white cards pop */
+  --surface-bg: #F2F5F9;
+  --nav-bg: rgba(184, 196, 212, 0.97);
   --text-primary: #0F172A;
   --text-dim: #334155;
   --selection-bg: rgba(6, 182, 212, 0.15);
@@ -107,17 +107,19 @@
   --text-white: #0F172A;
   --text-white-rgb: 15, 23, 42;
 
-  /* Glass System — proper contrast on light bg */
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-bg-hover: rgba(248, 250, 252, 0.92);
+  /* Glass System — white cards float on dark slate bg */
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-bg-hover: rgba(242, 245, 249, 0.97);
   --glass-border: rgba(15, 23, 42, 0.10);
-  /* More visible border */
   --glass-border-hover: rgba(6, 182, 212, 0.3);
 
-  /* Glows — more visible in light mode */
+  /* Glows — visible on the darker bg */
   --merino-glow: rgba(15, 23, 42, 0.04);
-  --visor-glow: rgba(6, 182, 212, 0.12);
-  --accent-glow: rgba(6, 182, 212, 0.18);
+  --visor-glow: rgba(6, 182, 212, 0.14);
+  --accent-glow: rgba(6, 182, 212, 0.20);
+
+  /* Inactive toggle track — visible on light cards */
+  --toggle-inactive: rgba(15, 23, 42, 0.18);
 
   /* Dynamic Accents */
   --accent-color: #06b6d4;
@@ -1197,7 +1199,7 @@ input[type="range"].reminder-slider::-moz-range-track {
 
 /* Dropdown and modal overlays */
 [data-theme="light"] .bg-\[var\(--body-bg\)\] {
-  background-color: #E8EDF3 !important;
+  background-color: #B8C4D4 !important;
 }
 
 /* Pulse-slow animation for light mode bg blobs */
@@ -1207,4 +1209,89 @@ input[type="range"].reminder-slider::-moz-range-track {
 }
 .animate-pulse-slow {
   animation: animate-pulse-slow 5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════
+   LIGHT THEME — SPECIFIC COMPONENT FIXES
+   ═══════════════════════════════════════ */
+
+/* glass-panel used in Settings sections */
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 2px 20px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Settings: inactive toggle track is visible */
+[data-theme="light"] .w-12.h-6.rounded-full {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.15);
+}
+
+/* Settings: Edit Profile / Change Password button */
+[data-theme="light"] button[style*="glass-bg-hover"],
+[data-theme="light"] .bg-\[var\(--glass-bg-hover\)\] {
+  background: rgba(245, 247, 250, 0.98) !important;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+/* Settings Appearance card: Dark Mode label and description text */
+[data-theme="light"] section span,
+[data-theme="light"] section p {
+  opacity: 1;
+}
+
+/* Dark Mode toggle: light theme inactive track */
+[data-theme="light"] button.w-14.h-7.rounded-full {
+  box-shadow: inset 0 0 0 1.5px rgba(15, 23, 42, 0.20) !important;
+  background: rgba(15, 23, 42, 0.18) !important;
+}
+
+/* Dost: Quick action chips need visible pill background */
+[data-theme="light"] .px-3\.5.py-2.rounded-full.text-\[var\(--text-dim\)\] {
+  background: rgba(255, 255, 255, 0.90) !important;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+}
+
+/* Dost: Quick actions bar background */
+[data-theme="light"] .px-4.py-2\.5.flex.gap-2 {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* Dashboard: Share Your Stats button — needs solid visible styling */
+[data-theme="light"] button.w-full.flex.items-center.justify-center.gap-2.py-4.rounded-2xl {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border: 1.5px solid rgba(6, 182, 212, 0.35) !important;
+  box-shadow: 0 2px 12px rgba(6, 182, 212, 0.12) !important;
+  color: #0891b2 !important;
+}
+
+/* Dashboard: Stat cards need stronger shadow to lift off bg */
+[data-theme="light"] .rounded-2xl.p-5.group {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.10), 0 1px 4px rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* Smart schedule button visibility */
+[data-theme="light"] button[style*="accent-glow"] {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.30) !important;
+  color: #0891b2 !important;
+}
+
+/* GlassCard component on dashboard in light mode */
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.10), 0 1px 6px rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Sidebar / nav background in light mode */
+[data-theme="light"] nav,
+[data-theme="light"] aside {
+  background: rgba(184, 196, 212, 0.97) !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.10);
 }

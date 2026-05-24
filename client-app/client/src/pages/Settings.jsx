@@ -22,7 +22,7 @@ const Toggle = ({ label, description, isActive, onToggle }) => (
     <button
       onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300"
-      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(150, 150, 150, 0.4)' }}
+      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(100, 116, 139, 0.35)' }}
     >
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
         style={{ backgroundColor: '#fff' }} />
@@ -106,7 +106,7 @@ const IconToggle = ({ label, description, icon: Icon, isActive, onToggle, disabl
     </div>
     <button onClick={onToggle}
       className="w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 ml-3"
-      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(150, 150, 150, 0.4)' }}>
+      style={{ background: isActive ? 'var(--accent-color)' : 'rgba(100, 116, 139, 0.35)' }}>
       <div className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}
         style={{ backgroundColor: '#fff' }} />
     </button>
@@ -460,13 +460,14 @@ export default function Settings() {
                   </motion.button>
                 </>
               ) : (
-                <motion.button
+              <motion.button
                   onClick={startEditProfile}
                   whileTap={{ scale: 0.95 }}
                   className="px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                   style={{
                     color: 'var(--accent-color)',
                     background: 'var(--glass-bg-hover)',
+                    border: '1px solid var(--glass-border)',
                     boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                   }}>
                   <Pencil size={14} /> Edit Profile
@@ -535,7 +536,8 @@ export default function Settings() {
                 style={{
                   color: 'var(--text-primary)',
                   background: 'var(--glass-bg-hover)',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                  border: '1px solid var(--glass-border)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
                 }}>
                 <Lock size={14} style={{ color: 'var(--accent-color)' }} /> Change Password
               </button>
@@ -550,7 +552,7 @@ export default function Settings() {
             <span className="flex items-center gap-3">
               {isDarkMode ? <Moon size={20} style={{ color: 'var(--accent-color)' }} /> : <Sun size={20} style={{ color: 'var(--accent-color)' }} />}
               <div>
-                <span>Dark Mode</span>
+                <span style={{ color: 'var(--text-primary)' }}>Dark Mode</span>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>
                   {isDarkMode ? 'Using dark theme' : 'Using light theme'}
                 </p>
@@ -558,7 +560,7 @@ export default function Settings() {
             </span>
             <button onClick={toggleTheme}
               className="w-14 h-7 rounded-full p-1 transition-colors duration-300"
-              style={{ background: isDarkMode ? 'var(--accent-color)' : 'var(--glass-border)' }}>
+              style={{ background: isDarkMode ? 'var(--accent-color)' : 'rgba(100, 116, 139, 0.4)' }}>
               <div className="w-5 h-5 rounded-full shadow-md transform transition-transform duration-300"
                 style={{ transform: isDarkMode ? 'translateX(28px)' : 'translateX(0)', backgroundColor: isDarkMode ? '#fff' : 'var(--accent-color)' }} />
             </button>
