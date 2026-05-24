@@ -94,10 +94,19 @@
   --color-surface: 255 255 255;
 
   /* Semantic Mappings */
-  --body-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
-  /* Very pale theme tint with white — NO SEPARATION from cards */
-  --surface-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
-  --nav-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
+  /* All surfaces = very pale tint of active accent mixed with white.
+     This means sidebar, cards, and background all share the SAME
+     base color — no separation at all. */
+  --body-bg:    color-mix(in srgb, var(--accent-color) 10%, #ffffff);
+  --surface-bg: color-mix(in srgb, var(--accent-color) 10%, #ffffff);
+  --nav-bg:     color-mix(in srgb, var(--accent-color) 10%, #ffffff);
+
+  /* Cards use a very slightly stronger tint than bg for subtle depth */
+  --glass-bg:       color-mix(in srgb, var(--accent-color) 14%, #ffffff);
+  --glass-bg-hover: color-mix(in srgb, var(--accent-color) 20%, #ffffff);
+  --glass-border:       rgba(15, 23, 42, 0.08);
+  --glass-border-hover: color-mix(in srgb, var(--accent-color) 50%, transparent);
+
   --text-primary: #0F172A;
   --text-dim: #334155;
   --selection-bg: rgba(6, 182, 212, 0.15);
@@ -107,18 +116,12 @@
   --text-white: #0F172A;
   --text-white-rgb: 15, 23, 42;
 
-  /* Glass System — white cards float on dark slate bg */
-  --glass-bg: rgba(255, 255, 255, 0.92);
-  --glass-bg-hover: rgba(242, 245, 249, 0.97);
-  --glass-border: rgba(15, 23, 42, 0.10);
-  --glass-border-hover: rgba(6, 182, 212, 0.3);
-
-  /* Glows — visible on the darker bg */
+  /* Glows */
   --merino-glow: rgba(15, 23, 42, 0.04);
-  --visor-glow: rgba(6, 182, 212, 0.14);
-  --accent-glow: rgba(6, 182, 212, 0.20);
+  --visor-glow:  color-mix(in srgb, var(--accent-color) 14%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent-color) 20%, transparent);
 
-  /* Inactive toggle track — visible on light cards */
+  /* Inactive toggle track */
   --toggle-inactive: rgba(15, 23, 42, 0.18);
 
   /* Dynamic Accents */
@@ -1194,12 +1197,12 @@ input[type="range"].reminder-slider::-moz-range-track {
 
 /* Background blur cards — ensure they look good in light */
 [data-theme="light"] .backdrop-blur-xl {
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--accent-color) 5%, #ffffff) !important;
 }
 
-/* Dropdown and modal overlays */
+/* Dropdown and modal overlays match theme */
 [data-theme="light"] .bg-\[var\(--body-bg\)\] {
-  background-color: color-mix(in srgb, var(--accent-color) 8%, #ffffff) !important;
+  background-color: color-mix(in srgb, var(--accent-color) 10%, #ffffff) !important;
 }
 
 /* Pulse-slow animation for light mode bg blobs */

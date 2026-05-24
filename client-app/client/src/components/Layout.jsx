@@ -78,7 +78,6 @@ const DesktopSidebar = () => {
         <aside className="hidden md:flex w-20 lg:w-64 h-screen fixed left-0 top-0 z-30 flex-col transition-all duration-400"
             style={{
                 background: 'var(--nav-bg)',
-                backdropFilter: 'blur(20px)',
                 borderRight: 'none'
             }}>
             <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7">
@@ -145,7 +144,6 @@ const MobileTopBar = () => {
                     paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)',
                     height: 'calc(56px + env(safe-area-inset-top, 0px))',
                     background: 'var(--nav-bg)',
-                    backdropFilter: 'blur(20px)',
                     borderBottom: 'none'
                 }}>
                 <div className="flex items-center gap-3">
@@ -223,7 +221,6 @@ const MobileBottomNav = () => {
             style={{
                 paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
                 background: 'var(--nav-bg)',
-                backdropFilter: 'blur(20px)',
                 borderTop: 'none'
             }}>
             <div className="flex items-center justify-around px-2 py-2">
