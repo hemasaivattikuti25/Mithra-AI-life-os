@@ -94,10 +94,10 @@
   --color-surface: 255 255 255;
 
   /* Semantic Mappings */
-  --body-bg: #E2E8F0;
-  /* Neutral slate-200 — greyish, not blue, but still dark enough */
-  --surface-bg: #F8FAFC;
-  --nav-bg: rgba(226, 232, 240, 0.97);
+  --body-bg: #E0F2FE;
+  /* Very light soft cyan/blue to match theme mixed with white */
+  --surface-bg: #FFFFFF;
+  --nav-bg: rgba(224, 242, 254, 0.97);
   --text-primary: #0F172A;
   --text-dim: #334155;
   --selection-bg: rgba(6, 182, 212, 0.15);
@@ -1199,7 +1199,7 @@ input[type="range"].reminder-slider::-moz-range-track {
 
 /* Dropdown and modal overlays */
 [data-theme="light"] .bg-\[var\(--body-bg\)\] {
-  background-color: #E2E8F0 !important;
+  background-color: #E0F2FE !important;
 }
 
 /* Pulse-slow animation for light mode bg blobs */
