@@ -1686,7 +1686,7 @@ export default function DostMode() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden rounded-2xl shadow-2xl glass-shine"
-      style={{ backgroundColor: 'var(--glass-bg)', color: 'var(--text-primary)' }}>
+      style={{ backgroundColor: 'var(--glass-bg-hover)', color: 'var(--text-primary)' }}>
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => { handleFileImport(e); if (fileInputRef.current) fileInputRef.current.setAttribute('accept', '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp'); }} />
@@ -1697,7 +1697,7 @@ export default function DostMode() {
 
       {/* HEADER */}
       <header className="p-4 md:p-6 flex items-center justify-between z-10 backdrop-blur-md"
-        style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
+        style={{ backgroundColor: 'transparent' }}>
         <div className="flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full transition-all ${isThinking ? 'bg-accent-visor animate-ping' : isListening ? 'bg-red-500 animate-pulse' : isOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
           <h1 className="text-xl font-light tracking-wide">Dost <span className="text-[var(--text-dim)] text-sm opacity-50">AI Companion</span></h1>
@@ -2047,7 +2047,7 @@ export default function DostMode() {
 
       {/* INPUT AREA */}
       <div className="p-4 md:p-6 z-20"
-        style={{ backgroundColor: 'var(--glass-bg-hover)' }}>
+        style={{ backgroundColor: 'transparent' }}>
         <div className="relative group flex items-center gap-2">
           <input
             type="text"

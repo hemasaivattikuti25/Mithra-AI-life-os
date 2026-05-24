@@ -1266,7 +1266,7 @@ const MithraCalendar = () => {
             onClick={() => openNewEvent(currentDate, 9)}
             className="lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--accent-color)',
+              backgroundColor: 'var(--accent-soft)',
               boxShadow: '0 4px 20px var(--accent-glow)',
               display: modalOpen ? 'none' : 'flex'
             }}
