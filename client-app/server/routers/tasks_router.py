@@ -150,7 +150,7 @@ async def list_tasks(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load tasks: {str(e)}")il="Failed to load tasks")
+        raise HTTPException(status_code=500, detail=f"Failed to load tasks: {str(e)}")
 
 @router.post("/tasks")
 async def create_task(task: TaskCreate, current_user: dict = Depends(get_current_user)):

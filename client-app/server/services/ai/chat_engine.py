@@ -71,7 +71,7 @@ class ChatEngine:
                 end = ev.get("end_time")
                 category = ev.get("category", "")
                 cat_str = f" ({category})" if category else ""
-                
+
                 if isinstance(start, (date, datetime)):
                     start_str = start.strftime("%b %d, %H:%M")
                 else:
@@ -80,7 +80,7 @@ class ChatEngine:
                     end_str = end.strftime("%H:%M") if start.date() == end.date() else end.strftime("%b %d, %H:%M")
                 else:
                     end_str = str(end)
-                    
+
                 cal_lines.append(f"  • {title} [{start_str} - {end_str}]{cat_str}")
             calendar_block = "\n".join(cal_lines)
         else:
@@ -102,21 +102,21 @@ class ChatEngine:
                         else:
                             clean_due = due.replace("Z", "+00:00")
                             due_dt = datetime.fromisoformat(clean_due)
-                        
+
                         if isinstance(due_dt, datetime):
                             due_date_only = due_dt.date()
                         else:
                             due_date_only = due_dt
-                        
+
                         if due_date_only < today.date():
                             is_overdue = True
-                        
+
                         due_str = due_dt.strftime("%b %d")
                     except Exception:
                         due_str = "soon"
                 else:
                     due_str = "no date"
-                
+
                 overdue_tag = "⚠️ [OVERDUE] " if is_overdue else ""
                 task_lines.append(f"  • {overdue_tag}{star}{t['title'][:40]} [{priority}] - {due_str}")
             task_block = "\n".join(task_lines)
