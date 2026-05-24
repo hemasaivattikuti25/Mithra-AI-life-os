@@ -408,35 +408,14 @@
 /* Safety net for buttons/badges on accent/dark backgrounds to keep white text in light mode */
 [data-theme="light"] .bg-\[var\(--accent-color\)\].text-white,
 [data-theme="light"] .bg-\[var\(--accent-color\)\] .text-white,
-[data-theme="light"] .bg-\[var\(--accent-color\)\] *,
 [data-theme="light"] button.bg-\[var\(--accent-color\)\],
 [data-theme="light"] button.bg-accent,
-[data-theme="light"] button[class*="bg-accent-visor"],
-[data-theme="light"] button[class*="bg-blue-"],
-[data-theme="light"] button[class*="bg-green-"],
-[data-theme="light"] button[class*="bg-purple-"],
-[data-theme="light"] button[class*="bg-indigo-"],
-[data-theme="light"] button[class*="bg-red-"],
-[data-theme="light"] button.bg-black,
-[data-theme="light"] button[class*="bg-slate-800"],
-[data-theme="light"] button[class*="bg-slate-900"],
-[data-theme="light"] button[class*="bg-gray-800"],
-[data-theme="light"] button[class*="bg-gray-900"] {
+[data-theme="light"] button.bg-black {
   color: #fff !important;
 }
 
 [data-theme="light"] button.bg-accent *,
-[data-theme="light"] button[class*="bg-accent-visor"] *,
-[data-theme="light"] button[class*="bg-blue-"] *,
-[data-theme="light"] button[class*="bg-green-"] *,
-[data-theme="light"] button[class*="bg-purple-"] *,
-[data-theme="light"] button[class*="bg-indigo-"] *,
-[data-theme="light"] button[class*="bg-red-"] *,
-[data-theme="light"] button.bg-black *,
-[data-theme="light"] button[class*="bg-slate-800"] *,
-[data-theme="light"] button[class*="bg-slate-900"] *,
-[data-theme="light"] button[class*="bg-gray-800"] *,
-[data-theme="light"] button[class*="bg-gray-900"] * {
+[data-theme="light"] button.bg-black * {
   color: #fff !important;
 }
 
