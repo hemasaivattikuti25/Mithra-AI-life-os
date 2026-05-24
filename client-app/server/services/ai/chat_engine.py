@@ -147,7 +147,7 @@ class ChatEngine:
         memory_block = memory_context if memory_context else "No relevant past entries."
 
         if is_day_plan:
-            return f"""You are Dost, a stoic productivity architect for {user_name}.
+            return f"""You are Dost, a helpful, friendly, and structured productivity assistant for {user_name}.
 
 📅 Today: {day_name}, {date_str}
 😊 Mood: {mood_text}
@@ -172,12 +172,13 @@ Create a realistic time-blocked schedule for today.
 4. Add 5-10 min breaks between focus blocks
 5. Mark high-priority items with 🔴
 6. Format as clean Markdown timeline
-7. End with a brief motivational note
+7. End with a brief, encouraging motivational note
 
-Be realistic — don't overpack. User's energy: {user_context.get('energy_level', 'medium')}."""
+Be realistic — don't overpack. Speak in a friendly, conversational ChatGPT-like style.
+User's energy: {user_context.get('energy_level', 'medium')}."""
 
         else:
-            return f"""You are Dost, {user_name}'s stoic digital companion.
+            return f"""You are Dost, {user_name}'s digital companion.
 
 📅 Today: {day_name}, {date_str}
 😊 Mood: {mood_text}
@@ -195,32 +196,27 @@ Be realistic — don't overpack. User's energy: {user_context.get('energy_level'
 {memory_block}
 
 ### Your Style:
-- Calm, reflective, insightful, stoic
-- Use **Markdown**: bold for emphasis, bullets for lists
-- Be concise but meaningful
-- Reference their REAL tasks/habits/events when relevant
-- Don't give generic advice — use their actual data
+- Helpful, friendly, conversational, engaging, and structured (like ChatGPT's conversational tone).
+- Use **Markdown**: bold for emphasis, bullets for lists.
+- Reference their REAL tasks/habits/events when relevant.
+- Don't give generic advice — use their actual data.
 
 ### Actions:
-If the user wants to schedule, edit, delete, or check off tasks, events, habits, or log a mood, output exactly one JSON action block at the very end of your response.
-Follow this format exactly:
-||JSON||{{"action": "action_name", "data": {{...}}}}
+If the user wants to schedule, edit, delete, or check off tasks, events, habits, or log a mood, fill the "action" field in the response schema. Otherwise, set "action" to null.
 
-Available actions and their schemas:
+Available actions and their data schemas:
 1. Complete Task:
-   ||JSON||{{"action": "complete_task", "data": {{"id": "uuid"}}}}
+   action name: "complete_task", data schema: {{"id": "uuid"}}
 2. Create Task:
-   ||JSON||{{"action": "create_task", "data": {{"title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
+   action name: "create_task", data schema: {{"title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}
 3. Update Task (reschedule, prioritize, edit description):
-   ||JSON||{{"action": "update_task", "data": {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
+   action name: "update_task", data schema: {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}
 4. Complete Habit:
-   ||JSON||{{"action": "complete_habit", "data": {{"id": "uuid"}}}}
+   action name: "complete_habit", data schema: {{"id": "uuid"}}
 5. Schedule Calendar Event:
-   ||JSON||{{"action": "create_event", "data": {{"title": "...", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "work|personal|health|other"}}}}
+   action name: "create_event", data schema: {{"title": "...", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "work|personal|health|other"}}
 6. Log Mood:
-   ||JSON||{{"action": "log_mood", "data": {{"score": 1..5}}}}
-
-Ensure the JSON is correct. Only output the action block if the user explicitly asked to schedule, complete, update, delete, or log something."""
+   action name: "log_mood", data schema: {{"score": 1..5}}"""
 
     def extract_actions(self, response_text: str) -> tuple[str, list]:
         """
@@ -230,9 +226,21 @@ Ensure the JSON is correct. Only output the action block if the user explicitly 
             Tuple of (clean_message, actions_list)
         """
         actions = []
-        clean_text = response_text
+        try:
+            # Parse the structured JSON response
+            data = json.loads(response_text)
+            clean_text = data.get("reply", "").strip()
+            action_data = data.get("action")
+            if action_data and isinstance(action_data, dict) and action_data.get("action"):
+                actions.append(action_data)
+            return clean_text, actions
+        except json.JSONDecodeError:
+            self.logger.debug(f"Failed to parse main response as JSON: {response_text}")
+        except Exception as e:
+            self.logger.debug(f"Unexpected error parsing response: {e}")
 
-        # Look for ||JSON|| blocks
+        # Fallback to old behavior
+        clean_text = response_text
         if "||JSON||" in response_text:
             parts = response_text.split("||JSON||")
             clean_text = parts[0].strip()
@@ -254,7 +262,7 @@ Ensure the JSON is correct. Only output the action block if the user explicitly 
                     if action_data:
                         actions.append(action_data)
                 except json.JSONDecodeError as e:
-                    self.logger.debug(f"Failed to parse action JSON: {e}")
+                    self.logger.debug(f"Failed to parse fallback action JSON: {e}")
                 except Exception:
                     pass
 
@@ -443,13 +451,15 @@ Ensure the JSON is correct. Only output the action block if the user explicitly 
                     system_prompt=system_prompt,
                     user_message=message,
                     history=trimmed_history,
-                    max_tokens=400 if is_day_plan else 300,
+                    max_tokens=1000 if is_day_plan else 800,
+                    response_schema=ai_gateway.DostResponseSchema,
                 )
             else:
                 response_text = await ai_gateway.generate_chat_response(
                     system_prompt=system_prompt,
                     user_message=message,
-                    max_tokens=400 if is_day_plan else 300,
+                    max_tokens=1000 if is_day_plan else 800,
+                    response_schema=ai_gateway.DostResponseSchema,
                 )
 
             # Extract structured actions from response

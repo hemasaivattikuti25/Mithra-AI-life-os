@@ -16,17 +16,27 @@ import json
 import hashlib
 import time
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
+from pydantic import BaseModel
+
+class ActionResponse(BaseModel):
+    action: str
+    data: Dict[str, Any]
+
+class DostResponseSchema(BaseModel):
+    reply: str
+    action: Optional[ActionResponse]
 
 logger = logging.getLogger("mithra.ai_gateway")
 
 # ─── Configuration ───────────────────────────────────────────────────────────
+# Use stable gemini-1.5-flash and gemini-1.5-pro aliases via latest tags
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Model names
-FLASH_MODEL = "gemini-1.5-flash"  # Fast, cheap — use for most requests
-PRO_MODEL = "gemini-1.5-pro"      # Better reasoning — use sparingly
+FLASH_MODEL = "gemini-flash-latest"  # Fast, cheap — stable alias
+PRO_MODEL = "gemini-pro-latest"      # Better reasoning — stable alias
 
 # ─── Lazy Model Initialization ───────────────────────────────────────────────
 _models = {}
@@ -122,6 +132,7 @@ async def generate_chat_response(
     max_tokens: int = 300,
     temperature: float = 0.7,
     model_name: str = FLASH_MODEL,
+    response_schema: Optional[Any] = None,
 ) -> str:
     """
     Generate a chat response from Gemini.
@@ -143,6 +154,10 @@ async def generate_chat_response(
             "max_output_tokens": max_tokens,
             "temperature": temperature,
         }
+        if response_schema:
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
+
         response = model.generate_content(
             full_prompt,
             generation_config=generation_config,
@@ -166,6 +181,7 @@ async def generate_chat_with_history(
     max_tokens: int = 300,
     temperature: float = 0.7,
     model_name: str = FLASH_MODEL,
+    response_schema: Optional[Any] = None,
 ) -> str:
     """
     Generate a chat response with conversation history.
@@ -197,7 +213,15 @@ async def generate_chat_with_history(
         full_prompt = f"{system_prompt}\n\nUser: {user_message}"
         input_tokens = _estimate_tokens(full_prompt) + sum(_estimate_tokens(str(m)) for m in trimmed_history)
 
-        response = chat.send_message(full_prompt)
+        generation_config = {
+            "max_output_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if response_schema:
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
+
+        response = chat.send_message(full_prompt, generation_config=generation_config)
         result = response.text.strip()
 
         output_tokens = _estimate_tokens(result)

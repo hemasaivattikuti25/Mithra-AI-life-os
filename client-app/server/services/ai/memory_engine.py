@@ -15,7 +15,37 @@ from . import ai_gateway
 logger = logging.getLogger("mithra.memory_engine")
 
 
+EXPANSION_SYSTEM_PROMPT = """You are a search query expander for a personal journal database.
+Your task is to take a user's current message and write a search query consisting of 3-5 keywords or short phrases that are highly likely to appear in past journal entries describing similar situations, emotions, or reflections.
+Do NOT reply to the user. Do NOT write a sentence. Return ONLY the search terms, separated by commas.
 
+Example 1:
+Input: "I feel stressed about work"
+Output: work pressure, stressed, overwhelmed, deadline, career anxiety
+
+Example 2:
+Input: "My stomach hurts today"
+Output: stomach ache, feeling sick, health issue, physically unwell, nauseous
+
+Example 3:
+Input: "had a great workout"
+Output: exercise, gym, running, feeling energetic, workout success
+"""
+
+
+async def expand_query(query: str) -> str:
+    """Use Gemini to expand the search query for better RAG retrieval."""
+    try:
+        expanded = await ai_gateway.generate_chat_response(
+            system_prompt=EXPANSION_SYSTEM_PROMPT,
+            user_message=query,
+            max_tokens=50,
+            temperature=0.2,
+        )
+        return expanded.strip()
+    except Exception as e:
+        logger.warning(f"Query expansion failed (falling back to original query): {e}")
+        return query
 
 
 async def retrieve_relevant_memories(
@@ -40,8 +70,12 @@ async def retrieve_relevant_memories(
         return []
 
     try:
-        # Generate embedding for the query
-        query_embedding = await ai_gateway.create_embedding(query)
+        # Expand the query to improve vector search recall
+        search_query = await expand_query(query)
+        logger.debug(f"[Memory] Expanded search query: '{query}' -> '{search_query}'")
+
+        # Generate embedding for the expanded query
+        query_embedding = await ai_gateway.create_embedding(search_query)
 
         async with db_pool.acquire() as conn:
             # pgvector cosine similarity search (<=> operator)
