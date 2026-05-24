@@ -1259,23 +1259,4 @@ input[type="range"].reminder-slider::-moz-range-track {
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-/* Smart schedule button visibility */
-[data-theme="light"] button[style*="accent-glow"] {
-  background: rgba(6, 182, 212, 0.15) !important;
-  border-color: rgba(6, 182, 212, 0.30) !important;
-  color: #0891b2 !important;
-}
-
-/* GlassCard component on dashboard in light mode */
-[data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.10), 0 1px 6px rgba(15, 23, 42, 0.06) !important;
-  border: 1px solid rgba(15, 23, 42, 0.06) !important;
-}
-
-/* Sidebar / nav background in light mode */
-[data-theme="light"] nav,
-[data-theme="light"] aside {
-  background: rgba(184, 196, 212, 0.97) !important;
-  border-right: 1px solid rgba(15, 23, 42, 0.10);
-}
+/* Removed hardcoded cyan button overrides to allow dynamic themes */

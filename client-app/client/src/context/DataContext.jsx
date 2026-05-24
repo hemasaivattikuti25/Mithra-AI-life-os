@@ -337,6 +337,16 @@ const applyColorTheme = (themeId, mode) => {
       root.style.setProperty('--accent-glow', `color-mix(in srgb, ${accent} 20%, transparent)`);
       root.style.setProperty('--visor-glow',  `color-mix(in srgb, ${accent} 14%, transparent)`);
     }
+  } else {
+    // When switching to dark mode, remove these inline styles so the CSS dark mode variables can take over
+    root.style.removeProperty('--body-bg');
+    root.style.removeProperty('--surface-bg');
+    root.style.removeProperty('--nav-bg');
+    root.style.removeProperty('--glass-bg');
+    root.style.removeProperty('--glass-bg-hover');
+    // Dark mode handles its own glow in the CSS, so remove inline glow variables too
+    // Note: Dark mode palette already provides --accent-glow and --visor-glow via 'vars',
+    // which are set in the loop above, so we don't need to remove them here, they get overwritten.
   }
 };
 
