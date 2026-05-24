@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { format, addDays, subDays, isSameDay, startOfDay, setHours, setMinutes } from 'date-fns';
-import * as XLSX from 'xlsx';
 import { notificationManager } from '../services/notifications';
 import { syncEngine } from '../services/syncEngine';
 import { apiFetch } from '../services/firebaseClient';
@@ -1227,12 +1226,13 @@ export function DataProvider({ children }) {
   }, []);
 
   /* ── Export as Excel (.xlsx) — replaces CSV ── */
-  const exportAsExcel = useCallback(() => {
+  const exportAsExcel = useCallback(async () => {
     let journal = [], moodHistory = [], focusSessions = [];
     try { journal = JSON.parse(localStorage.getItem(getUserScopedKey('journal')) || '[]'); } catch {}
     try { moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]'); } catch {}
     try { focusSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch {}
 
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
 
     // Tasks sheet

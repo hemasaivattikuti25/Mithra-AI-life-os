@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Share2, X, Flame, CheckCircle2, Calendar, Target } from 'lucide-react';
-import html2canvas from 'html2canvas';
 
 /**
  * ShareStatsCard — Generates a shareable stats image
@@ -33,6 +32,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
     setIsGenerating(true);
 
     try {
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         backgroundColor: null,
@@ -55,6 +55,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
     setIsGenerating(true);
 
     try {
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         backgroundColor: null,
