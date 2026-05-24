@@ -94,10 +94,10 @@
   --color-surface: 255 255 255;
 
   /* Semantic Mappings */
-  --body-bg: #F8FAFC;
+  --body-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
   /* Very pale theme tint with white — NO SEPARATION from cards */
-  --surface-bg: #F8FAFC;
-  --nav-bg: rgba(248, 250, 252, 0.97);
+  --surface-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
+  --nav-bg: color-mix(in srgb, var(--accent-color) 8%, #ffffff);
   --text-primary: #0F172A;
   --text-dim: #334155;
   --selection-bg: rgba(6, 182, 212, 0.15);
@@ -1199,7 +1199,7 @@ input[type="range"].reminder-slider::-moz-range-track {
 
 /* Dropdown and modal overlays */
 [data-theme="light"] .bg-\[var\(--body-bg\)\] {
-  background-color: #F8FAFC !important;
+  background-color: color-mix(in srgb, var(--accent-color) 8%, #ffffff) !important;
 }
 
 /* Pulse-slow animation for light mode bg blobs */
