@@ -4,13 +4,39 @@ from datetime import datetime, date
 import uuid
 import json
 
-from schemas.models import ScheduleRequest, TaskCreate, NotificationSettings, JournalCreate, HabitCreate, MoodLogCreate, FocusSessionCreate, EventCreate
+from schemas.models import (
+    ScheduleRequest,
+    TaskCreate,
+    TaskUpdate,
+    NotificationSettings,
+    JournalCreate,
+    HabitCreate,
+    MoodLogCreate,
+    FocusSessionCreate,
+    EventCreate,
+)
 from core.security import get_current_user
 from core.config import get_db, get_model, get_embedding
 from core.validators import InputValidator
 from core.errors import ValidationError, MithraError, PermissionError
 
 router = APIRouter()
+
+
+async def _require_workspace_member(conn, workspace_id: Optional[str], user_id: str) -> Optional[str]:
+    """Validate workspace id and require that the current user is a member."""
+    if not workspace_id:
+        return None
+
+    workspace_id = InputValidator.validate_uuid(workspace_id, "workspace_id")
+    is_member = await conn.fetchval(
+        "SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+        workspace_id,
+        user_id,
+    )
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Access denied to this workspace")
+    return workspace_id
 
 # ─── SCHEDULE PARSER ───
 @router.post("/parse-schedule")
@@ -54,6 +80,7 @@ Rules:
 @router.get("/tasks")
 async def list_tasks(
     workspace_id: Optional[str] = None,
+    completed: Optional[bool] = None,
     limit: int = 50,
     offset: int = 0,
     current_user: dict = Depends(get_current_user)
@@ -63,30 +90,33 @@ async def list_tasks(
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    # Clamp pagination params
     limit = max(1, min(limit, 200))
     offset = max(0, offset)
 
     try:
         async with pool.acquire() as conn:
             if workspace_id:
+                workspace_id = await _require_workspace_member(conn, workspace_id, current_user["id"])
                 rows = await conn.fetch(
                     """SELECT id, user_id, title, details, list_id, priority, completed, starred,
-                              due_date, recurrence, subtasks, subtasks_json, workspace_id
-                       FROM tasks WHERE workspace_id = $1 AND deleted_at IS NULL
-                       ORDER BY created_at DESC LIMIT $2 OFFSET $3""",
-                    workspace_id, limit, offset
+                              due_date, recurrence, subtasks, subtasks_json, workspace_id, created_at, updated_at
+                       FROM tasks
+                       WHERE workspace_id = $1 AND deleted_at IS NULL
+                          AND ($2::boolean IS NULL OR completed = $2)
+                       ORDER BY created_at DESC LIMIT $3 OFFSET $4""",
+                    workspace_id, completed, limit, offset
                 )
             else:
                 rows = await conn.fetch(
                     """SELECT t.id, t.user_id, t.title, t.details, t.list_id, t.priority,
                               t.completed, t.starred, t.due_date, t.recurrence, t.subtasks,
-                              t.subtasks_json, t.workspace_id
+                              t.subtasks_json, t.workspace_id, t.created_at, t.updated_at
                        FROM tasks t
                        LEFT JOIN workspace_members wm ON t.workspace_id = wm.workspace_id
                        WHERE (t.user_id = $1 OR wm.user_id = $1) AND t.deleted_at IS NULL
-                       ORDER BY t.created_at DESC LIMIT $2 OFFSET $3""",
-                    current_user["id"], limit, offset
+                          AND ($2::boolean IS NULL OR t.completed = $2)
+                       ORDER BY t.created_at DESC LIMIT $3 OFFSET $4""",
+                    current_user["id"], completed, limit, offset
                 )
 
         tasks = []
@@ -112,11 +142,15 @@ async def list_tasks(
                 "dueDate": t["due_date"].isoformat() if t.get("due_date") else None,
                 "recurrence": t.get("recurrence", "none"),
                 "subtasks": subtasks,
-                "workspaceId": str(t["workspace_id"]) if t.get("workspace_id") else None
+                "workspaceId": str(t["workspace_id"]) if t.get("workspace_id") else None,
+                "updatedAt": t["updated_at"].isoformat() if t.get("updated_at") else t["created_at"].isoformat() if t.get("created_at") else None,
+                "createdAt": t["created_at"].isoformat() if t.get("created_at") else None
             })
         return {"tasks": tasks, "limit": limit, "offset": offset, "count": len(tasks)}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to load tasks")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load tasks: {str(e)}")il="Failed to load tasks")
 
 @router.post("/tasks")
 async def create_task(task: TaskCreate, current_user: dict = Depends(get_current_user)):
@@ -135,6 +169,8 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
         user_id = current_user["id"]
 
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, task.workspaceId, user_id)
+
             # Plan limit enforcement: check current task count vs plan max
             plan_row = await conn.fetchrow("""
                 SELECT p.max_tasks FROM plans p
@@ -160,45 +196,100 @@ async def create_task(task: TaskCreate, current_user: dict = Depends(get_current
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13)""",
                 task_id, user_id, task.title, task.details, task.listId, task.priority,
                 task.completed, task.starred, task.dueDate, task.recurrence,
-                json.dumps(task.subtasks), json.dumps(task.subtasks), task.workspaceId
+                json.dumps(task.subtasks), json.dumps(task.subtasks), workspace_id
             )
-        return {"task": {**task.dict(), "id": task_id, "userId": user_id}}
+        return {"task": {
+            **task.model_dump(),
+            "id": task_id,
+            "userId": user_id,
+            "workspaceId": workspace_id,
+            "updatedAt": datetime.now().isoformat(),
+            "createdAt": datetime.now().isoformat()
+        }}
     except HTTPException:
         raise
     except Exception:
         raise HTTPException(status_code=500, detail="Task creation failed")
 
 @router.put("/tasks/{task_id}")
-async def update_task(task_id: str, task: TaskCreate, current_user: dict = Depends(get_current_user)):
+async def update_task(task_id: str, task: TaskUpdate, current_user: dict = Depends(get_current_user)):
     """Update a task."""
     pool = get_db()
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
     try:
-        InputValidator.validate_string(task.title, "title", max_length=500)
-        InputValidator.validate_string(task.details or "", "details", max_length=10000)
         InputValidator.validate_uuid(task_id, "task_id")
+        updates = task.model_dump(exclude_unset=True)
 
-        if task.subtasks:
-            InputValidator.validate_array(task.subtasks, "subtasks", max_length=50)
+        if not updates:
+            raise HTTPException(status_code=422, detail="No task fields provided")
+        if "title" in updates:
+            InputValidator.validate_string(updates["title"], "title", min_length=1, max_length=500)
+        if "details" in updates:
+            InputValidator.validate_string(updates.get("details") or "", "details", max_length=10000)
+        if updates.get("subtasks") is not None:
+            InputValidator.validate_array(updates["subtasks"], "subtasks", max_length=50)
 
         async with pool.acquire() as conn:
+            existing = await conn.fetchrow(
+                """SELECT id, user_id, title, details, list_id, priority, completed, starred,
+                          due_date, recurrence, subtasks, subtasks_json, workspace_id
+                   FROM tasks
+                   WHERE id=$1 AND deleted_at IS NULL AND (user_id=$2 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$2
+                   ))""",
+                task_id,
+                current_user["id"],
+            )
+            if not existing:
+                raise HTTPException(status_code=404, detail="Task not found or access denied")
+
+            existing_workspace_id = str(existing["workspace_id"]) if existing.get("workspace_id") else None
+            workspace_id = updates["workspaceId"] if "workspaceId" in updates else existing_workspace_id
+            workspace_id = await _require_workspace_member(conn, workspace_id, current_user["id"])
+
+            subtasks = updates["subtasks"] if "subtasks" in updates else (existing.get("subtasks_json") or [])
+            if not subtasks and existing.get("subtasks"):
+                try:
+                    subtasks = json.loads(existing["subtasks"])
+                except Exception:
+                    subtasks = []
+
+            values = {
+                "title": updates.get("title", existing["title"]),
+                "details": updates.get("details", existing.get("details", "")),
+                "listId": updates.get("listId", existing.get("list_id", "default")),
+                "priority": updates.get("priority", existing.get("priority", "medium")),
+                "completed": updates.get("completed", existing.get("completed", False)),
+                "starred": updates.get("starred", existing.get("starred", False)),
+                "dueDate": updates.get("dueDate", existing.get("due_date")),
+                "recurrence": updates.get("recurrence", existing.get("recurrence", "none")),
+                "subtasks": subtasks,
+                "workspaceId": workspace_id,
+            }
+
             result = await conn.execute(
                 """UPDATE tasks SET title=$1, details=$2, list_id=$3, priority=$4,
                    completed=$5, starred=$6, due_date=$7, recurrence=$8, subtasks=$9,
-                   workspace_id=$10, updated_at=NOW()
-                   WHERE id=$11 AND (user_id=$12 OR workspace_id IN (
-                       SELECT workspace_id FROM workspace_members WHERE user_id=$12
-                   ))""",
-                task.title, task.details, task.listId, task.priority,
-                task.completed, task.starred, task.dueDate, task.recurrence,
-                json.dumps(task.subtasks), task.workspaceId, task_id, current_user["id"]
+                   subtasks_json=$10::jsonb, workspace_id=$11, updated_at=NOW()
+                   WHERE id=$12""",
+                values["title"], values["details"], values["listId"], values["priority"],
+                values["completed"], values["starred"], values["dueDate"], values["recurrence"],
+                json.dumps(values["subtasks"]), json.dumps(values["subtasks"]), values["workspaceId"], task_id
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Task not found or access denied")
 
-        return {"task": {**task.dict(), "id": task_id, "userId": current_user["id"]}}
+        response_task = {
+            **values,
+            "id": task_id,
+            "userId": existing["user_id"],
+            "updatedAt": datetime.now().isoformat()
+        }
+        if hasattr(response_task["dueDate"], "isoformat") and response_task["dueDate"]:
+            response_task["dueDate"] = response_task["dueDate"].isoformat()
+        return {"task": response_task}
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except HTTPException:
@@ -218,26 +309,14 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
         InputValidator.validate_uuid(task_id, field_name="task_id")
 
         async with pool.acquire() as conn:
-            # First verify ownership/permission
-            task_owner = await conn.fetchval(
-                """SELECT user_id FROM tasks WHERE id=$1""",
-                task_id
-            )
-
-            if not task_owner:
-                raise HTTPException(status_code=404, detail="Task not found")
-
-            # Check ownership
-            if task_owner != current_user["id"]:
-                raise PermissionError(f"Access denied to task {task_id}")
-
-            # Delete the task
             result = await conn.execute(
-                """DELETE FROM tasks WHERE id=$1 AND user_id=$2""",
+                """DELETE FROM tasks WHERE id=$1 AND (user_id=$2 OR workspace_id IN (
+                       SELECT workspace_id FROM workspace_members WHERE user_id=$2
+                   ))""",
                 task_id, current_user["id"]
             )
             if result == "DELETE 0":
-                raise HTTPException(status_code=500, detail="Delete operation failed")
+                raise HTTPException(status_code=404, detail="Task not found or access denied")
 
         return {"deleted": task_id}
     except ValidationError as e:
@@ -301,13 +380,7 @@ async def list_journal(workspace_id: Optional[str] = None, current_user: dict = 
     try:
         async with pool.acquire() as conn:
             if workspace_id:
-                # SECURITY: Verify the user is actually a member of this workspace
-                is_member = await conn.fetchval(
-                    "SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
-                    workspace_id, current_user["id"]
-                )
-                if not is_member:
-                    raise HTTPException(status_code=403, detail="Access denied to this workspace")
+                workspace_id = await _require_workspace_member(conn, workspace_id, current_user["id"])
                 rows = await conn.fetch(
                     """SELECT id, user_id, content, mood, tags, date, workspace_id, created_at
                        FROM journal_entries WHERE workspace_id = $1 ORDER BY date DESC""",
@@ -349,7 +422,12 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
     try:
         # Validate journal entry
         InputValidator.validate_string(entry.content, min_length=1, max_length=10000, field_name="content")
-        InputValidator.validate_enum(entry.mood or "neutral", ["very_sad", "sad", "neutral", "happy", "very_happy"], field_name="mood")
+        mood = InputValidator.validate_integer(
+            entry.mood if entry.mood is not None else 3,
+            min_value=1,
+            max_value=5,
+            field_name="mood",
+        )
 
         if entry.tags:
             InputValidator.validate_array(entry.tags, max_length=10, field_name="tags")
@@ -361,26 +439,29 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
         embedding = get_embedding(entry.content)
 
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, entry.workspaceId, user_id)
             await conn.execute(
-                """INSERT INTO journal_entries (id, user_id, content, mood, tags, date, embedding, workspace_id)
-                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
-                entry_id, user_id, entry.content, entry.mood, entry.tags, entry_date,
-                str(embedding), entry.workspaceId
+                """INSERT INTO journal_entries (id, user_id, content, mood, tags, date, embedding, embedding_vector, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""",
+                entry_id, user_id, entry.content, mood, entry.tags, entry_date,
+                str(embedding), str(embedding), workspace_id
             )
 
         return_entry = {
             "id": entry_id,
             "userId": user_id,
             "content": entry.content,
-            "mood": entry.mood,
+            "mood": mood,
             "tags": entry.tags,
             "date": entry_date,
-            "workspaceId": entry.workspaceId,
+            "workspaceId": workspace_id,
             "createdAt": datetime.now().isoformat()
         }
         return {"entry": return_entry}
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.message)
+    except HTTPException:
+        raise
     except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception:
@@ -394,12 +475,13 @@ async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict
         raise HTTPException(status_code=503, detail="Database unavailable")
 
     try:
+        embedding = get_embedding(entry.content)
         async with pool.acquire() as conn:
             result = await conn.execute(
-                """UPDATE journal_entries SET content=$1, mood=$2, tags=$3, date=$4, updated_at=NOW()
-                   WHERE id=$5 AND user_id=$6""",
+                """UPDATE journal_entries SET content=$1, mood=$2, tags=$3, date=$4, embedding=$5, embedding_vector=$6, updated_at=NOW()
+                   WHERE id=$7 AND user_id=$8""",
                 entry.content, entry.mood, entry.tags, entry.date or date.today().isoformat(),
-                entry_id, current_user["id"]
+                str(embedding), str(embedding), entry_id, current_user["id"]
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Journal entry not found")
@@ -448,6 +530,7 @@ async def list_habits(workspace_id: Optional[str] = None, current_user: dict = D
     try:
         async with pool.acquire() as conn:
             if workspace_id:
+                workspace_id = await _require_workspace_member(conn, workspace_id, current_user["id"])
                 rows = await conn.fetch(
                     "SELECT * FROM habits WHERE workspace_id = $1",
                     workspace_id
@@ -476,9 +559,13 @@ async def list_habits(workspace_id: Optional[str] = None, current_user: dict = D
                 "streakGoal": h.get("streak_goal", 30),
                 "streakUnit": h.get("streak_unit", "Day"),
                 "focusDuration": h.get("focus_duration", 25),
-                "workspaceId": str(h["workspace_id"]) if h.get("workspace_id") else None
+                "workspaceId": str(h["workspace_id"]) if h.get("workspace_id") else None,
+                "updatedAt": h["updated_at"].isoformat() if h.get("updated_at") else h["created_at"].isoformat() if h.get("created_at") else None,
+                "createdAt": h["created_at"].isoformat() if h.get("created_at") else None
             })
         return {"habits": habits}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -493,7 +580,7 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
         # Validate habit data
         InputValidator.validate_string(habit.title, min_length=1, max_length=500, field_name="title")
         InputValidator.validate_enum(habit.category, ["Work", "Health", "Personal", "Learning", "Mindfulness"], field_name="category")
-        InputValidator.validate_enum(habit.frequency or "daily", ["daily", "weekly", "monthly"], field_name="frequency")
+        frequency = InputValidator.validate_integer(habit.frequency, min_value=1, max_value=10, field_name="frequency")
 
         if habit.repeat_days:
             InputValidator.validate_array(habit.repeat_days, max_length=7, field_name="repeat_days")
@@ -505,6 +592,7 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
         habit_id = str(uuid.uuid4())
 
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, habit.workspaceId, user_id)
             await conn.execute(
                 """INSERT INTO habits (id, user_id, title, category, color, streak, longest_streak,
                    completed_dates, repeat_days, frequency, reminder, schedule_time,
@@ -514,9 +602,9 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
                 habit.streak, habit.longest_streak,
                 habit.completed_dates,
                 json.dumps(habit.repeat_days),
-                habit.frequency, habit.reminder, habit.schedule_time,
+                frequency, habit.reminder, habit.schedule_time,
                 habit.streak_goal, habit.streak_unit, habit.focus_duration,
-                habit.workspaceId
+                workspace_id
             )
         return {"habit": {
             "id": habit_id,
@@ -528,16 +616,20 @@ async def create_habit(habit: HabitCreate, current_user: dict = Depends(get_curr
             "longestStreak": habit.longest_streak,
             "completedDates": habit.completed_dates,
             "repeatDays": habit.repeat_days,
-            "frequency": habit.frequency,
+            "frequency": frequency,
             "reminder": habit.reminder,
             "scheduleTime": habit.schedule_time,
             "streakGoal": habit.streak_goal,
             "streakUnit": habit.streak_unit,
             "focusDuration": habit.focus_duration,
-            "workspaceId": habit.workspaceId,
+            "workspaceId": workspace_id,
+            "updatedAt": datetime.now().isoformat(),
+            "createdAt": datetime.now().isoformat()
         }}
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.message)
+    except HTTPException:
+        raise
     except MithraError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception:
@@ -551,7 +643,16 @@ async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = D
         raise HTTPException(status_code=503, detail="Database unavailable")
 
     try:
+        InputValidator.validate_string(habit.title, min_length=1, max_length=500, field_name="title")
+        InputValidator.validate_enum(habit.category, ["Work", "Health", "Personal", "Learning", "Mindfulness"], field_name="category")
+        frequency = InputValidator.validate_integer(habit.frequency, min_value=1, max_value=10, field_name="frequency")
+        if habit.repeat_days:
+            InputValidator.validate_array(habit.repeat_days, max_length=7, field_name="repeat_days")
+        if habit.streak_goal:
+            InputValidator.validate_integer(habit.streak_goal, min_value=1, max_value=365, field_name="streak_goal")
+
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, habit.workspaceId, current_user["id"])
             result = await conn.execute(
                 """UPDATE habits SET title=$1, category=$2, color=$3, streak=$4, longest_streak=$5,
                    completed_dates=$6, repeat_days=$7, frequency=$8, reminder=$9, schedule_time=$10,
@@ -562,13 +663,17 @@ async def update_habit(habit_id: str, habit: HabitCreate, current_user: dict = D
                 habit.title, habit.category, habit.color, habit.streak, habit.longest_streak,
                 habit.completed_dates,
                 json.dumps(habit.repeat_days),
-                habit.frequency, habit.reminder, habit.schedule_time,
+                frequency, habit.reminder, habit.schedule_time,
                 habit.streak_goal, habit.streak_unit, habit.focus_duration,
-                habit.workspaceId, habit_id, current_user["id"]
+                workspace_id, habit_id, current_user["id"]
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Habit not found or access denied")
-        return {"habit": {"id": habit_id, "title": habit.title}}
+        return {"habit": {
+            "id": habit_id,
+            "title": habit.title,
+            "updatedAt": datetime.now().isoformat()
+        }}
     except HTTPException:
         raise
     except Exception as e:
@@ -700,13 +805,16 @@ async def create_focus_session(session: FocusSessionCreate, current_user: dict =
 
     try:
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, session.workspaceId, current_user["id"])
             await conn.execute(
                 """INSERT INTO focus_sessions (id, user_id, habit_id, duration_minutes, workspace_id)
                    VALUES ($1, $2, $3, $4, $5)""",
                 session_id, current_user["id"], session.habit_id, session.duration_minutes,
-                session.workspaceId
+                workspace_id
             )
         return {"session": {"id": session_id, "duration_minutes": session.duration_minutes}}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -751,6 +859,7 @@ async def list_events(workspace_id: Optional[str] = None, current_user: dict = D
     try:
         async with pool.acquire() as conn:
             if workspace_id:
+                workspace_id = await _require_workspace_member(conn, workspace_id, current_user["id"])
                 rows = await conn.fetch(
                     "SELECT * FROM calendar_events WHERE workspace_id = $1 ORDER BY start_time ASC",
                     workspace_id
@@ -775,6 +884,8 @@ async def list_events(workspace_id: Optional[str] = None, current_user: dict = D
                 }
                 for r in rows
             ]
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to load events")
 
@@ -786,6 +897,7 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=503, detail="Database unavailable")
     try:
         async with pool.acquire() as conn:
+            workspace_id = await _require_workspace_member(conn, event.workspaceId, current_user["id"])
             row = await conn.fetchrow(
                 """INSERT INTO calendar_events (user_id, title, start_time, end_time, category, workspace_id)
                    VALUES ($1, $2, $3, $4, $5, $6)
@@ -795,7 +907,7 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
                 datetime.fromisoformat(event.start),
                 datetime.fromisoformat(event.end),
                 event.category,
-                event.workspaceId,
+                workspace_id,
             )
             return {
                 "id": str(row["id"]),
@@ -804,9 +916,11 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
                 "start": event.start,
                 "end": event.end,
                 "category": event.category,
-                "workspaceId": event.workspaceId,
+                "workspaceId": workspace_id,
                 "createdAt": row["created_at"].isoformat(),
             }
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to create event")
 

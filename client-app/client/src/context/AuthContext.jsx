@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { authService, isFirebaseConfigured, firebaseAuth } from '../services/firebaseClient';
+import { authService, isFirebaseConfigured, isAuthRequired, firebaseAuth } from '../services/firebaseClient';
 
 const AuthContext = createContext(null);
 
@@ -50,8 +50,16 @@ const loadUsers = () => {
   } catch { return []; }
 };
 
+const canUseOfflineAuth = isFirebaseConfigured || !isAuthRequired;
+
+const ensureAuthAvailable = () => {
+  if (!canUseOfflineAuth) {
+    throw new Error('Authentication is required but Firebase is not configured.');
+  }
+};
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => loadAuth());
+  const [user, setUser] = useState(() => (canUseOfflineAuth ? loadAuth() : null));
   const [profile, setProfile] = useState(() => loadProfile() || {
     fullName: '',
     email: '',
@@ -139,6 +147,8 @@ export function AuthProvider({ children }) {
      SIGN UP — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signUp = useCallback(async ({ fullName, email, password }) => {
+    ensureAuthAvailable();
+
     // SECURITY: Validate email format and password strength even in offline mode
     if (!email || !email.includes('@')) {
       throw new Error('Invalid email address');
@@ -223,6 +233,8 @@ export function AuthProvider({ children }) {
      SIGN IN — Firebase-first, localStorage fallback
      ═══════════════════════════════════════════════════════════ */
   const signIn = useCallback(async ({ email, password }) => {
+    ensureAuthAvailable();
+
     // SECURITY: Validate email format and password strength even in offline mode
     if (!email || !email.includes('@')) {
       throw new Error('Invalid email address');
@@ -338,6 +350,8 @@ export function AuthProvider({ children }) {
      PASSWORD RESET
      ═══════════════════════════════════════════════════════════ */
   const resetPassword = useCallback(async (email) => {
+    ensureAuthAvailable();
+
     if (isFirebaseConfigured) {
       await authService.resetPassword(email);
       return true;
@@ -350,6 +364,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const confirmResetPassword = useCallback(async (email, newPassword) => {
+    ensureAuthAvailable();
+
     if (isFirebaseConfigured) {
       await authService.updatePassword(newPassword);
       return true;
@@ -375,6 +391,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updatePassword = useCallback(async (currentPassword, newPassword) => {
+    ensureAuthAvailable();
+
     if (!user) throw new Error('Not authenticated');
 
     if (isFirebaseConfigured && user.provider === 'firebase') {

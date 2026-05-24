@@ -322,17 +322,51 @@ class SyncEngine {
     }
     if (!remote) return localData;
 
-    // 3. Server-wins merge: index remote by id, overlay onto local
+    // Apply mapper if provided
+    if (opts.mapFromDB) {
+      remote = remote.map(opts.mapFromDB);
+    }
+
+    // 3. Bidirectional LWW Merge
     const remoteMap = new Map(remote.map(r => [r.id, r]));
     const localMap = new Map((localData || []).map(l => [l.id, l]));
+    const queue = this._getQueue();
+    const merged = new Map();
 
-    // Start with all remote rows (they win on conflict)
-    const merged = new Map(remoteMap);
+    const allIds = new Set([...remoteMap.keys(), ...localMap.keys()]);
 
-    // Add local-only rows that aren't on remote (offline-created, not yet synced)
-    for (const [id, localRow] of localMap) {
-      if (!merged.has(id)) {
-        merged.set(id, localRow);
+    for (const id of allIds) {
+      const localItem = localMap.get(id);
+      const remoteItem = remoteMap.get(id);
+
+      if (localItem && remoteItem) {
+        // Both exist. Compare updatedAt / createdAt
+        const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+        const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+
+        if (localTime > remoteTime) {
+          // Local wins! Keep local and sync to server.
+          merged.set(id, localItem);
+          this.enqueue({
+            table,
+            action: 'update',
+            data: opts.mapToDB ? opts.mapToDB(localItem) : localItem
+          });
+        } else {
+          // Remote wins! Keep remote.
+          merged.set(id, remoteItem);
+        }
+      } else if (localItem) {
+        // Only local. Check if it's created/modified offline.
+        const hasPendingOp = queue.some(op => op.table === table && op.data?.id === id);
+        if (hasPendingOp) {
+          merged.set(id, localItem);
+        } else {
+          // Discard: deleted on remote.
+        }
+      } else {
+        // Only remote. Add to local.
+        merged.set(id, remoteItem);
       }
     }
 

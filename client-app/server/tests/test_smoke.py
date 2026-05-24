@@ -49,6 +49,14 @@ class TestValidators:
         with pytest.raises(ValidationError):
             self.v.validate_uuid("not-a-uuid", "id")
 
+    def test_validate_field_name_aliases(self):
+        assert self.v.validate_string("hello", field_name="title") == "hello"
+        assert self.v.validate_integer("3", field_name="mood", min_value=1, max_value=5) == 3
+        assert self.v.validate_array(["a"], field_name="tags", max_length=3) == ["a"]
+
+    def test_validate_enum_allowed_list_with_field_name(self):
+        assert self.v.validate_enum("Work", ["Work", "Personal"], field_name="category") == "Work"
+
 
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
 class TestRateLimiter:
@@ -71,6 +79,21 @@ class TestRateLimiter:
         assert _get_limit("/api/chat/message") == 20
         assert _get_limit("/api/auth/login") == 10
         assert _get_limit("/api/tasks") == 60
+
+
+class TestWorkspaceGuard:
+    @pytest.mark.asyncio
+    async def test_workspace_member_required(self):
+        from fastapi import HTTPException
+        from routers.tasks_router import _require_workspace_member
+
+        class Conn:
+            async def fetchval(self, *args):
+                return None
+
+        with pytest.raises(HTTPException) as exc:
+            await _require_workspace_member(Conn(), "11111111-1111-1111-1111-111111111111", "user-1")
+        assert exc.value.status_code == 403
 
 
 # ─── Security ────────────────────────────────────────────────────────────────
@@ -100,5 +123,4 @@ class TestSecurity:
             with pytest.raises(HTTPException) as exc:
                 await get_current_user(token="fake.jwt.token")
             assert exc.value.status_code == 500
-
 

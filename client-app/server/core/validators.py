@@ -79,8 +79,16 @@ class InputValidator:
         return password
 
     @staticmethod
-    def validate_string(value: Optional[str], field: str = "value", max_length: int = None, min_length: int = 0, allow_empty: bool = True) -> str:
+    def validate_string(
+        value: Optional[str],
+        field: str = "value",
+        max_length: int = None,
+        min_length: int = 0,
+        allow_empty: bool = True,
+        field_name: str = None,
+    ) -> str:
         """Validate string input."""
+        field = field_name or field
         max_length = max_length or InputValidator.MAX_TEXT_LENGTH
         if value is None:
             if allow_empty or min_length == 0:
@@ -110,8 +118,15 @@ class InputValidator:
         return InputValidator.validate_string(description, "description", InputValidator.MAX_DESCRIPTION_LENGTH, allow_empty=True)
 
     @staticmethod
-    def validate_integer(value: Optional[int], field: str, min_value: int = 0, max_value: int = 10000) -> int:
+    def validate_integer(
+        value: Optional[int],
+        field: str = "value",
+        min_value: int = 0,
+        max_value: int = 10000,
+        field_name: str = None,
+    ) -> int:
         """Validate integer input."""
+        field = field_name or field
         if value is None:
             raise ValidationError(field, "This field is required")
 
@@ -126,8 +141,9 @@ class InputValidator:
         return value
 
     @staticmethod
-    def validate_uuid(value: Optional[str], field: str) -> str:
+    def validate_uuid(value: Optional[str], field: str = "id", field_name: str = None) -> str:
         """Validate UUID format."""
+        field = field_name or field
         if not value:
             raise ValidationError(field, "ID is required")
 
@@ -139,8 +155,14 @@ class InputValidator:
         return value
 
     @staticmethod
-    def validate_array(value: Optional[List[Any]], field: str, max_length: int = None) -> List[Any]:
+    def validate_array(
+        value: Optional[List[Any]],
+        field: str = "value",
+        max_length: int = None,
+        field_name: str = None,
+    ) -> List[Any]:
         """Validate array input."""
+        field = field_name or field
         if value is None:
             return []
         if not isinstance(value, list):
@@ -153,8 +175,19 @@ class InputValidator:
         return value
 
     @staticmethod
-    def validate_enum(value: Optional[str], field: str, allowed: List[str]) -> str:
+    def validate_enum(
+        value: Optional[str],
+        field: str | List[str] = "value",
+        allowed: List[str] = None,
+        field_name: str = None,
+    ) -> str:
         """Validate enum value."""
+        if allowed is None and isinstance(field, list):
+            allowed = field
+            field = "value"
+        field = field_name or field
+        allowed = allowed or []
+
         if value is None:
             raise ValidationError(field, "This field is required")
 

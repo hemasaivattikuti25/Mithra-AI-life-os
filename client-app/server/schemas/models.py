@@ -26,6 +26,18 @@ class TaskCreate(BaseModel):
     subtasks: List[str] = []
     workspaceId: Optional[str] = None
 
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    details: Optional[str] = None
+    listId: Optional[str] = None
+    priority: Optional[str] = None
+    completed: Optional[bool] = None
+    starred: Optional[bool] = None
+    dueDate: Optional[str] = None
+    recurrence: Optional[str] = None
+    subtasks: Optional[List[str]] = None
+    workspaceId: Optional[str] = None
+
 class NotificationSettings(BaseModel):
     enabled: bool
     reminderMinutes: int

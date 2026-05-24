@@ -390,9 +390,39 @@
   border-color: rgba(15, 23, 42, 0.18) !important;
 }
 
-/* Inline-style white color safety net — buttons/badges on accent bg keep white */
+/* Inline-style white color safety net — buttons/badges on accent/dark bg keep white */
 [data-theme="light"] .bg-\[var\(--accent-color\)\] .text-white,
-[data-theme="light"] .bg-\[var\(--accent-color\)\] * {
+[data-theme="light"] .bg-\[var\(--accent-color\)\] *,
+[data-theme="light"] button[class*="bg-"]:not(.bg-white):not(.bg-transparent):not(.bg-slate-50):not(.bg-gray-50) .text-white,
+[data-theme="light"] button[class*="bg-"]:not(.bg-white):not(.bg-transparent):not(.bg-slate-50):not(.bg-gray-50),
+[data-theme="light"] button[style*="background"]:not([style*="transparent"]):not([style*="var(--glass-border)"]):not([style*="#fff"]):not([style*="#FFF"]) .text-white,
+[data-theme="light"] button[style*="background"]:not([style*="transparent"]):not([style*="var(--glass-border)"]):not([style*="#fff"]):not([style*="#FFF"]),
+[data-theme="light"] .bg-green-500,
+[data-theme="light"] .bg-green-500 *,
+[data-theme="light"] .bg-emerald-500,
+[data-theme="light"] .bg-emerald-500 *,
+[data-theme="light"] .bg-red-500,
+[data-theme="light"] .bg-red-500 *,
+[data-theme="light"] .bg-amber-500,
+[data-theme="light"] .bg-amber-500 *,
+[data-theme="light"] .bg-blue-600,
+[data-theme="light"] .bg-blue-600 *,
+[data-theme="light"] .bg-purple-600,
+[data-theme="light"] .bg-purple-600 *,
+[data-theme="light"] .bg-purple-500,
+[data-theme="light"] .bg-purple-500 *,
+[data-theme="light"] .bg-indigo-500,
+[data-theme="light"] .bg-indigo-500 *,
+[data-theme="light"] .bg-indigo-600,
+[data-theme="light"] .bg-indigo-600 *,
+[data-theme="light"] div[class*="from-indigo"] .text-white,
+[data-theme="light"] div[class*="from-purple"] .text-white,
+[data-theme="light"] div[class*="bg-gradient"] .text-white,
+[data-theme="light"] .bg-\[\#C2185B\],
+[data-theme="light"] .bg-\[\#C2185B\] *,
+[data-theme="light"] .bg-\[\#9B1B30\],
+[data-theme="light"] .bg-\[\#9B1B30\] *,
+[data-theme="light"] .text-white-force {
   color: #fff !important;
 }
 
@@ -617,8 +647,8 @@ body.keyboard-open .md\:hidden:last-child {
 
 /* Scrollbar styling for Android WebView */
 ::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -626,20 +656,20 @@ body.keyboard-open .md\:hidden:last-child {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(15, 23, 42, 0.18);
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(15, 23, 42, 0.32);
 }
 
 /* Hide scrollbar utility */
@@ -673,6 +703,8 @@ body.keyboard-open .md\:hidden:last-child {
 }
 
 [data-theme="light"] .glass-card {
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 1px 12px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
   background-image: linear-gradient(
     135deg,
     rgba(var(--color-visor), 0.04) 0%,
@@ -814,6 +846,10 @@ body.keyboard-open .md\:hidden:last-child {
 @keyframes shimmerSlide {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+@keyframes dostPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(var(--color-visor), 0.3), 0 0 0 0 rgba(var(--color-visor), 0.35); }
+  50%       { box-shadow: 0 4px 30px rgba(var(--color-visor), 0.5), 0 0 0 8px rgba(var(--color-visor), 0); }
 }
 .animate-fade-in-up {
   animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;

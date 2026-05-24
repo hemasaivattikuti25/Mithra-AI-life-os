@@ -12,21 +12,6 @@ import { useAuth } from './AuthContext';
    shared across Calendar, Tasks, Habits, and Settings pages
    ═══════════════════════════════════════════════════════════════ */
 
-const mapTaskToDB = (t) => ({
-  id: t.id,
-  user_id: t.userId, // passed if available, strict schema
-  title: t.title,
-  details: t.details || '',
-  list_id: t.listId || 'default',
-  priority: t.priority || 'medium',
-  completed: t.completed || false,
-  starred: t.starred || false,
-  due_date: t.dueDate ? new Date(t.dueDate).toISOString() : null,
-  recurrence: t.recurrence || 'none',
-  subtasks: t.subtasks || [],
-  workspace_id: t.workspaceId || null,
-});
-
 const ensureArray = (v) => {
   if (Array.isArray(v)) return v;
   if (typeof v === 'string') { try { const p = JSON.parse(v); if (Array.isArray(p)) return p; } catch {} }
@@ -45,6 +30,25 @@ const mapTaskFromDB = (t) => ({
   recurrence: t.recurrence || 'none',
   subtasks: ensureArray(t.subtasks),
   workspaceId: t.workspaceId || t.workspace_id || null,
+  updatedAt: t.updatedAt || t.updated_at || null,
+  createdAt: t.createdAt || t.created_at || null,
+});
+
+const mapTaskToDB = (t) => ({
+  id: t.id,
+  user_id: t.userId, // passed if available, strict schema
+  title: t.title,
+  details: t.details || '',
+  list_id: t.listId || 'default',
+  priority: t.priority || 'medium',
+  completed: t.completed || false,
+  starred: t.starred || false,
+  due_date: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+  recurrence: t.recurrence || 'none',
+  subtasks: t.subtasks || [],
+  workspace_id: t.workspaceId || null,
+  updated_at: t.updatedAt || null,
+  created_at: t.createdAt || null,
 });
 
 const mapHabitToDB = (h) => ({
@@ -64,6 +68,8 @@ const mapHabitToDB = (h) => ({
   streak_goal: h.streakGoal || 30,
   streak_unit: h.streakUnit || 'Day',
   focus_duration: h.focusDuration || 25,
+  updated_at: h.updatedAt || null,
+  created_at: h.createdAt || null,
 });
 const mapHabitFromDB = (h) => ({
   id: h.id,
@@ -82,6 +88,8 @@ const mapHabitFromDB = (h) => ({
   streakUnit: h.streakUnit || h.streak_unit || 'Day',
   focusDuration: h.focusDuration || h.focus_duration || 25,
   todayDone: false,
+  updatedAt: h.updatedAt || h.updated_at || null,
+  createdAt: h.createdAt || h.created_at || null,
 });
 
 const DataContext = createContext(null);
@@ -521,21 +529,31 @@ export function DataProvider({ children }) {
     const fetchFromAPI = async () => {
       setDataLoading(true);
       try {
-        // Fetch tasks via API
-        const tasksRes = await apiFetch('/tasks');
-        if (tasksRes.tasks) {
-          const mapped = tasksRes.tasks.map(mapTaskFromDB);
-          setTasks(mapped);
-          saveToStorage('tasks', mapped); // update cache
-        }
+        // Load local cache for merge
+        const localTasks = loadFromStorage('tasks', [])
+          .map(t => ({ ...t, dueDate: t.dueDate ? new Date(t.dueDate) : null }));
+        const localHabits = loadFromStorage('habits', []);
 
-        // Fetch habits via API
-        const habitsRes = await apiFetch('/habits');
-        if (habitsRes.habits) {
-          const mapped = habitsRes.habits.map(mapHabitFromDB);
-          setHabits(mapped);
-          saveToStorage('habits', mapped); // update cache
-        }
+        // Sync tasks via syncEngine with LWW mappers
+        const mergedTasks = await syncEngine.syncTable('tasks', user.id, localTasks, {
+          mapFromDB: mapTaskFromDB,
+          mapToDB: mapTaskToDB
+        });
+        const tasksWithDates = mergedTasks.map(t => ({
+          ...t,
+          dueDate: t.dueDate ? new Date(t.dueDate) : null
+        }));
+        setTasks(tasksWithDates);
+        saveToStorage('tasks', tasksWithDates);
+
+        // Sync habits via syncEngine with LWW mappers
+        const mergedHabits = await syncEngine.syncTable('habits', user.id, localHabits, {
+          mapFromDB: mapHabitFromDB,
+          mapToDB: mapHabitToDB
+        });
+        const validatedHabits = validateHabitState(mergedHabits);
+        setHabits(validatedHabits);
+        saveToStorage('habits', validatedHabits);
 
         hasPulledRef.current = true;
       } catch (err) {
@@ -546,7 +564,7 @@ export function DataProvider({ children }) {
     };
 
     fetchFromAPI();
-  }, [user]);
+  }, [user, validateHabitState]);
 
   /* ── Subscribe to sync engine status changes ── */
   const [syncStatus, setSyncStatus] = useState('idle');
@@ -675,7 +693,13 @@ export function DataProvider({ children }) {
 
   /* ── Task CRUD — Local-first with sync queue ── */
   const addTask = useCallback(async (task) => {
-    const taskWithId = { ...task, id: task.id || crypto.randomUUID() };
+    const nowStr = new Date().toISOString();
+    const taskWithId = {
+      ...task,
+      id: task.id || crypto.randomUUID(),
+      updatedAt: nowStr,
+      createdAt: task.createdAt || nowStr
+    };
     
     // Step 1: ALWAYS save locally first (guaranteed immediate save)
     setTasks(prev => {
@@ -692,7 +716,7 @@ export function DataProvider({ children }) {
           body: JSON.stringify(mapTaskToDB({ ...taskWithId, userId: user.id })),
         });
         // Update with server-returned data if different
-        if (res.task && res.task.id !== taskWithId.id) {
+        if (res.task) {
           setTasks(prev => prev.map(t => t.id === taskWithId.id ? mapTaskFromDB(res.task) : t));
         }
       } catch (error) {
@@ -707,9 +731,13 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const updateTask = useCallback(async (updated) => {
+    const updatedWithTime = {
+      ...updated,
+      updatedAt: new Date().toISOString()
+    };
     // Step 1: ALWAYS save locally first
     setTasks(prev => {
-      const next = prev.map(t => t.id === updated.id ? updated : t);
+      const next = prev.map(t => t.id === updated.id ? updatedWithTime : t);
       saveToStorage('tasks', next);
       return next;
     });
@@ -719,13 +747,13 @@ export function DataProvider({ children }) {
       try {
         await apiFetch(`/tasks/${updated.id}`, {
           method: 'PUT',
-          body: JSON.stringify(mapTaskToDB(updated)),
+          body: JSON.stringify(mapTaskToDB(updatedWithTime)),
         });
       } catch (error) {
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
-          data: mapTaskToDB({ ...updated, userId: user.id }),
+          data: mapTaskToDB({ ...updatedWithTime, userId: user.id }),
         });
       }
     }
@@ -758,7 +786,8 @@ export function DataProvider({ children }) {
     if (!task) return;
 
     const willComplete = !task.completed;
-    const updated = { ...task, completed: willComplete };
+    const nowStr = new Date().toISOString();
+    const updated = { ...task, completed: willComplete, updatedAt: nowStr };
 
     // Award XP on task completion
     if (willComplete) {
@@ -786,7 +815,7 @@ export function DataProvider({ children }) {
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
-          data: { id, completed: willComplete },
+          data: mapTaskToDB(updated),
         });
       }
     }
@@ -802,12 +831,15 @@ export function DataProvider({ children }) {
         default: nextDate = null;
       }
       if (nextDate) {
+        const recurTime = new Date().toISOString();
         const recurringTask = {
           ...task,
           id: crypto.randomUUID(),
           completed: false,
           dueDate: nextDate,
           userId: user?.id,
+          updatedAt: recurTime,
+          createdAt: recurTime,
         };
         // Local-first: save recurring task locally, then sync
         setTasks(p => {
@@ -837,10 +869,12 @@ export function DataProvider({ children }) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     const newStarred = !task.starred;
+    const nowStr = new Date().toISOString();
+    const updated = { ...task, starred: newStarred, updatedAt: nowStr };
 
     // Step 1: ALWAYS save locally first
     setTasks(prev => {
-      const next = prev.map(t => t.id === id ? { ...t, starred: newStarred } : t);
+      const next = prev.map(t => t.id === id ? updated : t);
       saveToStorage('tasks', next);
       return next;
     });
@@ -856,7 +890,7 @@ export function DataProvider({ children }) {
         syncEngine.enqueue({
           table: 'tasks',
           action: 'update',
-          data: { id, starred: newStarred },
+          data: mapTaskToDB(updated),
         });
       }
     }
@@ -864,7 +898,13 @@ export function DataProvider({ children }) {
 
   /* ── Habit CRUD — Local-first with sync queue ── */
   const addHabit = useCallback(async (habit) => {
-    const habitWithId = { ...habit, id: habit.id || crypto.randomUUID() };
+    const nowStr = new Date().toISOString();
+    const habitWithId = {
+      ...habit,
+      id: habit.id || crypto.randomUUID(),
+      updatedAt: nowStr,
+      createdAt: habit.createdAt || nowStr
+    };
     
     // Step 1: ALWAYS save locally first (guaranteed immediate save)
     setHabits(prev => {
@@ -883,7 +923,7 @@ export function DataProvider({ children }) {
           body: JSON.stringify(dbHabit),
         });
         // Update with server-returned data if different
-        if (res.habit && res.habit.id !== habitWithId.id) {
+        if (res.habit) {
           setHabits(prev => prev.map(h => h.id === habitWithId.id ? mapHabitFromDB(res.habit) : h));
         }
       } catch (error) {
@@ -898,9 +938,13 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const updateHabit = useCallback(async (updated) => {
+    const updatedWithTime = {
+      ...updated,
+      updatedAt: new Date().toISOString()
+    };
     // Step 1: ALWAYS save locally first
     setHabits(prev => {
-      const next = prev.map(h => h.id === updated.id ? updated : h);
+      const next = prev.map(h => h.id === updated.id ? updatedWithTime : h);
       saveToStorage('habits', next);
       return next;
     });
@@ -910,13 +954,13 @@ export function DataProvider({ children }) {
       try {
         await apiFetch(`/habits/${updated.id}`, {
           method: 'PUT',
-          body: JSON.stringify(mapHabitToDB(updated)),
+          body: JSON.stringify(mapHabitToDB(updatedWithTime)),
         });
       } catch (error) {
         syncEngine.enqueue({
           table: 'habits',
           action: 'update',
-          data: mapHabitToDB({ ...updated, userId: user.id }),
+          data: mapHabitToDB({ ...updatedWithTime, userId: user.id }),
         });
       }
     }
@@ -1031,6 +1075,7 @@ export function DataProvider({ children }) {
       streak: newStreak,
       bestStreak: Math.max(habit.bestStreak || 0, newStreak),
       consistency: newConsistency,
+      updatedAt: new Date().toISOString(),
     };
 
     // OPTIMISTIC: Update state immediately for instant UI feedback
@@ -1289,7 +1334,7 @@ export function DataProvider({ children }) {
 
   const value = useMemo(() => ({
     // Tasks
-    tasks, taskLists, addTask, updateTask, deleteTask, toggleTask, starTask,
+    tasks, setTasks, taskLists, addTask, updateTask, deleteTask, toggleTask, starTask,
     // Habits
     habits, addHabit, updateHabit, deleteHabit, toggleHabit, setHabits, lastMilestone,
     // Calendar sync events
@@ -1315,7 +1360,7 @@ export function DataProvider({ children }) {
   }), [tasks, taskLists, habits, taskCalendarEvents, habitCalendarEvents, syncSettings, syncStatus,
     theme, colorTheme, accentColor, notifications, focusSound, notificationSettings,
     xp, badges, xpPopup, awardXP, checkBadges,
-    addTask, updateTask, deleteTask, toggleTask, starTask,
+    setTasks, addTask, updateTask, deleteTask, toggleTask, starTask,
     addHabit, updateHabit, deleteHabit, toggleHabit,
     toggleTheme, changeColorTheme, toggleNotifications, toggleFocusSound,
     updateNotificationSettings, requestNotificationPermission,

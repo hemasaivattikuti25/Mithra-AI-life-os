@@ -28,6 +28,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const PromoVideo = lazy(() => import('./pages/PromoVideo'));
 const MithraBlend = lazy(() => import('./pages/MithraBlend'));
+const Diagnostics = lazy(() => import('./pages/Diagnostics'));
 
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
 const PageLoader = () => (
@@ -201,6 +202,7 @@ function AppRoutes() {
         <Route path="/journal" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Journal"><Suspense fallback={<JournalSkeleton />}><MithraJournal /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Settings"><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
         <Route path="/blend" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Blend"><Suspense fallback={<PageSkeleton />}><MithraBlend /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
+        <Route path="/diagnostics" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Diagnostics"><Suspense fallback={<PageSkeleton />}><Diagnostics /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
 
         {/* Public Pages */}
         <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />

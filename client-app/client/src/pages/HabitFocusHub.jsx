@@ -104,7 +104,7 @@ const toRoman = (num) => {
 const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 }) => {
   const today = new Date();
   const [hoveredDay, setHoveredDay] = useState(null);
-  const { theme } = useData();
+  const containerRef = useRef(null);
   const startDate = startOfYear(today);
   const days = useMemo(() => eachDayOfInterval({ start: startDate, end: today }), [startDate.getTime(), today.getTime()]);
   const totalDaysInYear = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -112,35 +112,35 @@ const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 
     const r = []; let cw = [];
     const firstDayOfWeek = days[0].getDay();
     for (let i = 0; i < firstDayOfWeek; i++) cw.push(null);
-    days.forEach((d, i) => { cw.push(d); if (cw.length === 7) { r.push([...cw]); cw = []; } });
+    days.forEach((d) => { cw.push(d); if (cw.length === 7) { r.push([...cw]); cw = []; } });
     if (cw.length > 0) r.push([...cw]);
     return r;
   }, [days]);
 
-  // Accent-derived color levels (matching theme)
-  // We use opacity levels applied to the base accent color
-  const OPACITY_LEVELS = [0.2, 0.4, 0.65, 0.9];
-
-  // Build map: dateStr -> completion ratio (for ALL 365 days)
+  // Build map: dateStr -> { ratio, done: [], missed: [] }
   const completionMap = useMemo(() => {
     const map = {};
     if (!habits || habits.length === 0) return map;
     days.forEach(d => {
       const dateStr = format(d, 'yyyy-MM-dd');
+      const done = [];
+      const missed = [];
+      habits.forEach(h => {
+        const isDone = h.consistency?.includes(dateStr);
+        if (isDone) done.push(h.title);
+        else missed.push(h.title);
+      });
       const total = habits.length;
-      const done = habits.filter(h => h.consistency?.includes(dateStr)).length;
-      if (done > 0) map[dateStr] = done / total;
+      if (done.length > 0) {
+        map[dateStr] = {
+          ratio: done.length / total,
+          done,
+          missed
+        };
+      }
     });
     return map;
   }, [habits, days]);
-
-  const getOpacity = (ratio) => {
-    if (!ratio || ratio <= 0) return 0.05; // Empty state
-    if (ratio <= 0.25) return OPACITY_LEVELS[0];
-    if (ratio <= 0.5) return OPACITY_LEVELS[1];
-    if (ratio <= 0.75) return OPACITY_LEVELS[2];
-    return OPACITY_LEVELS[3];
-  };
 
   const totalActiveDays = Object.keys(completionMap).length;
 
@@ -163,6 +163,22 @@ const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 
 
   const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
+  const getCellColor = (ratio) => {
+    if (!ratio || ratio <= 0) return 'var(--glass-bg-hover)'; // level 0
+    if (ratio <= 0.25) return 'color-mix(in srgb, var(--accent-color) 25%, var(--glass-bg))';
+    if (ratio <= 0.5) return 'color-mix(in srgb, var(--accent-color) 50%, var(--glass-bg))';
+    if (ratio <= 0.75) return 'color-mix(in srgb, var(--accent-color) 75%, var(--glass-bg))';
+    return 'var(--accent-color)'; // level 4
+  };
+
+  const handleMouseEnter = (day) => {
+    setHoveredDay(day);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredDay(null);
+  };
+
   // Empty state — no habits at all
   if (!habits || habits.length === 0) {
     return (
@@ -176,10 +192,10 @@ const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 
   }
 
   return (
-    <div className="glass-card glass-shine rounded-2xl p-5 lg:p-6">
+    <div className="glass-card glass-shine rounded-2xl p-5 lg:p-6" ref={containerRef}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-[var(--text-dim)]">
-          <Activity size={14} className="text-[var(--accent-color)]" /> Consistency Map — {format(today, 'yyyy')}
+          <Activity size={14} className="text-[var(--accent-color)] animate-pulse" /> Consistency Map — {format(today, 'yyyy')}
         </h3>
         <div className="flex items-center gap-3 text-xs text-[var(--text-dim)]">
           <span className="flex items-center gap-1 text-cyan-400 font-semibold">🧊 {totalFreezes}/{FREEZES_PER_MONTH}</span>
@@ -188,77 +204,127 @@ const Heatmap = ({ habits, accentColor, totalFreezes = 0, FREEZES_PER_MONTH = 5 
         </div>
       </div>
 
-      {/* Month labels row */}
-      <div className="flex overflow-x-auto pb-0.5 scrollbar-hide">
-        <div className="w-7 flex-shrink-0" /> {/* spacer for day labels */}
-        <div className="flex gap-[3px] relative" style={{ minWidth: weeks.length * 14 }}>
-          {monthLabels.map((m, i) => (
-            <span key={i} className="absolute text-[10px] font-medium text-[var(--text-dim)] opacity-60" style={{ left: m.col * 14 }}>
-              {m.month}
-            </span>
-          ))}
+      {/* Grid container with custom scrollbar styling */}
+      <div className="overflow-x-auto pb-2 pt-2 scrollbar-thin scrollbar-thumb-glass relative">
+        {/* Month labels row */}
+        <div className="flex mb-1" style={{ minWidth: weeks.length * 15 + 30 }}>
+          <div className="w-8 flex-shrink-0" />
+          <div className="flex relative w-full h-4">
+            {monthLabels.map((m, i) => (
+              <span key={i} className="absolute text-[9px] font-bold text-[var(--text-dim)] opacity-60 tracking-wide" style={{ left: m.col * 15 }}>
+                {m.month}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Grid with day labels */}
-      <div className="flex overflow-x-auto pb-1 scrollbar-hide mt-4">
-        {/* Day labels column */}
-        <div className="flex flex-col gap-[3px] mr-1.5 flex-shrink-0">
-          {DAY_LABELS.map((label, i) => (
-            <div key={i} className="h-[11px] sm:h-3 flex items-center justify-end pr-0.5">
-              <span className="text-[9px] leading-none text-[var(--text-dim)] opacity-50">{label}</span>
-            </div>
-          ))}
-        </div>
-        {/* Contribution grid */}
-        <div className="flex gap-[3px]">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px]">
-              {week.map((day, di) => {
-                if (!day) return <div key={`empty-${di}`} className="w-[11px] h-[11px] sm:w-3 sm:h-3" />;
-                const dateStr = format(day, 'yyyy-MM-dd');
-                const ratio = completionMap[dateStr] || 0;
-                const opacity = getOpacity(ratio);
-                const isAcitve = ratio > 0;
-                const isH = hoveredDay && isSameDay(hoveredDay, day);
+        {/* Grid layout with day labels */}
+        <div className="flex" style={{ minWidth: weeks.length * 15 + 30 }}>
+          {/* Day labels column */}
+          <div className="flex flex-col gap-[3px] mr-2 flex-shrink-0 w-6">
+            {DAY_LABELS.map((label, i) => (
+              <div key={i} className="h-[12px] flex items-center justify-end">
+                <span className="text-[8px] font-bold text-[var(--text-dim)] opacity-40 uppercase">{label}</span>
+              </div>
+            ))}
+          </div>
 
-                return (
-                  <div key={day.toISOString()} onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)} className="relative">
+          {/* Grid weeks */}
+          <div className="flex gap-[3px]">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px]">
+                {week.map((day, di) => {
+                  if (!day) return <div key={`empty-${di}`} className="w-[12px] h-[12px] flex-shrink-0" />;
+                  const dateStr = format(day, 'yyyy-MM-dd');
+                  const dayData = completionMap[dateStr];
+                  const ratio = dayData?.ratio || 0;
+                  const cellColor = getCellColor(ratio);
+                  const isHovered = hoveredDay && isSameDay(hoveredDay, day);
+
+                  return (
                     <div
-                      className="w-[11px] h-[11px] sm:w-3 sm:h-3 rounded-[2px] sm:rounded-[3px] transition-all cursor-pointer"
-                      style={{
-                        backgroundColor: isAcitve ? 'var(--accent-color)' : 'var(--text-dim)',
-                        opacity: opacity,
-                        outline: isH ? `2px solid var(--accent-color)` : 'none',
-                        outlineOffset: isH ? '-1px' : '0',
-                      }}
-                    />
-                    {isH && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap z-50 pointer-events-none shadow-lg glass-heavy border border-white/10"
-                        style={{ background: 'var(--surface-bg)', color: 'var(--text-primary)' }}>
-                        <span className="font-bold">
-                          {ratio >= 1 ? 'All habits done' : ratio > 0 ? `${Math.round(ratio * 100)}% completed` : 'No activity'}
-                        </span>
-                        <span className="ml-1.5 opacity-70 border-l border-white/10 pl-1.5">{format(day, 'MMM d, yyyy')}</span>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-[var(--surface-bg)]" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                      key={day.toISOString()}
+                      className="relative"
+                      onMouseEnter={() => handleMouseEnter(day)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <motion.div
+                        className="w-[12px] h-[12px] rounded-[3px] cursor-pointer transition-all border border-transparent hover:border-white/10"
+                        style={{
+                          backgroundColor: cellColor,
+                          boxShadow: isHovered ? `0 0 8px var(--accent-color)` : 'none',
+                        }}
+                        whileHover={{ scale: 1.3, zIndex: 10 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      />
+
+                      {/* Tooltip positioned beautifully */}
+                      <AnimatePresence>
+                        {isHovered && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 rounded-xl text-[10px] z-50 pointer-events-none shadow-2xl glass-heavy border border-white/10 w-48 text-left"
+                            style={{
+                              background: 'var(--surface-bg)',
+                              color: 'var(--text-primary)',
+                            }}
+                          >
+                            <div className="font-bold flex items-center justify-between border-b border-white/5 pb-1 mb-1.5 text-[11px]">
+                              <span style={{ color: 'var(--text-primary)' }}>{format(day, 'EEE, MMM d, yyyy')}</span>
+                            </div>
+                            
+                            {ratio > 0 ? (
+                              <>
+                                <div className="text-[10px] font-semibold text-[var(--accent-color)] mb-1">
+                                  {Math.round(ratio * 100)}% completed ({dayData.done.length}/{habits.length})
+                                </div>
+                                <div className="flex flex-col gap-1 max-h-24 overflow-y-auto pr-1">
+                                  {dayData.done.map((hName, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5 text-[9px] text-[var(--text-primary)]">
+                                      <CheckCircle2 size={10} className="text-emerald-500 flex-shrink-0" />
+                                      <span className="truncate">{hName}</span>
+                                    </div>
+                                  ))}
+                                  {dayData.missed.map((hName, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5 text-[9px] text-[var(--text-dim)] opacity-50">
+                                      <Circle size={10} className="text-red-500/50 flex-shrink-0" />
+                                      <span className="truncate">{hName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-[10px] text-[var(--text-dim)] py-0.5">
+                                No activity recorded
+                              </div>
+                            )}
+
+                            {/* Tooltip caret arrow */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-[var(--surface-bg)]" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Legend — GitHub style */}
-      <div className="flex items-center justify-end gap-1.5 mt-3 text-[11px] text-[var(--text-dim)]">
-        <span>Less</span>
-        <div className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: 'var(--text-dim)', opacity: 0.05 }} />
-        {OPACITY_LEVELS.map((op, i) => (
-          <div key={i} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: 'var(--accent-color)', opacity: op }} />
-        ))}
-        <span>More</span>
+      <div className="flex items-center justify-end gap-1.5 mt-3 text-[10px] text-[var(--text-dim)]">
+        <span className="opacity-60">Less</span>
+        <div className="w-[10px] h-[10px] rounded-[2px]" style={{ backgroundColor: 'var(--glass-bg-hover)' }} />
+        <div className="w-[10px] h-[10px] rounded-[2px]" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-color) 25%, var(--glass-bg))' }} />
+        <div className="w-[10px] h-[10px] rounded-[2px]" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-color) 50%, var(--glass-bg))' }} />
+        <div className="w-[10px] h-[10px] rounded-[2px]" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-color) 75%, var(--glass-bg))' }} />
+        <div className="w-[10px] h-[10px] rounded-[2px]" style={{ backgroundColor: 'var(--accent-color)' }} />
+        <span className="opacity-60">More</span>
       </div>
     </div>
   );

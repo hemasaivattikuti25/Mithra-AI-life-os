@@ -1,11 +1,12 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Moon, Sun, Database, LogOut, Calendar, Bell, BellOff, Download,
   ChevronDown, Clock, User, Mail, Phone, MapPin, Globe, Camera,
   Edit3, Check, X, Lock, Shield, AlertCircle, Loader2, Pencil,
   CheckSquare, Activity, Flame, AlertTriangle, Info, Star, ExternalLink, Heart, Linkedin, Instagram,
-  FileSpreadsheet, Image
+  FileSpreadsheet, Image, Terminal, ChevronRight
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -291,6 +292,7 @@ const NotificationsSection = ({ isDarkMode, notificationSettings, updateNotifica
 
 /* ═══════════════════════════════════════════════════════════════ */
 export default function Settings() {
+  const navigate = useNavigate();
   const {
     theme, toggleTheme,
     colorTheme, changeColorTheme, COLOR_THEMES, accentColor,
@@ -723,6 +725,19 @@ export default function Settings() {
               </div>
             </div>
             <Camera size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
+          </button>
+          <button onClick={() => navigate('/diagnostics')}
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div className="flex items-center gap-3">
+              <Terminal size={20} style={{ color: 'var(--text-dim)' }} />
+              <div>
+                <div className="text-sm" style={{ color: 'var(--text-primary)' }}>System Diagnostics</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Audits, checks, and theme visualizers</div>
+              </div>
+            </div>
+            <ChevronRight size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
           </button>
           <button onClick={signOut}
             className="w-full flex items-center justify-between p-4 mt-2 rounded-lg transition-colors text-left group"

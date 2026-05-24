@@ -49,7 +49,7 @@ class ChatEngine:
         Build a carefully crafted system prompt with token budget in mind.
 
         Args:
-            user_context: Dict with pending_tasks, habits, today_mood
+            user_context: Dict with pending_tasks, habits, today_mood, calendar_events
             user_name: User's display name
             memory_context: RAG-retrieved journal snippets
             is_day_plan: Whether this is a day planning request
@@ -61,6 +61,31 @@ class ChatEngine:
         day_name = today.strftime("%A")
         date_str = today.strftime("%B %d, %Y")
 
+        # Build calendar block
+        calendar_events = user_context.get("calendar_events", [])
+        if calendar_events:
+            cal_lines = []
+            for ev in calendar_events:
+                title = ev.get("title", "Untitled Event")
+                start = ev.get("start_time")
+                end = ev.get("end_time")
+                category = ev.get("category", "")
+                cat_str = f" ({category})" if category else ""
+                
+                if isinstance(start, (date, datetime)):
+                    start_str = start.strftime("%b %d, %H:%M")
+                else:
+                    start_str = str(start)
+                if isinstance(end, (date, datetime)):
+                    end_str = end.strftime("%H:%M") if start.date() == end.date() else end.strftime("%b %d, %H:%M")
+                else:
+                    end_str = str(end)
+                    
+                cal_lines.append(f"  • {title} [{start_str} - {end_str}]{cat_str}")
+            calendar_block = "\n".join(cal_lines)
+        else:
+            calendar_block = "  (No calendar events scheduled for today or tomorrow)"
+
         # Build task list (limited to top 5)
         tasks = user_context.get("pending_tasks", [])[:MAX_TASKS_IN_CONTEXT]
         if tasks:
@@ -69,14 +94,31 @@ class ChatEngine:
                 star = "⭐ " if t.get("starred") else ""
                 priority = t.get("priority", "medium")[0].upper()  # H/M/L
                 due = t.get("due_date", "")
+                is_overdue = False
                 if due:
                     try:
-                        due = datetime.fromisoformat(due.replace("Z", "+00:00")).strftime("%b %d")
+                        if isinstance(due, (date, datetime)):
+                            due_dt = due
+                        else:
+                            clean_due = due.replace("Z", "+00:00")
+                            due_dt = datetime.fromisoformat(clean_due)
+                        
+                        if isinstance(due_dt, datetime):
+                            due_date_only = due_dt.date()
+                        else:
+                            due_date_only = due_dt
+                        
+                        if due_date_only < today.date():
+                            is_overdue = True
+                        
+                        due_str = due_dt.strftime("%b %d")
                     except Exception:
-                        due = "soon"
+                        due_str = "soon"
                 else:
-                    due = "no date"
-                task_lines.append(f"  • {star}{t['title'][:40]} [{priority}] - {due}")
+                    due_str = "no date"
+                
+                overdue_tag = "⚠️ [OVERDUE] " if is_overdue else ""
+                task_lines.append(f"  • {overdue_tag}{star}{t['title'][:40]} [{priority}] - {due_str}")
             task_block = "\n".join(task_lines)
         else:
             task_block = "  (No pending tasks — all caught up! 🎉)"
@@ -110,6 +152,9 @@ class ChatEngine:
 📅 Today: {day_name}, {date_str}
 😊 Mood: {mood_text}
 
+### Today's Calendar:
+{calendar_block}
+
 ### Pending Tasks:
 {task_block}
 
@@ -137,6 +182,9 @@ Be realistic — don't overpack. User's energy: {user_context.get('energy_level'
 📅 Today: {day_name}, {date_str}
 😊 Mood: {mood_text}
 
+### Today's Calendar:
+{calendar_block}
+
 ### {user_name}'s Tasks:
 {task_block}
 
@@ -150,14 +198,29 @@ Be realistic — don't overpack. User's energy: {user_context.get('energy_level'
 - Calm, reflective, insightful, stoic
 - Use **Markdown**: bold for emphasis, bullets for lists
 - Be concise but meaningful
-- Reference their REAL tasks/habits when relevant
+- Reference their REAL tasks/habits/events when relevant
 - Don't give generic advice — use their actual data
 
 ### Actions:
-If user wants to CREATE something, output JSON at the END:
-||JSON||{{"action": "create_task|create_habit|log_mood", "data": {{...}}}}
+If the user wants to schedule, edit, delete, or check off tasks, events, habits, or log a mood, output exactly one JSON action block at the very end of your response.
+Follow this format exactly:
+||JSON||{{"action": "action_name", "data": {{...}}}}
 
-Only output JSON for clear, actionable requests."""
+Available actions and their schemas:
+1. Complete Task:
+   ||JSON||{{"action": "complete_task", "data": {{"id": "uuid"}}}}
+2. Create Task:
+   ||JSON||{{"action": "create_task", "data": {{"title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
+3. Update Task (reschedule, prioritize, edit description):
+   ||JSON||{{"action": "update_task", "data": {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
+4. Complete Habit:
+   ||JSON||{{"action": "complete_habit", "data": {{"id": "uuid"}}}}
+5. Schedule Calendar Event:
+   ||JSON||{{"action": "create_event", "data": {{"title": "...", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "work|personal|health|other"}}}}
+6. Log Mood:
+   ||JSON||{{"action": "log_mood", "data": {{"score": 1..5}}}}
+
+Ensure the JSON is correct. Only output the action block if the user explicitly asked to schedule, complete, update, delete, or log something."""
 
     def extract_actions(self, response_text: str) -> tuple[str, list]:
         """
@@ -411,12 +474,13 @@ Only output JSON for clear, actionable requests."""
             }
 
     async def _fetch_user_context(self, user_id: str, db_pool) -> dict:
-        """Fetch live tasks, habits, and today's mood for the user."""
+        """Fetch live tasks, habits, today's mood, and calendar events for the user."""
 
         context = {
             "pending_tasks": [],
             "habits": [],
             "today_mood": None,
+            "calendar_events": [],
         }
 
         if not db_pool:
@@ -457,6 +521,19 @@ Only output JSON for clear, actionable requests."""
                 )
                 if journal:
                     context["today_mood"] = journal.get("mood")
+
+                # Calendar events for today and tomorrow (NOW - 4 hours to NOW + 36 hours)
+                # No deleted_at column exists in calendar_events.
+                calendar = await conn.fetch(
+                    """SELECT id, title, start_time, end_time, category
+                       FROM calendar_events
+                       WHERE user_id = $1 AND start_time >= NOW() - INTERVAL '4 hours' AND start_time <= NOW() + INTERVAL '36 hours'
+                       ORDER BY start_time ASC
+                       LIMIT 10""",
+                    user_id
+                )
+                if calendar:
+                    context["calendar_events"] = [dict(ev) for ev in calendar]
         except Exception as e:
             self.logger.debug(f"Failed to fetch context: {e}")
 

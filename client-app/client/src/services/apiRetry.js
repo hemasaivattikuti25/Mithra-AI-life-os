@@ -15,7 +15,7 @@ export async function apiFetchWithRetry(path, options = {}, maxRetries = 3) {
       const isMutation = options.method && options.method !== 'GET';
 
       // Don't retry mutations (POST/PUT/DELETE) — risk of double-write
-      if (!isRetryable || (isMutation && attempt > 0)) break;
+      if (!isRetryable || isMutation) break;
 
       const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
       await new Promise((r) => setTimeout(r, delay));

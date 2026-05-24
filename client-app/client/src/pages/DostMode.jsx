@@ -578,6 +578,7 @@ export default function DostMode() {
   const pendingEventRef = useRef(null); // stores a conflict-pending event awaiting user confirmation
 
   const [pendingSchedule, setPendingSchedule] = useState(null);
+  const [showSmartReminders, setShowSmartReminders] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -638,6 +639,76 @@ export default function DostMode() {
       setMessages(getDynamicWelcome());
     }
   }, [habits, tasks, getDynamicWelcome, messages]);
+
+  /* ── Smart Proactive Reminder Chips ── */
+  const smartReminderChips = React.useMemo(() => {
+    const chips = [];
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
+
+    // Overdue tasks (sorted by urgency)
+    const overdueTasks = (tasks || []).filter(t => {
+      if (t.completed || !t.dueDate) return false;
+      return new Date(t.dueDate) < now;
+    }).slice(0, 2);
+    overdueTasks.forEach(t => {
+      chips.push({
+        icon: '⚠️',
+        label: `Overdue: ${t.title.slice(0, 28)}${t.title.length > 28 ? '…' : ''}`,
+        cmd: `Complete task: ${t.title}`,
+        color: 'rgba(239,68,68,0.12)',
+        border: 'rgba(239,68,68,0.25)',
+        textColor: '#f87171',
+        type: 'overdue',
+      });
+    });
+
+    // Incomplete habits today
+    const pendingHabits = (habits || []).filter(h => !h.todayDone).slice(0, 2);
+    pendingHabits.forEach(h => {
+      chips.push({
+        icon: '🔥',
+        label: `Habit: ${h.title.slice(0, 26)}${h.title.length > 26 ? '…' : ''}`,
+        cmd: `I completed my ${h.title} habit`,
+        color: 'rgba(249,115,22,0.10)',
+        border: 'rgba(249,115,22,0.22)',
+        textColor: '#fb923c',
+        type: 'habit',
+      });
+    });
+
+    // Tasks due today
+    const todayTasks = (tasks || []).filter(t => {
+      if (t.completed || !t.dueDate) return false;
+      return format(new Date(t.dueDate), 'yyyy-MM-dd') === todayStr;
+    }).slice(0, 2);
+    if (todayTasks.length > 0 && overdueTasks.length === 0) {
+      chips.push({
+        icon: '📋',
+        label: `${todayTasks.length} task${todayTasks.length > 1 ? 's' : ''} due today`,
+        cmd: `Summarize my day`,
+        color: 'rgba(6,182,212,0.08)',
+        border: 'rgba(6,182,212,0.2)',
+        textColor: 'var(--accent-color)',
+        type: 'summary',
+      });
+    }
+
+    // If all is caught up and there are habits/tasks, suggest planning
+    if (chips.length === 0 && ((tasks || []).length > 0 || (habits || []).length > 0)) {
+      chips.push({
+        icon: '✨',
+        label: 'Plan my day',
+        cmd: 'Plan my day',
+        color: 'rgba(168,85,247,0.08)',
+        border: 'rgba(168,85,247,0.18)',
+        textColor: '#a78bfa',
+        type: 'plan',
+      });
+    }
+
+    return chips.slice(0, 4);
+  }, [tasks, habits]);
 
   /* ── Execute NLP-detected actions silently ── */
   const executeCasualActions = useCallback(async (actions) => {
@@ -710,6 +781,159 @@ export default function DostMode() {
       }
     }
   }, [habits, tasks, updateHabit, toggleTask]);
+
+  /* ── Execute AI-structured actions ── */
+  const executeAIAction = useCallback(async (action) => {
+    if (!action || !action.action || !action.data) return;
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const { action: actionName, data } = action;
+
+    try {
+      switch (actionName) {
+        case 'complete_task': {
+          if (data.id) {
+            const task = tasks.find(t => t.id === data.id);
+            if (task && !task.completed) {
+              toggleTask(data.id);
+            }
+          }
+          break;
+        }
+
+        case 'create_task': {
+          if (!data.title) break;
+          const newTask = {
+            id: data.id || `task-${Date.now()}`,
+            title: data.title,
+            priority: data.priority || 'medium',
+            dueDate: data.due_date ? new Date(data.due_date) : new Date(),
+            completed: false,
+            starred: data.priority === 'high',
+            subtasks: [],
+            listId: 'dost',
+            details: data.notes || '',
+            source: 'dost',
+          };
+          addTask(newTask);
+          break;
+        }
+
+        case 'update_task': {
+          if (!data.id) break;
+          const existingTask = tasks.find(t => t.id === data.id);
+          if (existingTask) {
+            const updatedTask = {
+              ...existingTask,
+              title: data.title !== undefined ? data.title : existingTask.title,
+              priority: data.priority !== undefined ? data.priority : existingTask.priority,
+              starred: data.priority !== undefined ? data.priority === 'high' : existingTask.starred,
+              dueDate: data.due_date ? new Date(data.due_date) : existingTask.dueDate,
+              details: data.notes !== undefined ? data.notes : existingTask.details,
+              completed: data.completed !== undefined ? data.completed : existingTask.completed,
+            };
+            updateTask(updatedTask);
+          }
+          break;
+        }
+
+        case 'complete_habit': {
+          if (!data.id) break;
+          const habit = habits.find(h => h.id === data.id);
+          if (habit && !habit.todayDone) {
+            const newDates = [...(habit.completedDates || []), today];
+            const newStreak = (habit.streak || 0) + 1;
+            const updated = {
+              ...habit,
+              completedDates: newDates,
+              streak: newStreak,
+              bestStreak: Math.max(newStreak, habit.bestStreak || 0),
+              todayDone: true
+            };
+            updateHabit(updated);
+            if (isFirebaseConfigured) {
+              apiFetch(`/habits/${data.id}/complete`, { method: 'POST' })
+                .catch(() => {});
+            }
+          }
+          break;
+        }
+
+        case 'create_event': {
+          if (!data.title || !data.start_time) break;
+          const evId = `evt-${Date.now()}`;
+          const startTime = new Date(data.start_time);
+          const endTime = data.end_time ? new Date(data.end_time) : new Date(startTime.getTime() + 60 * 60 * 1000);
+          
+          const calEvent = {
+            id: evId,
+            title: data.title,
+            start: startTime.toISOString(),
+            end: endTime.toISOString(),
+            category: data.category || 'Dost',
+            color: 'var(--accent-color)',
+            source: 'dost',
+          };
+          saveCalendarEvent(calEvent);
+          
+          if (isFirebaseConfigured) {
+            apiFetch('/events', {
+              method: 'POST',
+              body: JSON.stringify({
+                title: calEvent.title,
+                start: calEvent.start,
+                end: calEvent.end,
+                category: calEvent.category
+              })
+            }).catch(() => {});
+          }
+          
+          const eventTask = {
+            id: `task-${Date.now()}`,
+            title: `📅 ${data.title}`,
+            priority: 'high',
+            dueDate: startTime,
+            completed: false,
+            starred: true,
+            subtasks: [],
+            listId: 'dost',
+            details: `Scheduled event: ${format(startTime, 'h:mm a')} – ${format(endTime, 'h:mm a')}`,
+            source: 'dost',
+          };
+          addTask(eventTask);
+          break;
+        }
+
+        case 'log_mood': {
+          const score = parseInt(data.score);
+          if (isNaN(score) || score < 1 || score > 5) break;
+          
+          const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
+          const labels = { 5: 'Great', 4: 'Good', 3: 'Okay', 2: 'Low', 1: 'Rough' };
+          const entry = {
+            date: new Date().toISOString(),
+            mood: score,
+            label: labels[score] || 'Okay'
+          };
+          const updated = [entry, ...moodHistory].slice(0, 30);
+          localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
+          
+          if (isFirebaseConfigured) {
+            apiFetch('/mood-logs', {
+              method: 'POST',
+              body: JSON.stringify({ mood_value: score, mood_label: entry.label })
+            }).catch(() => {});
+          }
+          break;
+        }
+
+        default:
+          break;
+      }
+    } catch (err) {
+      console.error('[Dost] Failed to execute AI action:', err);
+    }
+  }, [habits, tasks, updateHabit, toggleTask, addTask, updateTask]);
 
   // Check if API server is reachable - ONLY if API is configured
   useEffect(() => {
@@ -1382,6 +1606,11 @@ export default function DostMode() {
               });
               addAiMsg(data?.reply || "That's interesting! Tell me more.");
 
+              // Execute any AI-structured action
+              if (data?.action) {
+                executeAIAction(data.action);
+              }
+
               // Execute any NLP-detected actions silently
               if (data?.actions?.length > 0) {
                 executeCasualActions(data.actions);
@@ -1402,7 +1631,7 @@ export default function DostMode() {
     } finally {
       setIsThinking(false);
     }
-  }, [input, isOnline, tasks, habits, addTask, updateTask, deleteTask, toggleTask, addHabit, updateHabit, deleteHabit, addAiMsg, executeCasualActions]);
+  }, [input, isOnline, tasks, habits, addTask, updateTask, deleteTask, toggleTask, addHabit, updateHabit, deleteHabit, addAiMsg, executeCasualActions, executeAIAction]);
 
   function getSmartResponse() {
     const pendingTasks = tasks.filter(t => !t.completed).length;
@@ -1556,6 +1785,56 @@ export default function DostMode() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SMART REMINDER BANNER — proactive context chips */}
+      <AnimatePresence>
+        {showSmartReminders && smartReminderChips.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="z-10 px-4 md:px-6 pt-3 pb-0 flex items-start gap-2"
+          >
+            <div className="flex-1 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-wider opacity-40 flex-shrink-0"
+                style={{ color: 'var(--text-dim)' }}>
+                Reminders
+              </span>
+              {smartReminderChips.map((chip, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => {
+                    setInput(chip.cmd);
+                    setTimeout(() => {
+                      document.querySelector('[data-dost-input]')?.focus();
+                    }, 100);
+                  }}
+                  className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                  style={{
+                    background: chip.color,
+                    border: `1px solid ${chip.border}`,
+                    color: chip.textColor,
+                  }}
+                >
+                  <span>{chip.icon}</span>
+                  <span>{chip.label}</span>
+                </motion.button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowSmartReminders(false)}
+              className="flex-shrink-0 p-1 rounded-lg opacity-30 hover:opacity-60 transition-opacity"
+              style={{ color: 'var(--text-dim)' }}
+            >
+              <X size={12} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

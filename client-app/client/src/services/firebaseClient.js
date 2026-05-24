@@ -58,6 +58,7 @@ if (isConfigured) {
 export const firebaseApp = app;
 export const firebaseAuth = auth;
 export const isFirebaseConfigured = isConfigured;
+export const isAuthRequired = REQUIRE_AUTH;
 
 /* ═══════════════════════════════════════════════════════════════
    AUTH SERVICE — Wraps Firebase Auth with offline fallback

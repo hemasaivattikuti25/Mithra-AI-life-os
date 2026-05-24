@@ -8,6 +8,8 @@ python_functions = ["test_*"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = ["migrations/", "tests/", ".venv*", "__pycache__/"]
+
+[tool.ruff.lint]
 select = ["E", "W", "F"]
 ignore = ["E501", "F401"]
-exclude = ["migrations/", "tests/"]

@@ -4,7 +4,7 @@ import {
   Sun, Moon, CloudSun, Calendar, CheckCircle2, Circle,
   Star, Clock, ArrowRight, Zap, BookOpen,
   ChevronRight, Sparkles, Target, Flame, Dumbbell,
-  Code, Brain, Heart, AlertTriangle,
+  Code, Brain, Heart, AlertTriangle, MessageCircle,
   TrendingUp, BarChart3, Inbox, FileText, Share2, Award, Trophy
 } from 'lucide-react';
 import { format, isToday as isTodayFn } from 'date-fns';
@@ -1104,6 +1104,39 @@ function Dashboard() {
           <Share2 size={18} />
           Share Your Stats
         </motion.button>
+
+        {/* ════════════════════════════════════
+          FLOATING DOST AI BUTTON — Quick access
+          ════════════════════════════════════ */}
+        {(() => {
+          const pendingItems = pendingCount + (habits ? habits.filter(h => !h.todayDone).length : 0);
+          return (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.2, duration: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
+              onClick={() => navigate('/dost', { state: { prefill: pendingItems > 0 ? 'plan my day' : undefined } })}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.93 }}
+              className="fixed bottom-24 md:bottom-8 right-4 md:right-6 z-40 w-14 h-14 rounded-full shadow-xl flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, var(--accent-color), var(--accent-secondary))',
+                boxShadow: '0 0 0 0 var(--accent-glow)',
+                animation: 'dostPulse 2.5s ease-in-out infinite',
+              }}
+              title="Open Dost AI"
+            >
+              <MessageCircle size={22} className="text-white" />
+              {pendingItems > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shadow"
+                >
+                  {pendingItems > 9 ? '9+' : pendingItems}
+                </span>
+              )}
+            </motion.button>
+          );
+        })()}
       </div>
 
       {/* Share Stats Modal */}

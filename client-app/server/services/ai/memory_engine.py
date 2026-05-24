@@ -48,11 +48,11 @@ async def retrieve_relevant_memories(
             rows = await conn.fetch(
                 """SELECT content, date, mood
                    FROM journal_entries
-                   WHERE user_id = $1 AND embedding IS NOT NULL
-                   ORDER BY embedding <=> $2::vector
+                   WHERE user_id = $1 AND embedding_vector IS NOT NULL
+                   ORDER BY embedding_vector <=> $2::vector
                    LIMIT $3""",
                 user_id,
-                str(query_embedding).replace("[", "{").replace("]", "}"),
+                str(query_embedding),
                 limit,
             )
 
