@@ -107,7 +107,7 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-[var(--glass-bg-hover)] hover:bg-white/20 transition-colors"
           >
-            <X size={20} className="text-white" />
+            <X size={20} style={{ color: '#ffffff' }} />
           </button>
 
           {/* Shareable Card */}
@@ -124,14 +124,14 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--glass-border)] mb-3">
                 <Flame size={14} className="text-orange-500" />
-                <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">
+                <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                   Mithra Stats
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold" style={{ color: '#ffffff' }}>
                 {userName}'s Journey
               </h2>
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
                 {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -167,15 +167,15 @@ const ShareStatsCard = ({ isOpen, onClose, stats, userName = 'User' }) => {
 
             {/* Motivational quote */}
             <div className="text-center py-3 px-4 rounded-xl bg-[var(--glass-border)]">
-              <p className="text-xs italic text-white/60">
+              <p className="text-xs italic" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                 "The obstacle is the way."
               </p>
-              <p className="text-[10px] text-white/30 mt-1">— Marcus Aurelius</p>
+              <p className="text-[10px] mt-1" style={{ color: 'rgba(255, 255, 255, 0.3)' }}>— Marcus Aurelius</p>
             </div>
 
             {/* Branding */}
             <div className="text-center mt-4">
-              <p className="text-[10px] text-white/30 tracking-widest uppercase">
+              <p className="text-[10px] tracking-widest uppercase" style={{ color: 'rgba(255, 255, 255, 0.3)' }}>
                 mithra.app
               </p>
             </div>
@@ -227,11 +227,11 @@ const StatBox = ({ icon, value, label, unit, color }) => (
     }}
   >
     <div className="flex justify-center mb-2">{icon}</div>
-    <div className="text-2xl font-bold text-white">
+    <div className="text-2xl font-bold" style={{ color: '#ffffff' }}>
       {value}
-      {unit && <span className="text-xs font-normal text-white/50 ml-1">{unit}</span>}
+      {unit && <span className="text-xs font-normal ml-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{unit}</span>}
     </div>
-    <div className="text-[10px] text-white/50 uppercase tracking-wider mt-1">{label}</div>
+    <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{label}</div>
   </div>
 );
 
