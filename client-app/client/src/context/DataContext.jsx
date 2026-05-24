@@ -517,6 +517,47 @@ export function DataProvider({ children }) {
     }
   }, [user]);
 
+  /* ── Habit Consistency Helpers — declared early so validateHabitState is in scope below ── */
+  const getTodayStr = () => format(new Date(), 'yyyy-MM-dd');
+
+  const calculateStreak = (consistency) => {
+    if (!consistency || consistency.length === 0) return 0;
+    const sorted = [...consistency].sort().reverse();
+    const todayStr = getTodayStr();
+    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+
+    // If consecutive chain is broken (neither today nor yesterday is present), streak is 0
+    if (sorted[0] !== todayStr && sorted[0] !== yesterdayStr) return 0;
+
+    let streak = 0;
+    let current = new Date(sorted[0]);
+    for (let i = 0; i < sorted.length; i++) {
+      if (isSameDay(new Date(sorted[i]), current)) {
+        streak++;
+        current = subDays(current, 1);
+      } else break;
+    }
+    return streak;
+  };
+
+  const validateHabitState = useCallback((list) => {
+    const todayStr = getTodayStr();
+    return list.map(h => {
+      const consistency = h.consistency || [];
+      const actuallyDone = consistency.includes(todayStr);
+      const recalcStreak = calculateStreak(consistency);
+      if (h.todayDone !== actuallyDone || h.streak !== recalcStreak) {
+        return { ...h, todayDone: actuallyDone, streak: recalcStreak, bestStreak: Math.max(h.bestStreak || 0, recalcStreak) };
+      }
+      return h;
+    });
+  }, []);
+
+  // Validate habits on mount
+  useEffect(() => {
+    setHabits(prev => validateHabitState(prev));
+  }, [validateHabitState]);
+
   /* ══════════════════════════════════════════════════════════════
      API-FIRST: Fetch on mount, write before state update
      ═══════════════════════════════════════════════════════════ */
@@ -991,47 +1032,6 @@ export function DataProvider({ children }) {
   // Streak milestones
   const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 180, 365];
   const [lastMilestone, setLastMilestone] = useState(null);
-
-  /* ── Habit Consistency Helpers ── */
-  const getTodayStr = () => format(new Date(), 'yyyy-MM-dd');
-
-  const calculateStreak = (consistency) => {
-    if (!consistency || consistency.length === 0) return 0;
-    const sorted = [...consistency].sort().reverse();
-    const todayStr = getTodayStr();
-    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-
-    // If consecutive chain is broken (neither today nor yesterday is present), streak is 0
-    if (sorted[0] !== todayStr && sorted[0] !== yesterdayStr) return 0;
-
-    let streak = 0;
-    let current = new Date(sorted[0]);
-    for (let i = 0; i < sorted.length; i++) {
-      if (isSameDay(new Date(sorted[i]), current)) {
-        streak++;
-        current = subDays(current, 1);
-      } else break;
-    }
-    return streak;
-  };
-
-  const validateHabitState = useCallback((list) => {
-    const todayStr = getTodayStr();
-    return list.map(h => {
-      const consistency = h.consistency || [];
-      const actuallyDone = consistency.includes(todayStr);
-      const recalcStreak = calculateStreak(consistency);
-      if (h.todayDone !== actuallyDone || h.streak !== recalcStreak) {
-        return { ...h, todayDone: actuallyDone, streak: recalcStreak, bestStreak: Math.max(h.bestStreak || 0, recalcStreak) };
-      }
-      return h;
-    });
-  }, []);
-
-  // Validate on mount
-  useEffect(() => {
-    setHabits(prev => validateHabitState(prev));
-  }, [validateHabitState]);
 
   /* ── Journal Cleanup & Quota Listeners ── */
   useEffect(() => {
