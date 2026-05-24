@@ -2013,9 +2013,8 @@ export default function DostMode() {
                 }, 50);
               }
             }}
-            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-accent-visor/10 transition-all flex-shrink-0 font-medium"
+            className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)] hover:bg-accent-visor/10 transition-all flex-shrink-0 font-medium"
             style={{ 
-              color: 'var(--text-dim)',
               background: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
