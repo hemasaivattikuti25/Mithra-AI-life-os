@@ -1,0 +1,48 @@
+# ═══════════════════════════════════════════════════════════
+# Mithra AI — Server Git Ignore
+# ═══════════════════════════════════════════════════════════
+
+# Environment (NEVER commit real credentials)
+.env
+.env.local
+.env.*.local
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+
+# Testing & linting cache
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Distribution / packaging
+dist/
+build/
+*.tgz
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

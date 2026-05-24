@@ -47,19 +47,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Testing
+# Testing & linting cache
 coverage/
 .nyc_output/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
 
 # Android
 *.apk
 *.aab
 *.keystore
 local.properties
-ClientScheduler/client/android/.gradle/
-ClientScheduler/client/android/app/build/
-ClientScheduler/client/android/build/
-ClientScheduler/client/android/capacitor-cordova-android-plugins/build/
+client-app/client/android/.gradle/
+client-app/client/android/app/build/
+client-app/client/android/build/
+client-app/client/android/capacitor-cordova-android-plugins/build/
 
 # ChromaDB / Vector stores
 mitra_vectordb/
@@ -69,3 +74,6 @@ mitra_vectordb/
 *.bak
 *.tmp
 .cache/
+
+# Large media — tracked via Git LFS instead (see .gitattributes)
+# *.mov, *.mp4, *.avi, *.webm, *.mkv → handled by LFS
