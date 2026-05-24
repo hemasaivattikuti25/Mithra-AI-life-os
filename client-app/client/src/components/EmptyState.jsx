@@ -41,7 +41,7 @@ const EmptyState = ({
           className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
           style={{
             background: 'var(--accent-color)',
-            color: 'var(--selection-text)',
+            color: '#ffffff',
             boxShadow: '0 8px 24px var(--accent-glow)'
           }}
         >

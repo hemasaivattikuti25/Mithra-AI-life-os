@@ -406,8 +406,10 @@
 }
 
 /* Safety net for buttons/badges on accent/dark backgrounds to keep white text in light mode */
+[data-theme="light"] .bg-\[var\(--accent-color\)\].text-white,
 [data-theme="light"] .bg-\[var\(--accent-color\)\] .text-white,
 [data-theme="light"] .bg-\[var\(--accent-color\)\] *,
+[data-theme="light"] button.bg-\[var\(--accent-color\)\],
 [data-theme="light"] button.bg-accent,
 [data-theme="light"] button[class*="bg-accent-visor"],
 [data-theme="light"] button[class*="bg-blue-"],

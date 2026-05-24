@@ -317,8 +317,27 @@ const applyColorTheme = (themeId, mode) => {
   const vars = mode === 'light' ? palette.light : palette.dark;
   const root = document.documentElement;
   Object.entries(vars).forEach(([key, value]) => {
+    // Skip glass-border overrides that reference CSS vars (they cascade fine)
+    if (value === 'var(--glass-border)' || value === 'var(--glass-border-hover)') return;
     root.style.setProperty(key, value);
   });
+
+  // In light mode, dynamically compute all surface backgrounds from the accent color
+  // (CSS color-mix() won't re-evaluate after JS changes --accent-color, so we do it here)
+  if (mode === 'light') {
+    const accent = vars['--accent-color'] || '#06b6d4';
+    // Use CSS.supports check — all modern browsers support color-mix
+    const supportsColorMix = CSS.supports('color', 'color-mix(in srgb, red 50%, blue)');
+    if (supportsColorMix) {
+      root.style.setProperty('--body-bg',    `color-mix(in srgb, ${accent} 10%, #ffffff)`);
+      root.style.setProperty('--surface-bg', `color-mix(in srgb, ${accent} 10%, #ffffff)`);
+      root.style.setProperty('--nav-bg',     `color-mix(in srgb, ${accent} 10%, #ffffff)`);
+      root.style.setProperty('--glass-bg',       `color-mix(in srgb, ${accent} 14%, #ffffff)`);
+      root.style.setProperty('--glass-bg-hover', `color-mix(in srgb, ${accent} 20%, #ffffff)`);
+      root.style.setProperty('--accent-glow', `color-mix(in srgb, ${accent} 20%, transparent)`);
+      root.style.setProperty('--visor-glow',  `color-mix(in srgb, ${accent} 14%, transparent)`);
+    }
+  }
 };
 
 /* ═══════════════════════════════════════════════════════════════

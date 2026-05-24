@@ -1128,7 +1128,7 @@ function Dashboard() {
               }}
               title="Open Dost AI"
             >
-              <MessageCircle size={22} className="text-white" />
+              <MessageCircle size={22} style={{ color: '#ffffff' }} />
               {pendingItems > 0 && (
                 <span
                   className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shadow"
