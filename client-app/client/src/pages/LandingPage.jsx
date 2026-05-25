@@ -249,14 +249,14 @@ const Features = () => {
                 </motion.div>
 
                 {/* Bento Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[300px]">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-[minmax(220px,auto)] sm:auto-rows-[260px]">
                     
                     {/* Feature 1: Dost AI (Large Box) */}
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
-                        className="md:col-span-2 lg:col-span-2 row-span-2 rounded-3xl p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-purple-500/30 transition-colors flex flex-col"
+                        className="md:col-span-2 lg:col-span-2 row-span-2 rounded-3xl p-6 sm:p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-purple-500/30 transition-colors flex flex-col"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
                         <div className="relative z-10 mb-auto">
@@ -267,7 +267,11 @@ const Features = () => {
                             <p className="text-[var(--text-dim)] text-sm max-w-sm">Not just a chatbot. Dost analyzes your habits, calendar, and mood to auto-schedule your success and prevent burnout before it happens.</p>
                         </div>
                         {/* Mini visual mockup inside the card */}
-                        <div className="relative mt-8 bg-[var(--surface-bg)] rounded-t-xl border-x border-t border-[var(--glass-border)] p-4 shadow-2xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <motion.div 
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                            className="relative mt-8 bg-[var(--surface-bg)] rounded-t-xl border-x border-t border-[var(--glass-border)] p-4 shadow-2xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
+                        >
                             <div className="flex gap-3 mb-3">
                                 <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0"><Brain size={12} className="text-purple-400"/></div>
                                 <div className="bg-[var(--glass-bg)] rounded-lg p-3 text-xs border border-[var(--glass-border)] w-full">
@@ -277,7 +281,7 @@ const Features = () => {
                             <div className="flex justify-end gap-2">
                                 <div className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-md text-xs font-medium">Apply Schedule</div>
                             </div>
-                        </div>
+                        </motion.div>
                     </motion.div>
 
                     {/* Feature 2: Habit Focus Hub */}
@@ -286,22 +290,25 @@ const Features = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ delay: 0.1 }}
-                        className="md:col-span-2 lg:col-span-2 row-span-1 rounded-3xl p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-cyan-500/30 transition-colors"
+                        className="md:col-span-2 lg:col-span-2 row-span-1 rounded-3xl p-6 sm:p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-cyan-500/30 transition-colors flex flex-col sm:flex-row justify-between items-start gap-4"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent pointer-events-none" />
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-4 border border-cyan-500/30">
-                                    <Target size={20} className="text-cyan-400" />
-                                </div>
-                                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>Atomic Habit Hub</h3>
-                                <p className="text-[var(--text-dim)] text-sm max-w-[200px]">Beautiful streaks, heatmaps, and smart tracking.</p>
+                        <div className="flex-1">
+                            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-4 border border-cyan-500/30">
+                                <Target size={20} className="text-cyan-400" />
                             </div>
-                            <div className="flex gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                                {[1,2,3,4,5,6,7].map((i) => (
-                                    <div key={i} className={`w-3 h-10 rounded-full ${i > 4 ? 'bg-[var(--glass-border)]' : 'bg-cyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.5)]'}`} style={{ height: `${20 + i*6}px` }} />
-                                ))}
-                            </div>
+                            <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>Atomic Habit Hub</h3>
+                            <p className="text-[var(--text-dim)] text-sm">Visualize your consistency. Track streaks, view dynamic heatmaps, and let the system intelligently remind you to maintain your momentum over time.</p>
+                        </div>
+                        <div className="flex gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity mt-4 sm:mt-0 shrink-0 self-end sm:self-center">
+                            {[1,2,3,4,5,6,7].map((i) => (
+                                <motion.div 
+                                    key={i} 
+                                    animate={i > 4 ? {} : { height: [`${20 + i*6}px`, `${25 + i*6}px`, `${20 + i*6}px`] }}
+                                    transition={{ repeat: Infinity, duration: 2, delay: i * 0.2 }}
+                                    className={`w-3 rounded-full ${i > 4 ? 'bg-[var(--glass-border)] h-10' : 'bg-cyan-500/80 shadow-[0_0_10px_rgba(6,182,212,0.5)]'}`} style={i > 4 ? {} : { height: `${20 + i*6}px` }} 
+                                />
+                            ))}
                         </div>
                     </motion.div>
 
@@ -311,7 +318,7 @@ const Features = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ delay: 0.2 }}
-                        className="md:col-span-1 lg:col-span-1 row-span-1 rounded-3xl p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-orange-500/30 transition-colors flex flex-col"
+                        className="md:col-span-1 lg:col-span-1 row-span-1 rounded-3xl p-6 sm:p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-orange-500/30 transition-colors flex flex-col"
                     >
                         <div className="w-10 h-10 rounded-2xl bg-orange-500/20 flex items-center justify-center mb-4 border border-orange-500/30">
                             <CalendarDays size={20} className="text-orange-400" />
@@ -326,7 +333,7 @@ const Features = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ delay: 0.3 }}
-                        className="md:col-span-1 lg:col-span-1 row-span-1 rounded-3xl p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-green-500/30 transition-colors flex flex-col justify-between"
+                        className="md:col-span-1 lg:col-span-1 row-span-1 rounded-3xl p-6 sm:p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-green-500/30 transition-colors flex flex-col justify-between"
                     >
                         <div className="w-10 h-10 rounded-2xl bg-green-500/20 flex items-center justify-center mb-4 border border-green-500/30">
                             <Shield size={20} className="text-green-400" />
@@ -334,6 +341,27 @@ const Features = () => {
                         <div>
                             <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>Local-First</h3>
                             <p className="text-[var(--text-dim)] text-sm">Works 100% offline. Syncs when you reconnect.</p>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 5: UI Customization */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ delay: 0.4 }}
+                        className="md:col-span-2 lg:col-span-2 row-span-1 rounded-3xl p-6 sm:p-8 bg-[var(--glass-bg)] border border-[var(--glass-border)] relative overflow-hidden group hover:border-pink-500/30 transition-colors flex flex-col sm:flex-row justify-between items-center gap-4"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent pointer-events-none" />
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>Make it yours.</h3>
+                            <p className="text-[var(--text-dim)] text-sm">Select from carefully curated themes. Dynamic glassmorphism automatically adapts your chosen color palette to borders, glows, and backgrounds.</p>
+                        </div>
+                        <div className="flex gap-2 p-3 bg-[var(--surface-bg)] rounded-2xl border border-[var(--glass-border)] shadow-lg">
+                            <motion.div whileHover={{ scale: 1.2 }} className="w-8 h-8 rounded-full bg-[#0891b2] border-2 border-[var(--body-bg)]" />
+                            <motion.div whileHover={{ scale: 1.2 }} className="w-8 h-8 rounded-full bg-[#e11d48] border-2 border-[var(--body-bg)]" />
+                            <motion.div whileHover={{ scale: 1.2 }} className="w-8 h-8 rounded-full bg-[#c026d3] border-2 border-[var(--body-bg)]" />
+                            <motion.div whileHover={{ scale: 1.2 }} className="w-8 h-8 rounded-full bg-[#16a34a] border-2 border-[var(--body-bg)]" />
                         </div>
                     </motion.div>
                 </div>
@@ -492,6 +520,10 @@ const Founder = () => (
                         
                         <p className="text-[var(--text-primary)] opacity-85 leading-relaxed mb-6 text-lg">
                             "I built Mithra Life OS because I was tired of fighting scattered tools. I wanted one unified, AI-native space to optimize productivity, build habits, and gain self-awareness without the friction."
+                        </p>
+                        
+                        <p className="text-[var(--text-dim)] leading-relaxed mb-6">
+                            As a B.Tech Computer Science student at VIT-AP (class of 2027) with coursework spanning Machine Learning, NLP, and Data Structures, I specialize in building high-availability backends and production LLM integrations. Previously, I engineered FastAPI backends and fault-tolerant MongoDB replica sets for a mission-critical Defence Asset Management System at DRDL–DRDO, and designed custom AI training pipelines at Embrizon. Shipping Mithra is my way of putting advanced, zero-trust productivity systems in the hands of users worldwide.
                         </p>
                         
                         <div className="flex flex-wrap justify-center lg:justify-start gap-3">
