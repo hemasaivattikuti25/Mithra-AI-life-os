@@ -15,9 +15,9 @@ const AnimatedBackground = ({ theme }) => {
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-[var(--body-bg)] transition-colors duration-500">
             {/* Deep mesh gradient */}
-            <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/20 blur-[100px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'} `} />
-            <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[100px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'}`}  />
-            <div className={`absolute top-[40%] left-[60%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[100px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'} `} />
+            <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/20 blur-[60px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'} `} style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }} />
+            <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[60px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'}`} style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}  />
+            <div className={`absolute top-[40%] left-[60%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[60px] ${isLight ? 'mix-blend-multiply opacity-50' : 'mix-blend-screen'} `} style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }} />
             
             {/* Noise Texture */}
             <div className={`absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] ${isLight ? 'opacity-[0.03] invert' : 'opacity-[0.03]'}`} />
@@ -131,7 +131,7 @@ const Hero = ({ navigate, isAuthenticated }) => {
                     </motion.div>
                     
                     <h1 
-                        className="text-6xl sm:text-7xl lg:text-[5.5rem] font-extrabold tracking-tight text-[var(--text-primary)] mb-8 leading-[1.05]" 
+                        className="text-4xl sm:text-6xl lg:text-[5.5rem] font-extrabold tracking-tight text-[var(--text-primary)] mb-6 sm:mb-8 leading-[1.1]" 
                         style={{ fontFamily: "'Outfit', sans-serif" }}
                     >
                         Master<br />
@@ -164,20 +164,22 @@ const Hero = ({ navigate, isAuthenticated }) => {
                             Watch Demo
                         </Link>
                     </div>
-                    
-                    {/* Social proof text removed */}
                 </motion.div>
 
                 {/* Right Content - 3D Floating Layers */}
-                <div className="relative lg:h-[700px] w-full perspective-1000">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-purple-600/20 rounded-full blur-[100px] -z-10 " />
+                <div className="relative h-[550px] sm:h-[600px] lg:h-[700px] w-full perspective-1000">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-purple-600/20 rounded-full blur-[60px] -z-10 " style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }} />
                     
                     {/* Main Dashboard Card */}
                     <motion.div 
                         style={{ rotateX: cardRotateX, rotateY: cardRotateY, transformStyle: "preserve-3d" }}
-                        className="absolute inset-0 flex items-center justify-center z-20"
+                        className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
                     >
-                        <div className="relative w-full max-w-lg h-[500px] rounded-3xl border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-lg shadow-2xl overflow-hidden flex flex-col">
+                        <motion.div
+                            animate={{ y: [0, -10, 0] }}
+                            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                            className="relative w-full max-w-lg h-[500px] rounded-3xl border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-lg shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
+                        >
                             {/* Mac OS Window Header */}
                             <div className="h-12 border-b border-[var(--glass-border)] flex items-center px-5 gap-2 bg-[var(--glass-bg)]">
                                 <div className="flex gap-2">
@@ -236,35 +238,47 @@ const Hero = ({ navigate, isAuthenticated }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     </motion.div>
 
                     {/* Floating Element 1 - AI Suggestion */}
                     <motion.div
                         style={{ x: floatX1, y: floatY1, z: 50 }}
-                        className="absolute -left-12 top-1/4 z-30 bg-[var(--surface-bg)] opacity-90 backdrop-blur-md border border-[var(--glass-border)] p-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-[280px]"
+                        className="absolute left-2 sm:left-4 md:-left-12 top-1/4 z-30 max-w-[280px] pointer-events-none scale-90 sm:scale-100"
                     >
-                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
-                            <Brain size={18} className="text-purple-400" />
-                        </div>
-                        <div>
-                            <div className="text-xs font-bold text-purple-400 mb-1">Dost AI</div>
-                            <div className="text-xs text-[var(--text-primary)] opacity-80 leading-tight">I noticed you're tired. Moved your 3PM meeting to tomorrow.</div>
-                        </div>
+                        <motion.div
+                            animate={{ y: [0, -8, 0] }}
+                            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-[var(--surface-bg)] opacity-95 backdrop-blur-md border border-[var(--glass-border)] p-4 rounded-2xl shadow-2xl flex items-center gap-4 pointer-events-auto"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
+                                <Brain size={18} className="text-purple-400" />
+                            </div>
+                            <div>
+                                <div className="text-xs font-bold text-purple-400 mb-1">Dost AI</div>
+                                <div className="text-xs text-[var(--text-primary)] opacity-80 leading-tight">I noticed you're tired. Moved your 3PM meeting to tomorrow.</div>
+                            </div>
+                        </motion.div>
                     </motion.div>
 
                     {/* Floating Element 2 - Habit Streak */}
                     <motion.div
                         style={{ x: floatX2, y: floatY2, z: 80 }}
-                        className="absolute -right-8 bottom-1/4 z-30 bg-[var(--surface-bg)] opacity-90 backdrop-blur-md border border-[var(--glass-border)] p-4 rounded-2xl shadow-2xl flex items-center gap-4"
+                        className="absolute right-2 sm:right-4 md:-right-8 bottom-1/4 z-30 pointer-events-none scale-90 sm:scale-100"
                     >
-                        <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
-                            <span className="text-lg">🔥</span>
-                        </div>
-                        <div>
-                            <div className="text-xs font-bold text-orange-400 mb-1">12 Day Streak</div>
-                            <div className="text-xs text-[var(--text-primary)] opacity-80 leading-tight">Meditation habit completed.</div>
-                        </div>
+                        <motion.div
+                            animate={{ y: [0, 8, 0] }}
+                            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                            className="bg-[var(--surface-bg)] opacity-95 backdrop-blur-md border border-[var(--glass-border)] p-4 rounded-2xl shadow-2xl flex items-center gap-4 pointer-events-auto"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
+                                <span className="text-lg">🔥</span>
+                            </div>
+                            <div>
+                                <div className="text-xs font-bold text-orange-400 mb-1">12 Day Streak</div>
+                                <div className="text-xs text-[var(--text-primary)] opacity-80 leading-tight">Meditation habit completed.</div>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 </div>
             </div>

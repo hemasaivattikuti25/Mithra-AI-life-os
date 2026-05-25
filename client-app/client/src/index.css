@@ -1260,3 +1260,18 @@ input[type="range"].reminder-slider::-moz-range-track {
 }
 
 /* Removed hardcoded cyan button overrides to allow dynamic themes */
+
+/* Landing Page Hero Gradient Text Animation */
+.animate-gradient-x {
+  background-size: 200% auto;
+  animation: gradient-x 6s ease infinite;
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
