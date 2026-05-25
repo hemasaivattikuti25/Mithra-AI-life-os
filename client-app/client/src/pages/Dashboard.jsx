@@ -88,26 +88,39 @@ const WeeklyAnalyticsChart = ({ tasks, habits, isLight }) => {
   const data = useMemo(() => {
     const days = [];
     const today = new Date();
+    
+    // O(N) pre-grouping to prevent O(N * 7) expensive format() calls
+    const tasksByDate = {};
+    const habitsByDate = {};
+    
+    tasks.forEach(t => {
+      if (!t.dueDate) return;
+      // Extract YYYY-MM-DD efficiently
+      const d = new Date(t.dueDate);
+      const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (!tasksByDate[dateStr]) tasksByDate[dateStr] = { total: 0, completed: 0 };
+      tasksByDate[dateStr].total++;
+      if (t.completed) tasksByDate[dateStr].completed++;
+    });
+
+    habits.forEach(h => {
+      if (!h.consistency) return;
+      h.consistency.forEach(dateStr => {
+        habitsByDate[dateStr] = (habitsByDate[dateStr] || 0) + 1;
+      });
+    });
+
+    const totalHabits = habits.length;
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateStr = format(d, 'yyyy-MM-dd');
+      const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const dayLabel = format(d, 'EEE');
 
-      const tasksCompleted = tasks.filter(t => {
-        if (!t.completed || !t.dueDate) return false;
-        return format(new Date(t.dueDate), 'yyyy-MM-dd') === dateStr;
-      }).length;
-
-      const totalTasks = tasks.filter(t => {
-        if (!t.dueDate) return false;
-        return format(new Date(t.dueDate), 'yyyy-MM-dd') === dateStr;
-      }).length;
-
-      const habitsCompleted = habits.filter(h =>
-        h.consistency?.includes(dateStr)
-      ).length;
-      const totalHabits = habits.length;
+      const tasksCompleted = tasksByDate[dateStr]?.completed || 0;
+      const totalTasks = tasksByDate[dateStr]?.total || 0;
+      const habitsCompleted = habitsByDate[dateStr] || 0;
 
       days.push({
         label: dayLabel,
@@ -228,6 +241,16 @@ function Dashboard() {
   }, [user?.id]);
 
   /* ── Today's events from real calendar data (deduplicated) ── */
+  const dueTodayCount = useMemo(() => {
+    const d = new Date();
+    const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return tasks.filter(t => {
+      if (!t.dueDate || t.completed) return false;
+      const td = new Date(t.dueDate);
+      return td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0') === todayStr;
+    }).length;
+  }, [tasks]);
+
   const todayEvents = useMemo(() => {
     const todayStr = format(today, 'yyyy-MM-dd');
     const events = [];
@@ -397,6 +420,18 @@ function Dashboard() {
   }, [realTasks]);
 
   /* Recent journal entries */
+  const recentTasks = useMemo(() => {
+    const d = new Date();
+    const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return tasks
+      .filter(t => !t.completed && t.dueDate && (() => {
+        const td = new Date(t.dueDate);
+        return td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0') === todayStr;
+      })())
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+      .slice(0, 3);
+  }, [tasks]);
+
   const recentJournals = useMemo(() => {
     try {
       const entries = JSON.parse(localStorage.getItem(getUserScopedKey('journal-entries')) || '[]');

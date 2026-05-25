@@ -465,8 +465,8 @@ export default function Settings() {
                   whileTap={{ scale: 0.95 }}
                   className="px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                   style={{
-                    color: 'var(--accent-color)',
-                    background: 'var(--glass-bg-hover)',
+                    color: '#fff',
+                    background: 'var(--accent-soft)',
                     border: '1px solid var(--glass-border)',
                     boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                   }}>
