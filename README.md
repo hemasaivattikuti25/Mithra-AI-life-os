@@ -96,6 +96,14 @@ Mithra avoids generic component libraries (like Bootstrap or MUI) in favor of a 
 * **Framer Motion:** Every interaction, from routing to modal popups, is physically modeled using Framer Motion springs for buttery-smooth 60fps animations.
 * **Heatmaps:** The dashboard features custom SVG-based habit heatmaps (similar to GitHub contributions) allowing users to visualize consistency over a 365-day macro scale.
 
+### 4.4 Rendering Performance & Mobile Optimization
+To guarantee a responsive, 60fps user experience across all devices—including low-end mobile hardware—Mithra implements several advanced front-end rendering techniques:
+
+1. **Persistent Nested Routing Layout:** Rather than duplicating the `<Layout>` component inside individual routes (which forces React to completely unmount and remount the global layout, sidebar, and background glows on every navigation), Mithra wraps its protected routes under a parent layout route. React Router’s `<Outlet />` renders only the child views, keeping the main layout continuously mounted. This instantly cuts navigation lag and enables Framer Motion’s spring-driven layout transitions to animate cleanly between tab changes.
+2. **GPU Compositor Layer Promotion:** The application utilizes deep, semi-transparent background ambient glows. To avoid expensive rasterization passes when scrolling or transitioning pages, these elements are promoted to their own compositor layers on the GPU using `transform: translate3d(0,0,0)` and `will-change: transform`.
+3. **Optimized CSS Filter Overload:** Large radial gradient divs with high blur values can bottleneck browser repaints. Mithra optimizes these elements by reducing blur filters by 50% (from `150px` to `60px`-`80px`) and replacing continuous opacity keyframe animations (like `animate-pulse` on massive blurred regions) with lightweight, hardware-accelerated transforms.
+4. **Fluid Mobile Viewport Constraints:** The landing page features a 3D browser mockup and floating badges. On mobile devices, the mockup container height is explicitly controlled (`h-[550px]`) to prevent layout collapse, and horizontal badge offsets are dynamically adapted (`left-2 sm:left-4 md:-left-12`) to keep elements centered and visible without edge clipping. Continuous auto-floating animations (`y: [0, -10, 0]`) are implemented to keep the section dynamic on touch devices.
+
 ---
 
 ## 📊 5. Database Schema & Data Models
