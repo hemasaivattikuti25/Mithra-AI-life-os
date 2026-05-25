@@ -244,12 +244,12 @@ function Dashboard() {
   const dueTodayCount = useMemo(() => {
     const d = new Date();
     const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    return tasks.filter(t => {
+    return (realTasks || []).filter(t => {
       if (!t.dueDate || t.completed) return false;
       const td = new Date(t.dueDate);
       return td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0') === todayStr;
     }).length;
-  }, [tasks]);
+  }, [realTasks]);
 
   const todayEvents = useMemo(() => {
     const todayStr = format(today, 'yyyy-MM-dd');
@@ -423,14 +423,14 @@ function Dashboard() {
   const recentTasks = useMemo(() => {
     const d = new Date();
     const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    return tasks
+    return (realTasks || [])
       .filter(t => !t.completed && t.dueDate && (() => {
         const td = new Date(t.dueDate);
         return td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0') === todayStr;
       })())
       .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
       .slice(0, 3);
-  }, [tasks]);
+  }, [realTasks]);
 
   const recentJournals = useMemo(() => {
     try {
