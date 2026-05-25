@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import {
     Layout as LayoutIcon, MessageSquare, Calendar as CalendarIcon,
     CheckSquare, BookOpen, Settings, User, Activity, Bot, Menu, X, Users
@@ -261,15 +261,15 @@ export const Layout = ({ children }) => {
             <main className="md:ml-20 lg:ml-64 min-h-screen relative overflow-x-hidden pt-14 md:pt-0 pb-32 md:pb-0">
                 <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                     {/* Theme-aware Ambient Glows */}
-                    <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-40 animate-pulse" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--accent-glow)] rounded-full blur-[120px] opacity-30" />
-                    <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-[var(--visor-glow)] rounded-full blur-[150px] opacity-20" />
+                    <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--accent-glow)] rounded-full blur-[60px] opacity-40" style={{ transform: 'translate3d(0, 0, 0)', willChange: 'transform' }} />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--accent-glow)] rounded-full blur-[60px] opacity-30" style={{ transform: 'translate3d(0, 0, 0)', willChange: 'transform' }} />
+                    <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[800px] h-[400px] bg-[var(--visor-glow)] rounded-full blur-[80px] opacity-20" style={{ transform: 'translate3d(0, 0, 0)', willChange: 'transform' }} />
                     {/* Secondary accent shimmer — offset for depth */}
-                    <div className="absolute top-[15%] right-[20%] w-[350px] h-[350px] rounded-full blur-[130px] opacity-15" style={{ background: 'var(--accent-soft)' }} />
-                    <div className="absolute bottom-[25%] left-[15%] w-[300px] h-[300px] rounded-full blur-[140px] opacity-10" style={{ background: 'var(--accent-secondary)' }} />
+                    <div className="absolute top-[15%] right-[20%] w-[350px] h-[350px] rounded-full blur-[70px] opacity-15" style={{ background: 'var(--accent-soft)', transform: 'translate3d(0, 0, 0)', willChange: 'transform' }} />
+                    <div className="absolute bottom-[25%] left-[15%] w-[300px] h-[300px] rounded-full blur-[75px] opacity-10" style={{ background: 'var(--accent-secondary)', transform: 'translate3d(0, 0, 0)', willChange: 'transform' }} />
                 </div>
                 <div className="relative">
-                    {children}
+                    {children || <Outlet />}
                 </div>
             </main>
             <MobileBottomNav />

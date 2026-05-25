@@ -194,15 +194,17 @@ function AppRoutes() {
         <Route path="/reset-password" element={<AuthPage isPasswordReset={true} />} />
 
         {/* Protected app routes — page-specific skeleton fallbacks + error boundaries */}
-        <Route path="/dashboard" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Dashboard"><Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/dost" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Dost"><Suspense fallback={<PageSkeleton />}><DostMode /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Calendar"><Suspense fallback={<CalendarSkeleton />}><MithraCalendar /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/tasks" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Tasks"><Suspense fallback={<TasksSkeleton />}><MithraTasks /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/habits" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Habits"><Suspense fallback={<HabitsSkeleton />}><HabitFocusHub /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/journal" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Journal"><Suspense fallback={<JournalSkeleton />}><MithraJournal /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Settings"><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/blend" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Blend"><Suspense fallback={<PageSkeleton />}><MithraBlend /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
-        <Route path="/diagnostics" element={<ProtectedRoute><Layout><PageErrorBoundary pageName="Diagnostics"><Suspense fallback={<PageSkeleton />}><Diagnostics /></Suspense></PageErrorBoundary></Layout></ProtectedRoute>} />
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<PageErrorBoundary pageName="Dashboard"><Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense></PageErrorBoundary>} />
+          <Route path="/dost" element={<PageErrorBoundary pageName="Dost"><Suspense fallback={<PageSkeleton />}><DostMode /></Suspense></PageErrorBoundary>} />
+          <Route path="/calendar" element={<PageErrorBoundary pageName="Calendar"><Suspense fallback={<CalendarSkeleton />}><MithraCalendar /></Suspense></PageErrorBoundary>} />
+          <Route path="/tasks" element={<PageErrorBoundary pageName="Tasks"><Suspense fallback={<TasksSkeleton />}><MithraTasks /></Suspense></PageErrorBoundary>} />
+          <Route path="/habits" element={<PageErrorBoundary pageName="Habits"><Suspense fallback={<HabitsSkeleton />}><HabitFocusHub /></Suspense></PageErrorBoundary>} />
+          <Route path="/journal" element={<PageErrorBoundary pageName="Journal"><Suspense fallback={<JournalSkeleton />}><MithraJournal /></Suspense></PageErrorBoundary>} />
+          <Route path="/settings" element={<PageErrorBoundary pageName="Settings"><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></PageErrorBoundary>} />
+          <Route path="/blend" element={<PageErrorBoundary pageName="Blend"><Suspense fallback={<PageSkeleton />}><MithraBlend /></Suspense></PageErrorBoundary>} />
+          <Route path="/diagnostics" element={<PageErrorBoundary pageName="Diagnostics"><Suspense fallback={<PageSkeleton />}><Diagnostics /></Suspense></PageErrorBoundary>} />
+        </Route>
 
         {/* Public Pages */}
         <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
