@@ -622,30 +622,32 @@ export default function Settings() {
           <h2 className="uppercase text-xs font-bold tracking-widest mb-4" style={{ color: 'var(--accent-color)' }}>Support & About</h2>
 
           {/* Install App */}
-          {installPrompt && (
-            <button onClick={async () => {
+          <button onClick={async () => {
+            if (installPrompt) {
               installPrompt.prompt();
               const { outcome } = await installPrompt.userChoice;
               if (outcome === 'accepted') {
                 setInstallPrompt(null);
                 window.deferredPrompt = null;
               }
-            }}
-              className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                  <Download size={18} style={{ color: 'white' }} />
-                </div>
-                <div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Install App</div>
-                  <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Install Mithra for a better experience</div>
-                </div>
+            } else {
+              alert("App installation is not available. It might already be installed, or your browser may not support it.");
+            }
+          }}
+            className="w-full flex items-center justify-between p-4 rounded-lg transition-colors text-left group"
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                <Download size={18} style={{ color: 'white' }} />
               </div>
-              <Download size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
-            </button>
-          )}
+              <div>
+                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Install App</div>
+                <div className="text-xs" style={{ color: 'var(--text-dim)' }}>Install Mithra for a better experience</div>
+              </div>
+            </div>
+            <Download size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-color)' }} />
+          </button>
 
           {/* Star on GitHub */}
           <a href="https://github.com/hemasaivattikuti25/Mithra-AI-life-os" target="_blank" rel="noopener noreferrer"
