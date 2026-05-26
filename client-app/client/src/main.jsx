@@ -7,6 +7,13 @@ import { initNative } from './native.js'
 // Initialize native platform features (Capacitor)
 initNative();
 
+// Capture PWA install prompt
+window.deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPrompt = e;
+});
+
 /* ══════════════════════════════════════════════════════════════
    SERVICE WORKER CLEANUP — Kill any old cached SW that still
    serves stale Supabase-era JS bundles. Runs on every page load

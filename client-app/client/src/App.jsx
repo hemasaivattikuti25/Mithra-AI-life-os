@@ -219,7 +219,14 @@ function AppRoutes() {
 }
 
 function App() {
-  useEffect(() => { initAnalytics(); }, []);
+  useEffect(() => { 
+    initAnalytics(); 
+    
+    // Prompt for notification permission on start if not already answered
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   return (
     <ErrorBoundary>
