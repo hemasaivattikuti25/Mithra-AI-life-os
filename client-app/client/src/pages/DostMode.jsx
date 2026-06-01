@@ -12,6 +12,7 @@ import { authService } from '../services/firebaseClient';
 import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 import { format, addDays, parse } from 'date-fns';
 import clsx from 'clsx';
+import { localEngine } from '../services/dostLocalEngine';
 
 /* =========================================
    API Configuration
@@ -1577,9 +1578,16 @@ export default function DostMode() {
         /* ── GENERAL / SCOPED RESPONSE ── */
         case 'general':
         default: {
+          // 1. Try local classification (No API needed)
+          const localResponse = localEngine.classifyLocal(userInput);
+          if (localResponse) {
+            addAiMsg(localResponse.reply);
+            break;
+          }
+
           // Check if the question is relevant to our app capabilities
-          const appKeywords = /task|habit|mood|journal|summar|schedule|remind|focus|pomodoro|productiv|streak|goal|timer|break|meditat|stress|motivat|wellness|wellbeing|breath|import|csv|excel|meeting|event|calendar|appointment/i;
-          const isAppRelated = appKeywords.test(userInput);
+          const appKeywords = /task|habit|mood|journal|summar|schedule|remind|focus|pomodoro|productiv|streak|goal|timer|break|meditat|stress|motivat|wellness|wellbeing|breath|import|csv|excel|meeting|event|calendar|appointment|hi|hello|hey|help/i;
+          const isAppRelated = appKeywords.test(userInput) || userInput.length < 50;
 
           if (isAppRelated && isOnline) {
             if (isRateLimited()) {
@@ -1587,6 +1595,16 @@ export default function DostMode() {
               break;
             }
             try {
+              // 2. Try Cache
+              const userId = authService.currentUser?.uid || 'guest';
+              const cached = localEngine.getCachedResponse(userId, userInput);
+              if (cached) {
+                addAiMsg(cached.reply);
+                if (cached.action) executeAIAction(cached.action);
+                if (cached.actions?.length > 0) executeCasualActions(cached.actions);
+                break;
+              }
+
               // Build chat history from recent messages (Problem 5)
               const recentMsgs = messages.slice(-20);
               const history = recentMsgs
@@ -1604,6 +1622,10 @@ export default function DostMode() {
                   history: history.length > 0 ? history : [],
                 }),
               });
+              
+              // 3. Save to cache
+              localEngine.cacheResponse(userId, userInput, data);
+
               addAiMsg(data?.reply || "That's interesting! Tell me more.");
 
               // Execute any AI-structured action

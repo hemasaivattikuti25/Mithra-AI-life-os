@@ -436,15 +436,13 @@ async def create_journal(entry: JournalCreate, current_user: dict = Depends(get_
         entry_id = str(uuid.uuid4())
         entry_date = entry.date or date.today().isoformat()
 
-        embedding = get_embedding(entry.content)
-
         async with pool.acquire() as conn:
             workspace_id = await _require_workspace_member(conn, entry.workspaceId, user_id)
             await conn.execute(
-                """INSERT INTO journal_entries (id, user_id, content, mood, tags, date, embedding, embedding_vector, workspace_id)
-                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""",
+                """INSERT INTO journal_entries (id, user_id, content, mood, tags, date, workspace_id)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)""",
                 entry_id, user_id, entry.content, mood, entry.tags, entry_date,
-                str(embedding), str(embedding), workspace_id
+                workspace_id
             )
 
         return_entry = {
@@ -475,13 +473,12 @@ async def update_journal(entry_id: str, entry: JournalCreate, current_user: dict
         raise HTTPException(status_code=503, detail="Database unavailable")
 
     try:
-        embedding = get_embedding(entry.content)
         async with pool.acquire() as conn:
             result = await conn.execute(
-                """UPDATE journal_entries SET content=$1, mood=$2, tags=$3, date=$4, embedding=$5, embedding_vector=$6, updated_at=NOW()
-                   WHERE id=$7 AND user_id=$8""",
+                """UPDATE journal_entries SET content=$1, mood=$2, tags=$3, date=$4, updated_at=NOW()
+                   WHERE id=$5 AND user_id=$6""",
                 entry.content, entry.mood, entry.tags, entry.date or date.today().isoformat(),
-                str(embedding), str(embedding), entry_id, current_user["id"]
+                entry_id, current_user["id"]
             )
             if result == "UPDATE 0":
                 raise HTTPException(status_code=404, detail="Journal entry not found")

@@ -1,0 +1,33 @@
+{
+  "greeting": [
+    "Hey! How's your day going? 😊",
+    "Hi there! What's on your mind today?",
+    "Hello! How can I help you organize your day?",
+    "Hey! Let's get things done. What should we tackle first?"
+  ],
+  "status": [
+    "I'm doing great and ready to help you conquer the day! 🚀",
+    "Always here and ready! What's on the agenda?",
+    "Operating at 100%! How are you feeling?"
+  ],
+  "capabilities": [
+    "I'm Dost! I can help you plan your day, manage your tasks, track your habits, and reflect on your mood. Just tell me what you need! ✨",
+    "I can organize your schedule, add tasks, track habits, or just chat if you need to clear your head. Try saying 'plan my day'!"
+  ],
+  "acknowledgement": [
+    "You're very welcome! 💙",
+    "Anytime! Let me know if you need anything else.",
+    "Happy to help! Keep up the great work. 🌟",
+    "No problem at all!"
+  ],
+  "farewell": [
+    "See you later! Have a great day. 👋",
+    "Bye for now! Remember, I'm just a click away.",
+    "Take care! See you soon. 🌙"
+  ],
+  "comfort": [
+    "I hear you. Take a deep breath. It's okay to feel this way. Maybe take a short break? 💙",
+    "Sometimes things get overwhelming. Remember to be kind to yourself today. I'm here for you.",
+    "I'm sorry you're feeling this way. Sometimes writing it down in the Journal helps. You've got this. 🌱"
+  ]
+}

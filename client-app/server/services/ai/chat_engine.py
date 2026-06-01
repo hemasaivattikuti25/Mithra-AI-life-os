@@ -42,7 +42,6 @@ class ChatEngine:
         self,
         user_context: dict,
         user_name: str = "friend",
-        memory_context: str = "",
         is_day_plan: bool = False,
     ) -> str:
         """
@@ -51,7 +50,6 @@ class ChatEngine:
         Args:
             user_context: Dict with pending_tasks, habits, today_mood, calendar_events
             user_name: User's display name
-            memory_context: RAG-retrieved journal snippets
             is_day_plan: Whether this is a day planning request
 
         Returns:
@@ -141,11 +139,6 @@ class ChatEngine:
         mood_labels = {1: "Rough 😔", 2: "Low 😕", 3: "Okay 😐", 4: "Good 🙂", 5: "Great 😊"}
         mood_text = mood_labels.get(mood, "Not logged") if mood else "Not logged"
 
-        # Memory context (truncated)
-        if memory_context and len(memory_context) > MAX_MEMORY_TOKENS * 4:
-            memory_context = memory_context[:MAX_MEMORY_TOKENS * 4] + "..."
-        memory_block = memory_context if memory_context else "No relevant past entries."
-
         if is_day_plan:
             return f"""You are Dost, a helpful, friendly, and structured productivity assistant for {user_name}.
 
@@ -160,9 +153,6 @@ class ChatEngine:
 
 ### Habits:
 {habit_block}
-
-### Memory (from journal):
-{memory_block}
 
 ### Instructions:
 Create a realistic time-blocked schedule for today.
@@ -191,9 +181,6 @@ User's energy: {user_context.get('energy_level', 'medium')}."""
 
 ### Habits:
 {habit_block}
-
-### Memory:
-{memory_block}
 
 ### Your Style:
 - Helpful, friendly, conversational, engaging, and structured (like ChatGPT's conversational tone).
@@ -422,24 +409,12 @@ Available actions and their data schemas:
             user_context.get("pending_tasks", []),
         )
 
-        # Get RAG memory context
-        memory_context = ""
-        try:
-            memory_context = await memory_engine.build_memory_context(
-                user_id=user_id,
-                current_message=message,
-                db_pool=db_pool,
-            )
-        except Exception as e:
-            self.logger.debug(f"Memory context failed: {e}")
-
         is_day_plan = self.is_day_plan_request(message)
 
         # Build system prompt
         system_prompt = self.build_system_prompt(
             user_context=user_context,
             user_name=user_name,
-            memory_context=memory_context,
             is_day_plan=is_day_plan,
         )
 
@@ -469,7 +444,7 @@ Available actions and their data schemas:
                 "reply": clean_message,
                 "action": parsed_actions[0] if parsed_actions else None,
                 "actions": casual_actions,  # NLP-detected actions from casual text
-                "memory_used": bool(memory_context),
+                "memory_used": False,
                 "context_used": bool(user_context.get("pending_tasks") or user_context.get("habits")),
             }
 

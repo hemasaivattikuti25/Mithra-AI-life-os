@@ -34,18 +34,10 @@ Output: exercise, gym, running, feeling energetic, workout success
 
 
 async def expand_query(query: str) -> str:
-    """Use Gemini to expand the search query for better RAG retrieval."""
-    try:
-        expanded = await ai_gateway.generate_chat_response(
-            system_prompt=EXPANSION_SYSTEM_PROMPT,
-            user_message=query,
-            max_tokens=50,
-            temperature=0.2,
-        )
-        return expanded.strip()
-    except Exception as e:
-        logger.warning(f"Query expansion failed (falling back to original query): {e}")
-        return query
+    """Use Gemini to expand the search query for better RAG retrieval.
+    DISABLED: to save API costs.
+    """
+    return query
 
 
 async def retrieve_relevant_memories(
@@ -55,55 +47,9 @@ async def retrieve_relevant_memories(
     db_pool = None,
 ) -> list[dict]:
     """
-    Retrieve journal entries most relevant to the query using vector similarity.
-
-    Args:
-        user_id: User's unique ID
-        query: The search query (user's message)
-        limit: Max number of results
-        db_pool: asyncpg connection pool
-
-    Returns:
-        List of relevant journal snippets with date and mood
+    DISABLED: to save API costs.
     """
-    if not db_pool:
-        return []
-
-    try:
-        # Expand the query to improve vector search recall
-        search_query = await expand_query(query)
-        logger.debug(f"[Memory] Expanded search query: '{query}' -> '{search_query}'")
-
-        # Generate embedding for the expanded query
-        query_embedding = await ai_gateway.create_embedding(search_query)
-
-        async with db_pool.acquire() as conn:
-            # pgvector cosine similarity search (<=> operator)
-            rows = await conn.fetch(
-                """SELECT content, date, mood
-                   FROM journal_entries
-                   WHERE user_id = $1 AND embedding_vector IS NOT NULL
-                   ORDER BY embedding_vector <=> $2::vector
-                   LIMIT $3""",
-                user_id,
-                str(query_embedding),
-                limit,
-            )
-
-        results = []
-        for row in rows:
-            results.append({
-                "content": row.get("content", "")[:200],  # Truncate for context
-                "date": row.get("date"),
-                "mood": row.get("mood"),
-            })
-
-        logger.debug(f"[Memory] Retrieved {len(results)} memories for query")
-        return results
-
-    except Exception as e:
-        logger.debug(f"[Memory] RAG retrieval failed (graceful fallback): {e}")
-        return []
+    return []
 
 
 async def build_memory_context(
@@ -112,51 +58,9 @@ async def build_memory_context(
     db_pool = None,
 ) -> str:
     """
-    Build a memory context string to inject into the system prompt.
-
-    Args:
-        user_id: User's unique ID
-        current_message: The user's current message (used as query)
-        db_pool: asyncpg connection pool
-
-    Returns:
-        Formatted memory context string (under 200 tokens)
-        Empty string if no memories found.
+    DISABLED: to save API costs.
     """
-    memories = await retrieve_relevant_memories(
-        user_id=user_id,
-        query=current_message,
-        limit=3,
-        db_pool=db_pool,
-    )
-
-    if not memories:
-        return ""
-
-    # Format memories for the prompt
-    lines = ["From your past journal entries:"]
-
-    mood_labels = {
-        1: "very rough", 2: "rough", 3: "low", 4: "okay",
-        5: "neutral", 6: "good", 7: "quite good", 8: "great",
-        9: "amazing", 10: "best day",
-    }
-
-    for mem in memories:
-        date_str = mem.get("date", "Unknown date")
-        content = mem.get("content", "")[:150]  # Truncate
-        mood = mem.get("mood")
-        mood_text = f" (mood: {mood_labels.get(mood, mood)}/10)" if mood else ""
-
-        lines.append(f"- {date_str}: {content}{mood_text}")
-
-    result = "\n".join(lines)
-
-    # Enforce token budget (roughly 200 tokens = 800 chars)
-    if len(result) > 800:
-        result = result[:800] + "..."
-
-    return result
+    return ""
 
 
 async def get_mood_trends(
