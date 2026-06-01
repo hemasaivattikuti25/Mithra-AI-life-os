@@ -39,9 +39,9 @@ async def main():
             max_tokens=100,
         )
         print(f"✅ AI Gateway works: {result}")
-    except Exception as e:
+    except Exception:
         import traceback
-        print(f"❌ AI Gateway FAILED:")
+        print("❌ AI Gateway FAILED:")
         traceback.print_exc()
 
     print("\n--- Test 3: AI Gateway with DostResponseSchema ---")
@@ -54,9 +54,9 @@ async def main():
             response_schema=DostResponseSchema,
         )
         print(f"✅ Schema call works: {result[:200]}")
-    except Exception as e:
+    except Exception:
         import traceback
-        print(f"❌ Schema call FAILED:")
+        print("❌ Schema call FAILED:")
         traceback.print_exc()
 
     print("\n--- Test 4: Memory Engine embedding ---")
@@ -64,9 +64,9 @@ async def main():
         from services.ai.ai_gateway import create_embedding
         vec = await create_embedding("I feel stressed about work")
         print(f"✅ Embedding works: vector length = {len(vec)}")
-    except Exception as e:
+    except Exception:
         import traceback
-        print(f"❌ Embedding FAILED:")
+        print("❌ Embedding FAILED:")
         traceback.print_exc()
 
     print("\n" + "=" * 60)
