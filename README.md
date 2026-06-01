@@ -191,12 +191,12 @@ Handling the transition from a local MVP to a live platform with **900+ users** 
 <div align="center">
   <img src="./client-app/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="180" style="border-radius: 50%; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
   <h3>Hemasai Vattikuti</h3>
-  <p><i>Applied AI Engineer & Full-Stack Developer</i></p>
+  <p><i>Applied AI Engineer & backend Developer</i></p>
 </div>
 
 I built Mithra because I believe the future of software isn't just about storing data; it's about software that understands you. Too many people struggle with scattered tools—a task list here, a habit tracker there, a journal somewhere else. I engineered Mithra to be the single source of truth for your personal life, powered by an AI that actually possesses the context to help you.
 
-Building this platform solo—from the initial Figma designs, to the async Python backend, to fine-tuning the RAG pipeline, and scaling it to 900+ active users—has been a masterclass in modern software engineering. 
+Building this platform solo—from the initial Figma designs, to the async Python backend, to fine-tuning the RAG pipeline, and scaling it to 1300+ active users—has been a masterclass in modern software engineering. 
 
 I am actively open to roles in **Applied AI Engineering** and **Backend Development**.
 
