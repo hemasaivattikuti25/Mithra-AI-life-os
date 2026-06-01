@@ -61,7 +61,8 @@ async def chat_with_dost(
         return result
 
     except Exception as e:
-        logger.error(f"Chat error: {e}")
+        import traceback
+        logger.error(f"Chat error: {e}\n{traceback.format_exc()}")
         return {
             "reply": "I hit a snag processing that. Could you rephrase? 🤔",
             "action": None,

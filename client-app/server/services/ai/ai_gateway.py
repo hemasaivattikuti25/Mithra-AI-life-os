@@ -35,8 +35,8 @@ logger = logging.getLogger("mithra.ai_gateway")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Model names
-FLASH_MODEL = "gemini-flash-latest"  # Fast, cheap — stable alias
-PRO_MODEL = "gemini-pro-latest"      # Better reasoning — stable alias
+FLASH_MODEL = "gemini-2.5-flash"  # Fast, cheap — confirmed available
+PRO_MODEL = "gemini-2.5-pro"      # Better reasoning — confirmed available
 
 # ─── Lazy Model Initialization ───────────────────────────────────────────────
 _models = {}
@@ -124,6 +124,74 @@ def _log_ai_call(func_name: str, model: str, input_tokens: int, output_tokens: i
     logger.info(f"[AI Gateway] {func_name} | ~{total} tokens | {model}")
 
 
+# ─── Schema Cleaner ──────────────────────────────────────────────────────────
+
+def _resolve_refs(schema: Any, defs: dict) -> Any:
+    """Inline all $ref references using the $defs lookup table."""
+    if isinstance(schema, dict):
+        if "$ref" in schema:
+            ref_path = schema["$ref"]  # e.g. "#/$defs/ActionResponse"
+            ref_name = ref_path.split("/")[-1]
+            resolved = defs.get(ref_name, {"type": "string"})
+            # Recurse in case the resolved schema also has $refs
+            return _resolve_refs(resolved, defs)
+        return {k: _resolve_refs(v, defs) for k, v in schema.items()}
+    elif isinstance(schema, list):
+        return [_resolve_refs(item, defs) for item in schema]
+    return schema
+
+
+def _clean_schema_for_gemini(schema: Any) -> Any:
+    """
+    Recursively remove fields that Gemini's proto Schema doesn't support.
+    Pydantic v2 injects 'additionalProperties': False and uses 'anyOf' for
+    Optional fields — neither is supported by Gemini's proto Schema.
+    """
+    if isinstance(schema, dict):
+        # Resolve anyOf (Optional[X] -> just X, ignoring null)
+        if "anyOf" in schema:
+            non_null = [s for s in schema["anyOf"] if s.get("type") != "null"]
+            base = non_null[0] if non_null else {"type": "string"}
+            # Merge remaining keys (like 'description') into base
+            for k, v in schema.items():
+                if k != "anyOf" and k not in base:
+                    base[k] = v
+            return _clean_schema_for_gemini(base)
+
+        # Remove unsupported fields
+        UNSUPPORTED = {"additionalProperties", "$defs", "$schema", "title", "default"}
+        cleaned = {k: _clean_schema_for_gemini(v) for k, v in schema.items() if k not in UNSUPPORTED}
+        return cleaned
+    elif isinstance(schema, list):
+        return [_clean_schema_for_gemini(item) for item in schema]
+    return schema
+
+
+def _to_gemini_schema(response_schema: Any) -> Any:
+    """
+    Convert a Pydantic model class or dict schema to a Gemini-safe schema dict.
+    Steps:
+      1. Get JSON schema from Pydantic (if needed)
+      2. Resolve all $ref pointers using $defs
+      3. Strip all fields Gemini proto doesn't support
+    """
+    if response_schema is None:
+        return None
+    # If it's a Pydantic model class, get its JSON schema
+    if hasattr(response_schema, "model_json_schema"):
+        schema = response_schema.model_json_schema()
+    elif isinstance(response_schema, dict):
+        schema = response_schema
+    else:
+        return response_schema
+    # Step 1: extract $defs lookup table
+    defs = schema.get("$defs", {})
+    # Step 2: inline all $refs
+    schema = _resolve_refs(schema, defs)
+    # Step 3: clean unsupported fields
+    return _clean_schema_for_gemini(schema)
+
+
 # ─── AI Gateway Functions ────────────────────────────────────────────────────
 
 async def generate_chat_response(
@@ -156,7 +224,8 @@ async def generate_chat_response(
         }
         if response_schema:
             generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = response_schema
+            # Clean schema — remove fields Gemini proto doesn't support
+            generation_config["response_schema"] = _to_gemini_schema(response_schema)
 
         response = model.generate_content(
             full_prompt,
@@ -219,7 +288,7 @@ async def generate_chat_with_history(
         }
         if response_schema:
             generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = response_schema
+            generation_config["response_schema"] = _to_gemini_schema(response_schema)
 
         response = chat.send_message(full_prompt, generation_config=generation_config)
         result = response.text.strip()
@@ -437,13 +506,12 @@ async def create_embedding(text: str) -> list:
         input_tokens = _estimate_tokens(truncated)
 
         result = genai.embed_content(
-            model="models/embedding-001",
+            model="models/gemini-embedding-001",
             content=truncated,
             task_type="retrieval_document",
-            title="Mithra Memory",
         )
 
-        _log_ai_call("embedding", "embedding-001", input_tokens)
+        _log_ai_call("embedding", "gemini-embedding-001", input_tokens)
         return result["embedding"]
 
     except Exception as e:

@@ -114,7 +114,7 @@ def get_model():
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            _model_instance = genai.GenerativeModel('gemini-1.5-flash')
+            _model_instance = genai.GenerativeModel('gemini-2.5-flash')
             logger.info("✅ Gemini AI connected (lazy init)")
         except Exception as e:
             logger.error(f"⚠️  Gemini init failed: {e}")
@@ -133,10 +133,9 @@ def get_embedding(text: str):
     try:
         import google.generativeai as genai
         result = genai.embed_content(
-            model="models/embedding-001",
+            model="models/text-embedding-004",
             content=text,
             task_type="retrieval_document",
-            title="Mithra Memory"
         )
         return result['embedding']
     except Exception as e:
