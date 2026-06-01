@@ -67,11 +67,11 @@ Mithra is an AI-powered productivity operating system that replaces your scatter
 | Layer | Technology |
 | :--- | :--- |
 | **Frontend** | React 18, Vite 5, Tailwind CSS, Framer Motion, Capacitor |
-| **State** | Context API + Sync Engine (Optimistic UI, Offline Queue) |
+| **State** | Context API + Custom Bidirectional State Sync Engine (LWW merge, exponential backoff) |
 | **Backend** | Python 3.12, FastAPI, Uvicorn |
 | **Database** | Neon PostgreSQL, pgvector (AI embeddings) |
 | **Auth** | Firebase Auth (Email/Password + Google OAuth) |
-| **AI** | Advanced AI Engine, RAG pipeline, semantic search |
+| **AI** | Hybrid NLP Regex Parser + Advanced AI Engine with RAG memory |
 | **Deployment** | Vercel (Frontend), Render (Backend) |
 | **Upcoming** | WhatsApp Business API, Telegram Bot API |
 
@@ -129,5 +129,5 @@ Contributions welcome! Fork → Branch → Commit → PR.
 ---
 
 <div align="center">
-  <sub>Built by <b>Hemasai Vattikuti</b> — Backend & Applied AI Engineer. Built production systems at DRDL–DRDO (Ministry of Defence). Shipping Mithra Life OS with 690+ users, RAG semantic search, and zero-trust architecture.</sub>
+  <sub>Built by <b>Hemasai Vattikuti</b> — Backend & Applied AI Engineer. Built production systems at DRDL–DRDO (Ministry of Defence). Shipping Mithra Life OS with 900+ active signups, RAG semantic search, and cryptographic multi-tenant isolation.</sub>
 </div>

@@ -20,7 +20,7 @@
 
 Mithra Life OS is a comprehensive, AI-first productivity ecosystem engineered to replace disjointed task managers, habit trackers, and journaling applications. Moving beyond simple CRUD applications, Mithra is designed around **Dost AI** — an embedded, context-aware companion agent that possesses true semantic memory of the user's life. 
 
-Currently serving a rapidly growing user base of **900+ active signups** with a 99.9% API uptime, the platform serves as a technical showcase of integrating advanced Applied AI mechanics (RAG, agentic schemas, dynamic prompt injection) within a highly scalable, asynchronous Python backend.
+Currently serving a rapidly growing user base of **900+ active signups**, the platform serves as a technical showcase of integrating advanced Applied AI mechanics (RAG, agentic schemas, dynamic prompt injection) within a highly scalable, asynchronous Python backend, optimized for high availability with warmup cycles.
 
 This repository contains the complete source code for both the React-based client and the FastAPI backend service.
 
@@ -57,6 +57,11 @@ When the LLM detects actionable intent (e.g., *"Remind me to call Mom tomorrow"*
 ```
 The backend parser extracts this payload, validates it via Pydantic schemas, and autonomously executes the database transaction. This effectively turns the LLM into a functional agent capable of navigating and modifying the application state.
 
+### 2.4 Hybrid NLP & Cost Optimization
+To optimize API usage and reduce chat latency, Mithra incorporates a hybrid processing paradigm:
+* **Pre-LLM NLP Regex Parser:** Lightweight tasks, mood logs, and habit check-ins are intercepted via a local, regex-driven NLP matcher (`extract_casual_actions`), resolving routine user updates instantly without triggering API overhead.
+* **Token Budget Enforcement:** Strict context restrictions (`MAX_HISTORY_MESSAGES = 6`, `MAX_MESSAGE_LENGTH = 200`, `MAX_MEMORY_TOKENS = 200`) guarantee system prompts remain under an 800-token threshold, ensuring fast response times and highly optimized API utilization.
+
 ---
 
 ## ⚙️ 3. Backend Engineering
@@ -72,11 +77,11 @@ The codebase eschews monolithic patterns in favor of modular, Domain-Driven Desi
 * `chat_router.py`: Handles websocket-like rapid polling for AI interactions.
 * `ai_gateway.py`: Abstracts the LLM provider, ensuring the system is model-agnostic and immune to vendor lock-in.
 
-### 3.3 Zero-Trust Security Model
-Because Mithra stores highly sensitive personal data (journals, habits, tasks), security is paramount. The platform employs a Zero-Trust architecture.
+### 3.3 Strict Cryptographic Multi-Tenant Isolation
+Because Mithra stores highly sensitive personal data (journals, habits, tasks), security is paramount. The platform employs a Zero-Trust architecture:
 1. The client authenticates via **Firebase Auth** and receives a short-lived JSON Web Token (JWT).
 2. The FastAPI backend utilizes the Firebase Admin SDK within a dedicated `Depends` middleware to cryptographically verify every single incoming request.
-3. The backend explicitly extracts the `user_id` from the verified token. All database queries append `WHERE user_id = $1`, making data leakage between accounts mathematically impossible at the database layer.
+3. All operations scope queries using the cryptographically verified `user_id` context (`WHERE user_id = $1`), ensuring mathematically scoped tenant isolation and eliminating cross-account data leakage at the query layer.
 
 ---
 
@@ -87,8 +92,12 @@ The user interface is designed to feel like a premium, native application while 
 ### 4.1 React 18 & Vite
 The frontend is a Single Page Application (SPA) built with React 18 and bundled with Vite for instantaneous Hot Module Replacement (HMR) and optimized production builds. 
 
-### 4.2 State Management & Optimistic UI
-State is managed via specialized React Context providers (`HabitsContext`, `TasksContext`, `DataContext`). To ensure the app feels blazingly fast even on slow connections, the client heavily utilizes **Optimistic UI updates**. When a user checks off a habit, the UI updates instantly while the asynchronous API call executes in the background.
+### 4.2 Custom Bidirectional Offline Sync Engine
+Rather than relying on basic CRUD contexts, Mithra features a bespoke **Bidirectional State Sync Engine** (`syncEngine.js`) built from scratch:
+* **Conflict Resolution:** Utilizes a client-side Last-Write-Wins (LWW) merge algorithm comparing local and remote timestamps (`updatedAt`/`createdAt`).
+* **Resiliency & Recovery:** Built-in connection-recovery listeners run periodic health pings (`/api/ping`) and execute queued offline transactions using exponential backoff retry cycles with randomized jitter.
+* **LocalStorage Quota Protection:** A dynamic garbage collector monitors LocalStorage footprint and automatically prunes legacy log history under high cache pressure, maintaining stability.
+* **Optimistic UI:** Local updates persist immediately to the browser database for a zero-latency interface, syncing to the API backend asynchronously in the background.
 
 ### 4.3 Bespoke Design System & Data Visualization
 Mithra avoids generic component libraries (like Bootstrap or MUI) in favor of a completely bespoke, utility-first CSS architecture.
