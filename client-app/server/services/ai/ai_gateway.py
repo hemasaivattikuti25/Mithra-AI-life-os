@@ -132,13 +132,17 @@ async def generate_chat_response(
 
         input_tokens = _estimate_tokens(system_prompt + "\n" + user_message)
 
-        response = await client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
-        )
+        kwargs = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+        }
+        if response_schema:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        response = await client.chat.completions.create(**kwargs)
 
         result = response.choices[0].message.content or ""
         result = _clean_json_text(result)
@@ -194,13 +198,17 @@ async def generate_chat_with_history(
 
         input_tokens = sum(_estimate_tokens(m["content"]) for m in messages)
 
-        response = await client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
-        )
+        kwargs = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+        }
+        if response_schema:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        response = await client.chat.completions.create(**kwargs)
 
         result = response.choices[0].message.content or ""
         result = _clean_json_text(result)

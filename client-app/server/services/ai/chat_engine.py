@@ -170,7 +170,7 @@ Be realistic — don't overpack. Speak in a friendly, conversational ChatGPT-lik
 User's energy: {user_context.get('energy_level', 'medium')}."""
 
         else:
-            return f"""You are Dost, {user_name}'s digital companion.
+            return f"""You are Dost, {user_name}'s digital life coach and companion.
 
 📅 Today: {day_name}, {date_str}
 😊 Mood: {mood_text}
@@ -185,75 +185,93 @@ User's energy: {user_context.get('energy_level', 'medium')}."""
 {habit_block}
 
 ### Your Style:
-- Helpful, friendly, conversational, engaging, and structured (like ChatGPT's conversational tone).
-- Use **Markdown**: bold for emphasis, bullets for lists.
+- Helpful, friendly, conversational, engaging, and structured.
+- Use Markdown (bold, bullet points, emojis).
 - Reference their REAL tasks/habits/events when relevant.
-- Don't give generic advice — use their actual data.
 
-### Actions:
-If the user wants to schedule, edit, delete, or check off tasks, events, habits, or log a mood, fill the "action" field in the response schema. Otherwise, set "action" to null.
+### CRITICAL INSTRUCTION FOR ACTIONS & OUTPUT FORMAT:
+You MUST ALWAYS return a valid JSON object matching this schema:
+{{
+  "reply": "Your conversational response in Markdown to the user",
+  "action": null OR an action object
+}}
 
-Available actions and their data schemas:
-1. Complete Task:
-   action name: "complete_task", data schema: {{"id": "uuid"}}
-2. Create Task:
-   action name: "create_task", data schema: {{"title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}
-3. Update Task (reschedule, prioritize, edit description):
-   action name: "update_task", data schema: {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}
-4. Complete Habit:
-   action name: "complete_habit", data schema: {{"id": "uuid"}}
-5. Schedule Calendar Event:
-   action name: "create_event", data schema: {{"title": "...", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "work|personal|health|other"}}
-6. Log Mood:
-   action name: "log_mood", data schema: {{"score": 1..5}}"""
+When the user asks to schedule an event, create a task, complete a task, complete a habit, or log mood, set "action" to:
+- Schedule Event:
+  {{"action": "create_event", "data": {{"title": "Event title", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "Work|Personal|Health|Academic"}}}}
+- Create Task:
+  {{"action": "create_task", "data": {{"title": "Task title", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "optional notes"}}}}
+- Update Task:
+  {{"action": "update_task", "data": {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
+- Complete Task:
+  {{"action": "complete_task", "data": {{"id": "uuid"}}}}
+- Complete Habit:
+  {{"action": "complete_habit", "data": {{"id": "uuid"}}}}
+- Log Mood:
+  {{"action": "log_mood", "data": {{"score": 1..5}}}}
+
+If no action is needed, set "action": null.
+Return ONLY the raw JSON object."""
 
     def extract_actions(self, response_text: str) -> tuple[str, list]:
         """
-        Extract action JSON blocks from Gemini response.
+        Extract reply and action JSON blocks from LLM response.
 
         Returns:
             Tuple of (clean_message, actions_list)
         """
         actions = []
+        clean_text = response_text.strip()
+
+        # Clean markdown code blocks if present
+        cleaned_str = clean_text
+        if cleaned_str.startswith("```json"):
+            cleaned_str = cleaned_str[7:]
+        elif cleaned_str.startswith("```"):
+            cleaned_str = cleaned_str[3:]
+        if cleaned_str.endswith("```"):
+            cleaned_str = cleaned_str[:-3]
+        cleaned_str = cleaned_str.strip()
+
+        def _parse_dict_for_actions(data: dict):
+            nonlocal clean_text, actions
+            clean_text = data.get("reply", clean_text).strip()
+            action_val = data.get("action")
+            # Case 1: Nested action object {"action": {"action": "create_event", "data": {...}}}
+            if isinstance(action_val, dict) and action_val.get("action"):
+                actions.append(action_val)
+            # Case 2: Flat action string {"action": "create_event", "data": {...}}
+            elif isinstance(action_val, str) and action_val:
+                actions.append({
+                    "action": action_val,
+                    "data": data.get("data", {})
+                })
+            # Case 3: Type field {"type": "create_event", "data": {...}}
+            elif data.get("type") in ("create_event", "create_task", "update_task", "complete_task", "complete_habit", "log_mood"):
+                actions.append({
+                    "action": data.get("type"),
+                    "data": data.get("data", data)
+                })
+
+        # Attempt 1: Direct JSON parse
         try:
-            # Parse the structured JSON response
-            data = json.loads(response_text)
-            clean_text = data.get("reply", "").strip()
-            action_data = data.get("action")
-            if action_data and isinstance(action_data, dict) and action_data.get("action"):
-                actions.append(action_data)
-            return clean_text, actions
-        except json.JSONDecodeError:
-            self.logger.debug(f"Failed to parse main response as JSON: {response_text}")
-        except Exception as e:
-            self.logger.debug(f"Unexpected error parsing response: {e}")
+            data = json.loads(cleaned_str)
+            if isinstance(data, dict):
+                _parse_dict_for_actions(data)
+                return clean_text, actions
+        except Exception:
+            pass
 
-        # Fallback to old behavior
-        clean_text = response_text
-        if "||JSON||" in response_text:
-            parts = response_text.split("||JSON||")
-            clean_text = parts[0].strip()
-
-            for json_part in parts[1:]:
-                try:
-                    # Clean up markdown
-                    json_str = json_part.strip()
-                    if json_str.startswith("```json"):
-                        json_str = json_str[7:]
-                    if json_str.startswith("```"):
-                        json_str = json_str[3:]
-                    if json_str.endswith("```"):
-                        json_str = json_str[:-3]
-                    json_str = json_str.strip()
-
-                    # Parse JSON
-                    action_data = json.loads(json_str)
-                    if action_data:
-                        actions.append(action_data)
-                except json.JSONDecodeError as e:
-                    self.logger.debug(f"Failed to parse fallback action JSON: {e}")
-                except Exception:
-                    pass
+        # Attempt 2: Extract JSON object from text via regex
+        match = re.search(r"\{[\s\S]*\}", cleaned_str)
+        if match:
+            try:
+                data = json.loads(match.group(0))
+                if isinstance(data, dict):
+                    _parse_dict_for_actions(data)
+                    return clean_text, actions
+            except Exception:
+                pass
 
         return clean_text, actions
 
