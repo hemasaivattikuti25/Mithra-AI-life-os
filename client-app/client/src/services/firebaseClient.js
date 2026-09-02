@@ -136,7 +136,7 @@ export const authService = {
 /* ═══════════════════════════════════════════════════════════════
    API HELPER — Makes authenticated requests to backend
    ═══════════════════════════════════════════════════════════════ */
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const FETCH_TIMEOUT = 30000;
 const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000; // Refresh if < 5 min left
 
