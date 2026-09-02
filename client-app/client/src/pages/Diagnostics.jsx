@@ -286,10 +286,10 @@ export default function Diagnostics() {
     try { rawSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch { }
 
     return [
-      { name: 'Tasks (Cached)', count: rawTasks.length, icon: CheckCircle2 },
-      { name: 'Habits (Cached)', count: rawHabits.length, icon: Activity },
-      { name: 'Journal Entries (Cached)', count: rawJournal.length, icon: Code },
-      { name: 'Focus Sessions (Cached)', count: rawSessions.length, icon: Clock },
+      { name: 'Tasks (Cached)', count: Array.isArray(rawTasks) ? rawTasks.length : 0, icon: CheckCircle2 },
+      { name: 'Habits (Cached)', count: Array.isArray(rawHabits) ? rawHabits.length : 0, icon: Activity },
+      { name: 'Journal Entries (Cached)', count: Array.isArray(rawJournal) ? rawJournal.length : 0, icon: Code },
+      { name: 'Focus Sessions (Cached)', count: Array.isArray(rawSessions) ? rawSessions.length : (parseInt(rawSessions) || 0), icon: Clock },
     ];
   }, [tasks, habits, profile]);
 

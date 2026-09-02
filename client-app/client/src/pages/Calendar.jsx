@@ -105,11 +105,17 @@ const exportEventsAsICS = (events) => {
 const computeEventColumns = (events) => {
   if (!events.length) return [];
 
+  const getTime = (d) => (d instanceof Date ? d.getTime() : new Date(d).getTime() || 0);
+
   // Sort by start time, then by duration (longer first)
   const sorted = [...events].sort((a, b) => {
-    const diff = a.start - b.start;
+    const startA = getTime(a.start);
+    const startB = getTime(b.start);
+    const diff = startA - startB;
     if (diff !== 0) return diff;
-    return (b.end - b.start) - (a.end - a.start);
+    const durA = getTime(a.end) - startA;
+    const durB = getTime(b.end) - startB;
+    return durB - durA;
   });
 
   // Assign columns using greedy algorithm
@@ -118,10 +124,11 @@ const computeEventColumns = (events) => {
 
   sorted.forEach(evt => {
     let placed = false;
+    const evtStart = getTime(evt.start);
     for (let col = 0; col < columns.length; col++) {
       const lastInCol = columns[col][columns[col].length - 1];
       // No overlap if event starts at or after the last event ends
-      if (evt.start >= lastInCol.end) {
+      if (evtStart >= getTime(lastInCol.end)) {
         columns[col].push(evt);
         eventMeta.set(evt.id, { col });
         placed = true;
