@@ -322,15 +322,10 @@ function parseIntent(input, tasks, habits) {
     return { type: 'complete_task', query, found };
   }
 
-  if (/how.*(?:are|is).*(?:my\s+)?habits?|habit.*status|my\s+habits?|habits?\s+status|show.*habits?|habits?\??$/i.test(lower)) return { type: 'habit_status' };
-  if (/(?:my\s+)?streak|(?:\d+)\s*days?\s*(?:of\s+)?streak|show.*streak|streak.*status/i.test(lower)) return { type: 'habit_status' };
-  if (/mood|how.*feel|emotion|feeling|how\s+am\s+i/i.test(lower)) return { type: 'mood_check' };
-  if (/summar|overview|daily.*report|weekly.*report|recap|my\s+day|today.*glance/i.test(lower)) return { type: 'summarize' };
-  if (/hello|hi|hey|what's up|howdy|good\s*(?:morning|afternoon|evening)/i.test(lower)) return { type: 'greeting' };
-  if (/stress|overwhelm|anxious|worried|tired|exhausted/i.test(lower)) return { type: 'wellbeing' };
-  if (/motivat|lazy|procrastinat|can't start|stuck/i.test(lower)) return { type: 'motivation' };
-  if (/focus|pomodoro|concentrate|distract/i.test(lower)) return { type: 'focus' };
-  if (/thank|thanks|appreciate/i.test(lower)) return { type: 'thanks' };
+  if (/^(?:show\s+)?(?:how.*(?:are|is).*(?:my\s+)?habits?|habit.*status|my\s+habits?|habits?\s+status|show.*habits?|habits?\??)$/i.test(lower)) return { type: 'habit_status' };
+  if (/^(?:show\s+)?(?:my\s+)?streak|^(?:\d+)\s*days?\s*(?:of\s+)?streak|^show.*streak|^streak.*status/i.test(lower)) return { type: 'habit_status' };
+  if (/^(?:show\s+)?(?:mood|how.*feel|emotion|feeling|how\s+am\s+i)$/i.test(lower)) return { type: 'mood_check' };
+  if (/^(?:summar|overview|daily.*report|weekly.*report|recap|my\s+day|today.*glance)$/i.test(lower)) return { type: 'summarize' };
 
   return { type: 'general', input };
 }
@@ -857,6 +852,25 @@ export default function DostMode() {
                 .catch(() => {});
             }
           }
+          break;
+        }
+
+        case 'create_habit': {
+          if (!data.title) break;
+          const newHabit = {
+            id: `habit-${Date.now()}`,
+            title: data.title,
+            category: data.category || 'General',
+            streak: 0,
+            bestStreak: 0,
+            consistency: [],
+            todayDone: false,
+            focusDuration: parseInt(data.duration) || 30,
+            streakGoal: parseInt(data.streak_goal) || 30,
+            scheduleTime: data.schedule_time || '20:00',
+            source: 'dost',
+          };
+          addHabit(newHabit);
           break;
         }
 
@@ -1578,18 +1592,7 @@ export default function DostMode() {
         /* ── GENERAL / SCOPED RESPONSE ── */
         case 'general':
         default: {
-          // 1. Try local classification (No API needed)
-          const localResponse = localEngine.classifyLocal(userInput);
-          if (localResponse) {
-            addAiMsg(localResponse.reply);
-            break;
-          }
-
-          // Check if the question is relevant to our app capabilities
-          const appKeywords = /task|habit|mood|journal|summar|schedule|remind|focus|pomodoro|productiv|streak|goal|timer|break|meditat|stress|motivat|wellness|wellbeing|breath|import|csv|excel|meeting|event|calendar|appointment|hi|hello|hey|help/i;
-          const isAppRelated = appKeywords.test(userInput) || userInput.length < 50;
-
-          if (isAppRelated && isOnline) {
+          if (isOnline) {
             if (isRateLimited()) {
               addAiMsg("⏳ You're sending messages too quickly. Please wait a moment before trying again.");
               break;
@@ -1641,10 +1644,13 @@ export default function DostMode() {
               setApiError({ message: "Connection failed", input: userInput });
               addAiMsg("I'm having trouble connecting. Please check your internet or try again.", { isError: true });
             }
-          } else if (isAppRelated) {
-            addAiMsg(getSmartResponse());
           } else {
-            addAiMsg("I appreciate your curiosity! 😊 However, I'm best at helping you with things related to **Mithra** — your productivity companion.\n\nHere's what I can help with:\n\n📋 **Tasks** — Create, edit, delete, or complete tasks\n🔥 **Habits** — Add, track, and review habit streaks\n📊 **Summaries** — Get a daily overview of your progress\n😊 **Mood** — Check your mood history and patterns\n🎤 **Voice** — Speak to me using the mic\n📎 **Import** — Upload CSV or Excel files\n⏱ **Focus** — Tips for concentration and productivity\n🧘 **Wellness** — Breathing exercises and motivation\n\nTry asking something like: *\"Summarize my day\"* or *\"Add task: Finish report by tomorrow\"* 💬");
+            const localResponse = localEngine.classifyLocal(userInput);
+            if (localResponse) {
+              addAiMsg(localResponse.reply);
+            } else {
+              addAiMsg(getSmartResponse());
+            }
           }
         }
       }

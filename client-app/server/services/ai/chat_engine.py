@@ -201,6 +201,8 @@ When the user asks to schedule an event, create a task, complete a task, complet
   {{"action": "create_event", "data": {{"title": "Event title", "start_time": "YYYY-MM-DDTHH:MM:SS", "end_time": "YYYY-MM-DDTHH:MM:SS", "category": "Work|Personal|Health|Academic"}}}}
 - Create Task:
   {{"action": "create_task", "data": {{"title": "Task title", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "optional notes"}}}}
+- Create Habit:
+  {{"action": "create_habit", "data": {{"title": "Habit title", "duration": 60, "schedule_time": "20:00", "streak_goal": 30, "category": "Learning|Health|Fitness|Mindfulness|Work"}}}}
 - Update Task:
   {{"action": "update_task", "data": {{"id": "uuid", "title": "...", "priority": "high|medium|low", "due_date": "YYYY-MM-DD", "notes": "..."}}}}
 - Complete Task:
