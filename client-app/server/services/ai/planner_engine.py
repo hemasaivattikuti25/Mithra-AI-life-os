@@ -52,7 +52,12 @@ async def get_or_generate_plan(
         due = task.get("due_date")
         if due:
             try:
-                due_date = date.fromisoformat(due.split("T")[0])
+                if isinstance(due, datetime):
+                    due_date = due.date()
+                elif isinstance(due, date):
+                    due_date = due
+                else:
+                    due_date = date.fromisoformat(str(due).split("T")[0])
                 if due_date <= date.today():
                     filtered_tasks.append(task)
             except Exception:
@@ -62,11 +67,11 @@ async def get_or_generate_plan(
             if task.get("priority") == "high" or task.get("starred"):
                 filtered_tasks.append(task)
 
-    # Sort by priority and due date
+    # Sort by priority and due date (stringify due_date to avoid TypeError)
     priority_order = {"high": 0, "medium": 1, "low": 2}
     filtered_tasks.sort(key=lambda t: (
         priority_order.get(t.get("priority", "medium"), 1),
-        t.get("due_date") or "9999-99-99",
+        str(t.get("due_date") or "9999-99-99"),
     ))
 
     # Filter habits to incomplete ones

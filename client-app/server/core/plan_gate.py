@@ -115,3 +115,31 @@ async def require_ai_access(current_user: dict = Depends(get_current_user)) -> d
         logger.error(f"Plan gate error for {user_id}: {e}", exc_info=True)
         # Fail open — don't block users on infrastructure errors
         return {"allowed": True, "current": 0, "limit": FREE_DAILY_LIMIT, "plan": FREE_PLAN_ID}
+
+
+async def get_plan_info(current_user: dict) -> dict:
+    """Fetch current user plan details and today's AI usage count."""
+    pool = get_db()
+    user_id = current_user.get("id") if current_user else None
+    if not pool or not user_id:
+        return {
+            "plan_id": FREE_PLAN_ID,
+            "daily_ai_limit": FREE_DAILY_LIMIT,
+            "today_ai_calls": 0,
+        }
+
+    try:
+        plan = await _get_user_plan(user_id, pool)
+        today_calls = await _get_today_calls(user_id, pool)
+        return {
+            "plan_id": plan["plan_id"],
+            "daily_ai_limit": plan["daily_ai_limit"],
+            "today_ai_calls": today_calls,
+        }
+    except Exception as e:
+        logger.warning(f"Failed to get plan info for {user_id}: {e}")
+        return {
+            "plan_id": FREE_PLAN_ID,
+            "daily_ai_limit": FREE_DAILY_LIMIT,
+            "today_ai_calls": 0,
+        }

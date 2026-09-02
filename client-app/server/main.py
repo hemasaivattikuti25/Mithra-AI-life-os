@@ -12,8 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from core.config import get_db, get_model, validate_config, init_db_pool, close_db_pool
 from core.rate_limiter import RateLimitMiddleware
 from migrations.runner import run_migrations
-from routers import auth_router, chat_router, tasks_router, planner_router
-from routers import workspace_router, calendar_router
+from routers import auth_router, chat_router, tasks_router, planner_router, calendar_router
 from services.warmup import keep_alive
 
 # ─── Structured logging ──────────────────────────────────────────────────────
@@ -102,6 +101,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -129,7 +129,6 @@ app.include_router(auth_router.router,      prefix="/api/auth",  tags=["Auth"])
 app.include_router(chat_router.router,      prefix="/api/chat",  tags=["AI Chat"])
 app.include_router(planner_router.router,   prefix="/api/plan",  tags=["AI Planner"])
 app.include_router(tasks_router.router,     prefix="/api",       tags=["Activity & Data"])
-app.include_router(workspace_router.router, prefix="/api",       tags=["Mithra Blend"])
 app.include_router(calendar_router.router,                       tags=["Google Calendar"])
 
 
@@ -143,7 +142,7 @@ def health_check():
         "version": "4.0.0",
         "services": {
             "database": "connected" if db_pool else "unavailable",
-            "gemini": "available" if get_model() else "disabled",
+            "ai": "available (NVIDIA NIM)" if get_model() else "disabled",
         },
         "timestamp": datetime.now().isoformat(),
     }

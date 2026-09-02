@@ -8,7 +8,6 @@ export const ROUTES = {
   HABITS: '/habits',
   JOURNAL: '/journal',
   SETTINGS: '/settings',
-  BLEND: '/blend',
   PRIVACY: '/privacy',
   TERMS: '/terms',
   PROMO_VIDEO: '/promo-video',

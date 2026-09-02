@@ -2,7 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import {
     Layout as LayoutIcon, MessageSquare, Calendar as CalendarIcon,
-    CheckSquare, BookOpen, Settings, User, Activity, Bot, Menu, X, Users
+    CheckSquare, BookOpen, Settings, User, Activity, Bot, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
@@ -53,7 +53,6 @@ const navItems = [
     { path: '/tasks', label: 'Tasks', icon: CheckSquare, id: 'nav-tasks' },
     { path: '/journal', label: 'Journal', icon: BookOpen, id: 'nav-journal' },
     { path: '/dost', label: 'Dost Mode', icon: MessageSquare, id: 'nav-dost' },
-    { path: '/blend', label: 'Blend', icon: Users, id: 'nav-blend' },
 ];
 
 /* Bottom bar items (subset for mobile) — Settings moved to top-right */
@@ -62,7 +61,6 @@ const bottomNavItems = [
     { path: '/habits', label: 'Habits', icon: Activity, id: 'nav-habits' },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare, id: 'nav-tasks' },
     { path: '/dost', label: 'Dost', icon: MessageSquare, id: 'nav-dost' },
-    { path: '/blend', label: 'Blend', icon: Users, id: 'nav-blend' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════

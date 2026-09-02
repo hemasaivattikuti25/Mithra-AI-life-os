@@ -29,12 +29,6 @@ const steps = [
         body: "Your Stoic AI companion. Ask for advice, schedule tasks, or just vent — Dost remembers everything.",
         position: 'bottom',
     },
-    {
-        target: '#nav-blend',
-        title: 'Mithra Blend',
-        body: 'Invite friends to shared workspaces. Track goals together and stay accountable — like Spotify Blend for productivity!',
-        position: 'bottom',
-    },
 ];
 
 export default function OnboardingTour({ onComplete }) {

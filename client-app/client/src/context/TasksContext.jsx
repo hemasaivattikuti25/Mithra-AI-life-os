@@ -81,7 +81,10 @@ export function TasksProvider({ children }) {
       );
     });
     try {
-      await apiFetch(`/tasks/${taskId}/toggle`, { method: 'POST' });
+      await apiFetch(`/tasks/${taskId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ completed: !previousState?.completed })
+      });
     } catch (err) {
       // Rollback on failure
       if (previousState) {

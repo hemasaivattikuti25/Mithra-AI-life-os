@@ -77,12 +77,6 @@ export const analytics = {
     habitCreated: (category = '') =>
         trackEvent('habit_created', { category }),
 
-    blendCreated: (name = '') =>
-        trackEvent('blend_created', { workspace_name: name }),
-
-    blendJoined: () =>
-        trackEvent('blend_joined'),
-
     pageView: (pageName) =>
         trackEvent('$pageview', { page: pageName }),
 };

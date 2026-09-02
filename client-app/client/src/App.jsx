@@ -27,7 +27,6 @@ const HabitFocusHub = lazy(() => import('./pages/HabitFocusHub'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const PromoVideo = lazy(() => import('./pages/PromoVideo'));
-const MithraBlend = lazy(() => import('./pages/MithraBlend'));
 const Diagnostics = lazy(() => import('./pages/Diagnostics'));
 
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
@@ -202,7 +201,6 @@ function AppRoutes() {
           <Route path="/habits" element={<PageErrorBoundary pageName="Habits"><Suspense fallback={<HabitsSkeleton />}><HabitFocusHub /></Suspense></PageErrorBoundary>} />
           <Route path="/journal" element={<PageErrorBoundary pageName="Journal"><Suspense fallback={<JournalSkeleton />}><MithraJournal /></Suspense></PageErrorBoundary>} />
           <Route path="/settings" element={<PageErrorBoundary pageName="Settings"><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></PageErrorBoundary>} />
-          <Route path="/blend" element={<PageErrorBoundary pageName="Blend"><Suspense fallback={<PageSkeleton />}><MithraBlend /></Suspense></PageErrorBoundary>} />
           <Route path="/diagnostics" element={<PageErrorBoundary pageName="Diagnostics"><Suspense fallback={<PageSkeleton />}><Diagnostics /></Suspense></PageErrorBoundary>} />
         </Route>
 

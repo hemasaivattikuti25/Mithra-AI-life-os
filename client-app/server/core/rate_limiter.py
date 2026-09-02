@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import jwt
 
@@ -73,9 +74,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if len(_windows[bucket_key]) >= limit:
             retry_after = int(WINDOW_SECONDS - (now - _windows[bucket_key][0]))
-            raise HTTPException(
+            return JSONResponse(
                 status_code=429,
-                detail=f"Rate limit exceeded. Try again in {max(1, retry_after)}s.",
+                content={"detail": f"Rate limit exceeded. Try again in {max(1, retry_after)}s."},
                 headers={"Retry-After": str(max(1, retry_after))},
             )
 

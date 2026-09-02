@@ -30,7 +30,6 @@ export default defineConfig({
           'lucide':        ['lucide-react'],
           // Heavy page chunks
           'dost':          ['./src/pages/DostMode.jsx'],
-          'blend':         ['./src/pages/MithraBlend.jsx'],
           'calendar':      ['./src/pages/Calendar.jsx'],
           'habits':        ['./src/pages/HabitFocusHub.jsx'],
         },

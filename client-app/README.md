@@ -47,7 +47,6 @@ Mithra is an AI-powered productivity operating system that replaces your scatter
 - **Heatmap Tracking**: GitHub-style activity graph per habit
 - **Streak Freeze**: Smart protection against accidental resets
 - **Milestone Rewards**: Celebrations for hitting streak goals
-- **Blend Mode**: Share habits with friends — track together in real-time
 
 #### 🧘 **Focus & Wellness**
 - **Pomodoro Timer**: Customizable work/break intervals

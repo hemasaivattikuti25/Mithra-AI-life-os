@@ -75,7 +75,9 @@ class ChatEngine:
                 else:
                     start_str = str(start)
                 if isinstance(end, (date, datetime)):
-                    end_str = end.strftime("%H:%M") if start.date() == end.date() else end.strftime("%b %d, %H:%M")
+                    start_d = start.date() if isinstance(start, datetime) else (start if isinstance(start, date) else None)
+                    end_d = end.date() if isinstance(end, datetime) else (end if isinstance(end, date) else None)
+                    end_str = end.strftime("%H:%M") if (start_d and start_d == end_d) else end.strftime("%b %d, %H:%M")
                 else:
                     end_str = str(end)
 

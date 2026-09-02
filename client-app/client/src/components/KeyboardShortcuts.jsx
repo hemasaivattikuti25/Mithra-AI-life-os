@@ -12,7 +12,6 @@ const SHORTCUTS = [
   { keys: ['G', 'C'], label: 'Go to Calendar', action: '/calendar' },
   { keys: ['G', 'A'], label: 'Go to Dost AI', action: '/dost' },
   { keys: ['G', 'S'], label: 'Go to Settings', action: '/settings' },
-  { keys: ['G', 'B'], label: 'Go to Blend', action: '/blend' },
   { keys: ['?'], label: 'Show shortcuts', action: 'help' },
 ];
 
@@ -59,7 +58,7 @@ export default function KeyboardShortcuts() {
       if (gPressed) {
         setGPressed(false);
         if (gTimer) clearTimeout(gTimer);
-        const map = { d: '/dashboard', t: '/tasks', h: '/habits', j: '/journal', c: '/calendar', a: '/dost', s: '/settings', b: '/blend' };
+        const map = { d: '/dashboard', t: '/tasks', h: '/habits', j: '/journal', c: '/calendar', a: '/dost', s: '/settings' };
         const target = map[e.key.toLowerCase()];
         if (target && location.pathname !== target) {
           e.preventDefault();

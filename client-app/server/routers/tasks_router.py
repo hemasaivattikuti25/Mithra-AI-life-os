@@ -843,7 +843,7 @@ async def sync_data(current_user: dict = Depends(get_current_user)):
         return {"tasks": [], "journal": [], "habits": [], "notifications": {}}
 
 
-# ─── CALENDAR EVENTS CRUD (with workspace support for Blend) ───
+# ─── CALENDAR EVENTS CRUD ───
 
 # NOTE: calendar_events table is created via migrations/004_add_calendar_events.sql
 # DO NOT call _ensure_events_table on every request — it was a DDL lock.

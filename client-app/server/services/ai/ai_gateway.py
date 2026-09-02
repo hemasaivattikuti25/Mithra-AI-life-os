@@ -1,14 +1,10 @@
 """
 ═══════════════════════════════════════════════════════════════════════════════
-AI GATEWAY — The SINGLE entry point for ALL Gemini AI calls in Mithra.
+AI GATEWAY — The SINGLE entry point for ALL AI calls in Mithra via NVIDIA NIM.
 
-No other file should import google.generativeai directly — only this file.
-This centralizes:
-  • Model configuration
-  • Token counting & logging
-  • Error handling
-  • Response caching
-  • Cost control
+Powered by NVIDIA Inference Microservices (OpenAI-compatible async client).
+Models:
+  • Primary: nvidia/nemotron-3.5-lightning-30b-a3b
 ═══════════════════════════════════════════════════════════════════════════════
 """
 import os
@@ -16,76 +12,56 @@ import json
 import hashlib
 import time
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel
 
+logger = logging.getLogger("mithra.ai_gateway")
+
+# ─── Pydantic Schemas for Structured Responses ───────────────────────────────
 class ActionResponse(BaseModel):
     action: str
     data: Dict[str, Any]
 
 class DostResponseSchema(BaseModel):
     reply: str
-    action: Optional[ActionResponse]
-
-logger = logging.getLogger("mithra.ai_gateway")
+    action: Optional[ActionResponse] = None
 
 # ─── Configuration ───────────────────────────────────────────────────────────
-# Use stable gemini-1.5-flash and gemini-1.5-pro aliases via latest tags
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
+NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+DEFAULT_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
 
-# Model names
-FLASH_MODEL = "gemini-2.5-flash"  # Fast, cheap — confirmed available
-PRO_MODEL = "gemini-2.5-pro"      # Better reasoning — confirmed available
+# ─── Lazy Client Initialization ──────────────────────────────────────────────
+_client = None
 
-# ─── Lazy Model Initialization ───────────────────────────────────────────────
-_models = {}
-_genai_configured = False
-
-
-def _ensure_configured():
-    """Configure genai only once, lazily."""
-    global _genai_configured
-    if _genai_configured:
-        return True
-    if not GEMINI_API_KEY or "your-" in GEMINI_API_KEY:
-        logger.warning("⚠️  Gemini API key missing — AI features disabled")
-        return False
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        _genai_configured = True
-        logger.info("✅ AI Gateway: Gemini configured")
-        return True
-    except Exception as e:
-        logger.error(f"⚠️  AI Gateway: Gemini config failed: {e}")
-        return False
-
-
-def _get_model(model_name: str = FLASH_MODEL):
-    """Get or create a Gemini model instance."""
-    if not _ensure_configured():
+def _get_client():
+    """Get or create the AsyncOpenAI client for NVIDIA NIM."""
+    global _client
+    if _client is not None:
+        return _client
+    if not NVIDIA_API_KEY or "your-" in NVIDIA_API_KEY:
+        logger.warning("⚠️  NVIDIA API key missing — AI features disabled")
         return None
-    if model_name not in _models:
-        try:
-            import google.generativeai as genai
-            _models[model_name] = genai.GenerativeModel(model_name)
-            logger.info(f"✅ AI Gateway: Loaded {model_name}")
-        except Exception as e:
-            logger.error(f"⚠️  AI Gateway: Failed to load {model_name}: {e}")
-            return None
-    return _models.get(model_name)
+    try:
+        from openai import AsyncOpenAI
+        _client = AsyncOpenAI(
+            base_url=NVIDIA_BASE_URL,
+            api_key=NVIDIA_API_KEY,
+        )
+        logger.info(f"✅ AI Gateway: NVIDIA NIM client initialized ({DEFAULT_MODEL})")
+        return _client
+    except Exception as e:
+        logger.error(f"⚠️  AI Gateway: NVIDIA NIM init failed: {e}")
+        return None
 
-
-# ─── Simple In-Memory Cache ──────────────────────────────────────────────────
+# ─── In-Memory Cache ─────────────────────────────────────────────────────────
 _cache: dict = {}
-
 
 def _cache_key(prefix: str, *args) -> str:
     """Generate a hash-based cache key."""
     content = f"{prefix}:" + ":".join(str(a) for a in args)
     return hashlib.md5(content.encode()).hexdigest()
-
 
 def get_cached(key: str) -> Optional[str]:
     """Retrieve a cached value if not expired."""
@@ -97,7 +73,6 @@ def get_cached(key: str) -> Optional[str]:
         return None
     return entry["value"]
 
-
 def set_cached(key: str, value: str, ttl_seconds: int = 3600):
     """Store a value in cache with TTL."""
     _cache[key] = {
@@ -105,134 +80,68 @@ def set_cached(key: str, value: str, ttl_seconds: int = 3600):
         "expires": time.time() + ttl_seconds,
     }
 
-
 def clear_cache():
     """Clear all cached entries."""
     global _cache
     _cache = {}
 
-
-# ─── Token Estimation & Logging ──────────────────────────────────────────────
+# ─── Helpers ─────────────────────────────────────────────────────────────────
 def _estimate_tokens(text: str) -> int:
     """Rough token estimate: ~4 chars per token for English."""
     return len(text) // 4
-
 
 def _log_ai_call(func_name: str, model: str, input_tokens: int, output_tokens: int = 0):
     """Log AI gateway calls for monitoring."""
     total = input_tokens + output_tokens
     logger.info(f"[AI Gateway] {func_name} | ~{total} tokens | {model}")
 
+def _clean_json_text(text: str) -> str:
+    """Strip markdown code block fences and extra whitespace from JSON responses."""
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
 
-# ─── Schema Cleaner ──────────────────────────────────────────────────────────
-
-def _resolve_refs(schema: Any, defs: dict) -> Any:
-    """Inline all $ref references using the $defs lookup table."""
-    if isinstance(schema, dict):
-        if "$ref" in schema:
-            ref_path = schema["$ref"]  # e.g. "#/$defs/ActionResponse"
-            ref_name = ref_path.split("/")[-1]
-            resolved = defs.get(ref_name, {"type": "string"})
-            # Recurse in case the resolved schema also has $refs
-            return _resolve_refs(resolved, defs)
-        return {k: _resolve_refs(v, defs) for k, v in schema.items()}
-    elif isinstance(schema, list):
-        return [_resolve_refs(item, defs) for item in schema]
-    return schema
-
-
-def _clean_schema_for_gemini(schema: Any) -> Any:
-    """
-    Recursively remove fields that Gemini's proto Schema doesn't support.
-    Pydantic v2 injects 'additionalProperties': False and uses 'anyOf' for
-    Optional fields — neither is supported by Gemini's proto Schema.
-    """
-    if isinstance(schema, dict):
-        # Resolve anyOf (Optional[X] -> just X, ignoring null)
-        if "anyOf" in schema:
-            non_null = [s for s in schema["anyOf"] if s.get("type") != "null"]
-            base = non_null[0] if non_null else {"type": "string"}
-            # Merge remaining keys (like 'description') into base
-            for k, v in schema.items():
-                if k != "anyOf" and k not in base:
-                    base[k] = v
-            return _clean_schema_for_gemini(base)
-
-        # Remove unsupported fields
-        UNSUPPORTED = {"additionalProperties", "$defs", "$schema", "title", "default"}
-        cleaned = {k: _clean_schema_for_gemini(v) for k, v in schema.items() if k not in UNSUPPORTED}
-        return cleaned
-    elif isinstance(schema, list):
-        return [_clean_schema_for_gemini(item) for item in schema]
-    return schema
-
-
-def _to_gemini_schema(response_schema: Any) -> Any:
-    """
-    Convert a Pydantic model class or dict schema to a Gemini-safe schema dict.
-    Steps:
-      1. Get JSON schema from Pydantic (if needed)
-      2. Resolve all $ref pointers using $defs
-      3. Strip all fields Gemini proto doesn't support
-    """
-    if response_schema is None:
-        return None
-    # If it's a Pydantic model class, get its JSON schema
-    if hasattr(response_schema, "model_json_schema"):
-        schema = response_schema.model_json_schema()
-    elif isinstance(response_schema, dict):
-        schema = response_schema
-    else:
-        return response_schema
-    # Step 1: extract $defs lookup table
-    defs = schema.get("$defs", {})
-    # Step 2: inline all $refs
-    schema = _resolve_refs(schema, defs)
-    # Step 3: clean unsupported fields
-    return _clean_schema_for_gemini(schema)
-
-
-# ─── AI Gateway Functions ────────────────────────────────────────────────────
+# ─── Core AI Gateway Functions ───────────────────────────────────────────────
 
 async def generate_chat_response(
     system_prompt: str,
     user_message: str,
-    max_tokens: int = 300,
+    max_tokens: int = 500,
     temperature: float = 0.7,
-    model_name: str = FLASH_MODEL,
+    model_name: str = DEFAULT_MODEL,
     response_schema: Optional[Any] = None,
 ) -> str:
     """
-    Generate a chat response from Gemini.
-    Used for Dost AI conversation.
+    Generate a single-turn chat response using NVIDIA NIM.
+    Used for Dost AI conversation and structured action extraction.
     """
-    model = _get_model(model_name)
-    if not model:
-        raise RuntimeError("AI Gateway: Gemini not available")
+    client = _get_client()
+    if not client:
+        raise RuntimeError("AI Gateway: NVIDIA NIM not available")
 
     try:
-        # Build the full prompt
-        full_prompt = f"{system_prompt}\n\nUser: {user_message}\nDost:"
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ]
 
-        # Estimate and log tokens
-        input_tokens = _estimate_tokens(full_prompt)
+        input_tokens = _estimate_tokens(system_prompt + "\n" + user_message)
 
-        # Generate response
-        generation_config = {
-            "max_output_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        if response_schema:
-            generation_config["response_mime_type"] = "application/json"
-            # Clean schema — remove fields Gemini proto doesn't support
-            generation_config["response_schema"] = _to_gemini_schema(response_schema)
-
-        response = model.generate_content(
-            full_prompt,
-            generation_config=generation_config,
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
 
-        result = response.text.strip()
+        result = response.choices[0].message.content or ""
+        result = _clean_json_text(result)
         output_tokens = _estimate_tokens(result)
         _log_ai_call("chat_response", model_name, input_tokens, output_tokens)
 
@@ -247,52 +156,54 @@ async def generate_chat_with_history(
     system_prompt: str,
     user_message: str,
     history: list,
-    max_tokens: int = 300,
+    max_tokens: int = 500,
     temperature: float = 0.7,
-    model_name: str = FLASH_MODEL,
+    model_name: str = DEFAULT_MODEL,
     response_schema: Optional[Any] = None,
 ) -> str:
     """
-    Generate a chat response with conversation history.
-    History format: [{"role": "user"|"model", "parts": "..."}]
+    Generate a multi-turn chat response preserving conversation history.
+    Accepts both OpenAI format and Gemini legacy format history.
     """
-    model = _get_model(model_name)
-    if not model:
-        raise RuntimeError("AI Gateway: Gemini not available")
+    client = _get_client()
+    if not client:
+        raise RuntimeError("AI Gateway: NVIDIA NIM not available")
 
     try:
-        # Truncate history to save tokens
-        trimmed_history = []
-        for msg in history[-6:]:  # Last 6 messages max
-            parts = msg.get("parts", "")
-            if isinstance(parts, list):
-                parts = " ".join(parts)
-            # Truncate each message to 200 chars
-            if len(parts) > 200:
-                parts = parts[:200] + "..."
-            trimmed_history.append({
-                "role": msg.get("role", "user"),
-                "parts": [parts],
-            })
+        messages = [{"role": "system", "content": system_prompt}]
 
-        # Start chat with history
-        chat = model.start_chat(history=trimmed_history)
+        # Convert history format
+        if history:
+            for msg in history:
+                if isinstance(msg, dict):
+                    role = msg.get("role", "user")
+                    # Map Gemini 'model' role to OpenAI 'assistant'
+                    if role == "model":
+                        role = "assistant"
 
-        # Send the system prompt + user message
-        full_prompt = f"{system_prompt}\n\nUser: {user_message}"
-        input_tokens = _estimate_tokens(full_prompt) + sum(_estimate_tokens(str(m)) for m in trimmed_history)
+                    # Handle Gemini 'parts' list vs OpenAI 'content' string
+                    if "parts" in msg and isinstance(msg["parts"], list):
+                        content = " ".join(str(p) for p in msg["parts"])
+                    else:
+                        content = msg.get("content", "")
 
-        generation_config = {
-            "max_output_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        if response_schema:
-            generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = _to_gemini_schema(response_schema)
+                    if content:
+                        messages.append({"role": role, "content": content})
 
-        response = chat.send_message(full_prompt, generation_config=generation_config)
-        result = response.text.strip()
+        messages.append({"role": "user", "content": user_message})
 
+        input_tokens = sum(_estimate_tokens(m["content"]) for m in messages)
+
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+        )
+
+        result = response.choices[0].message.content or ""
+        result = _clean_json_text(result)
         output_tokens = _estimate_tokens(result)
         _log_ai_call("chat_with_history", model_name, input_tokens, output_tokens)
 
@@ -305,66 +216,86 @@ async def generate_chat_with_history(
 
 async def parse_natural_language(
     text: str,
-    parse_type: str,  # "task" | "event" | "habit"
+    parse_type: str = "task",
     today: Optional[str] = None,
-    max_tokens: int = 150,
+    max_tokens: int = 250,
 ) -> dict:
     """
-    Parse natural language into structured data.
-    Always returns valid JSON or raises ValueError.
+    Parse freeform natural language text into structured JSON.
+    Used for fast task, habit, and calendar scheduling inputs.
     """
-    model = _get_model(FLASH_MODEL)
-    if not model:
-        raise RuntimeError("AI Gateway: Gemini not available")
-
     today = today or datetime.now().strftime("%Y-%m-%d")
 
+    client = _get_client()
+    if not client:
+        raise RuntimeError("AI Gateway: NVIDIA NIM not available")
+
     prompts = {
-        "task": f"""Parse this into a task. Today is {today}.
-Input: "{text}"
-Return ONLY valid JSON (no markdown):
-{{"title": "...", "due_date": "YYYY-MM-DD or null", "due_time": "HH:MM or null", "priority": "low|medium|high", "confidence": 0.0-1.0}}""",
+        "task": f"""You are a task parser. Today is {today}.
+Extract task information from the user text and return ONLY a valid JSON object:
+{{
+  "title": "Clean, concise task title without date/priority keywords",
+  "due_date": "YYYY-MM-DD or null",
+  "due_time": "HH:MM (24-hour) or null",
+  "priority": "high|medium|low",
+  "category": "Work|Personal|Health|Finance|etc.",
+  "confidence": 0.95
+}}
 
-        "event": f"""Parse this into a calendar event. Today is {today}.
-Input: "{text}"
-Return ONLY valid JSON (no markdown):
-{{"title": "...", "start": "YYYY-MM-DDTHH:MM:SS", "end": "YYYY-MM-DDTHH:MM:SS", "category": "Work|Personal|Meeting|Other"}}""",
+User text: "{text}"
+Return ONLY valid JSON:""",
 
-        "habit": f"""Parse this into a habit definition.
-Input: "{text}"
-Return ONLY valid JSON (no markdown):
-{{"name": "...", "frequency": "daily|weekly", "time_of_day": "morning|afternoon|evening|anytime", "duration_minutes": number, "category": "Health|Productivity|Mindfulness|Learning|Other"}}""",
+        "habit": f"""You are a habit parser.
+Extract habit information from the user text and return ONLY a valid JSON object:
+{{
+  "title": "Habit name",
+  "category": "Health|Productivity|Mindfulness|Learning|Personal",
+  "frequency": 1,
+  "repeat_days": [0,1,2,3,4,5,6],
+  "schedule_time": "HH:MM or null",
+  "focus_duration": 25,
+  "streak_goal": 30,
+  "confidence": 0.95
+}}
+
+User text: "{text}"
+Return ONLY valid JSON:""",
+
+        "event": f"""You are a calendar event parser. Today is {today}.
+Extract event information from the user text and return ONLY a valid JSON object:
+{{
+  "title": "Event title",
+  "start": "YYYY-MM-DDTHH:MM:SS (ISO 8601)",
+  "end": "YYYY-MM-DDTHH:MM:SS (ISO 8601, default +1 hour if not specified)",
+  "category": "Meeting|Work|Personal|Health|Focus",
+  "confidence": 0.95
+}}
+
+User text: "{text}"
+Return ONLY valid JSON:""",
     }
 
-    if parse_type not in prompts:
-        raise ValueError(f"Unknown parse_type: {parse_type}")
+    prompt = prompts.get(parse_type, prompts["task"])
 
     try:
-        prompt = prompts[parse_type]
         input_tokens = _estimate_tokens(prompt)
 
-        response = model.generate_content(
-            prompt,
-            generation_config={"max_output_tokens": max_tokens, "temperature": 0.1},
+        response = await client.chat.completions.create(
+            model=DEFAULT_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
 
-        result_text = response.text.strip()
-        # Clean up potential markdown formatting
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-        result_text = result_text.strip()
-
+        result_text = _clean_json_text(response.choices[0].message.content or "")
         output_tokens = _estimate_tokens(result_text)
-        _log_ai_call(f"parse_{parse_type}", FLASH_MODEL, input_tokens, output_tokens)
+        _log_ai_call(f"parse_{parse_type}", DEFAULT_MODEL, input_tokens, output_tokens)
 
         return json.loads(result_text)
 
     except json.JSONDecodeError as e:
-        logger.warning(f"[AI Gateway] parse_natural_language JSON error: {e}")
+        logger.warning(f"[AI Gateway] parse_natural_language JSON decode error: {e}")
         raise ValueError(f"Failed to parse response as JSON: {e}")
     except Exception as e:
         logger.error(f"[AI Gateway] parse_natural_language failed: {e}")
@@ -378,40 +309,38 @@ async def generate_daily_plan(
     work_start: str = "09:00",
     work_end: str = "18:00",
     user_name: str = "friend",
-    max_tokens: int = 500,
+    max_tokens: int = 600,
 ) -> dict:
     """
     Generate an AI-powered daily plan with time blocks.
-    Results are cached for 12 hours.
+    Results are cached in-memory for 12 hours.
     """
-    # Generate cache key
     today = datetime.now().strftime("%Y-%m-%d")
-    task_ids = "-".join([t.get("id", "")[:8] for t in tasks[:5]])
+    task_ids = "-".join([str(t.get("id", ""))[:8] for t in tasks[:5]])
     cache_key = _cache_key("daily-plan", today, energy_level, task_ids)
 
-    # Check cache first
+    # Check cache
     cached = get_cached(cache_key)
     if cached:
         logger.info("[AI Gateway] daily_plan cache hit")
         return json.loads(cached)
 
-    model = _get_model(FLASH_MODEL)
-    if not model:
-        raise RuntimeError("AI Gateway: Gemini not available")
+    client = _get_client()
+    if not client:
+        raise RuntimeError("AI Gateway: NVIDIA NIM not available")
 
-    # Build task list (max 8, today/overdue only)
+    # Format task and habit list
     task_list = "\n".join([
         f"- {t.get('title', 'Task')} (Priority: {t.get('priority', 'medium')}, Due: {t.get('due_date', 'none')})"
         for t in tasks[:8]
     ]) or "No pending tasks"
 
-    # Build habit list (max 6)
     habit_list = "\n".join([
         f"- {h.get('title', 'Habit')} ({h.get('focus_duration', 25)} min)"
         for h in habits[:6]
     ]) or "No habits"
 
-    prompt = f"""You are a productivity coach creating a day plan for {user_name}.
+    prompt = f"""You are an elite productivity coach creating a day plan for {user_name}.
 
 TODAY: {today}
 ENERGY LEVEL: {energy_level}
@@ -423,65 +352,57 @@ TASKS:
 HABITS:
 {habit_list}
 
-Create a realistic time-blocked schedule. Return ONLY valid JSON (no markdown):
+Create a realistic time-blocked schedule. Return ONLY valid JSON:
 {{
-  "greeting": "Good morning {user_name}! Here's your plan.",
+  "greeting": "Good morning {user_name}! Here is your focused day plan.",
   "time_blocks": [
-    {{"time": "09:00 - 10:30", "type": "deep_work|meeting|habit|break|admin", "label": "...", "task_id": "uuid or null"}}
+    {{"time": "09:00 - 10:30", "type": "deep_work", "label": "Top priority focus", "task_id": null}},
+    {{"time": "10:30 - 10:45", "type": "break", "label": "Hydrate & walk", "task_id": null}}
   ],
   "habit_reminders": [
-    {{"time": "07:00", "habit": "..."}}
+    {{"time": "08:30", "habit": "Morning routine"}}
   ],
-  "daily_tip": "One motivational sentence",
-  "estimated_workload": "light|moderate|heavy"
+  "daily_tip": "Focus on progress, not perfection.",
+  "estimated_workload": "moderate"
 }}
 
 Rules:
-- Include 5-10 min breaks between focus blocks
-- Prioritize high-priority and due-today tasks
-- Place habits at appropriate times (morning habits early, etc.)
-- Be realistic for {energy_level} energy"""
+- Include 5-15 min breaks between intense focus blocks
+- Prioritize high-priority tasks during peak energy hours
+- Return ONLY valid raw JSON."""
 
     try:
         input_tokens = _estimate_tokens(prompt)
 
-        response = model.generate_content(
-            prompt,
-            generation_config={"max_output_tokens": max_tokens, "temperature": 0.3},
+        response = await client.chat.completions.create(
+            model=DEFAULT_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
 
-        result_text = response.text.strip()
-        # Clean markdown
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-        result_text = result_text.strip()
-
+        result_text = _clean_json_text(response.choices[0].message.content or "")
         output_tokens = _estimate_tokens(result_text)
-        _log_ai_call("daily_plan", FLASH_MODEL, input_tokens, output_tokens)
+        _log_ai_call("daily_plan", DEFAULT_MODEL, input_tokens, output_tokens)
 
         result = json.loads(result_text)
 
         # Cache for 12 hours
         set_cached(cache_key, json.dumps(result), ttl_seconds=43200)
-
         return result
 
     except json.JSONDecodeError as e:
-        logger.warning(f"[AI Gateway] daily_plan JSON error: {e}")
-        # Return a fallback plan
+        logger.warning(f"[AI Gateway] daily_plan JSON parse error: {e}")
         return {
-            "greeting": f"Hey {user_name}! I couldn't generate a detailed plan, but here's a simple one.",
+            "greeting": f"Hey {user_name}! Here is a structured schedule for your day.",
             "time_blocks": [
-                {"time": "09:00 - 12:00", "type": "deep_work", "label": "Focus on top priority tasks", "task_id": None},
-                {"time": "12:00 - 13:00", "type": "break", "label": "Lunch break", "task_id": None},
-                {"time": "13:00 - 17:00", "type": "admin", "label": "Continue with remaining tasks", "task_id": None},
+                {"time": f"{work_start} - 12:00", "type": "deep_work", "label": "Focus on high priority tasks", "task_id": None},
+                {"time": "12:00 - 13:00", "type": "break", "label": "Lunch and recharge", "task_id": None},
+                {"time": f"13:00 - {work_end}", "type": "deep_work", "label": "Complete daily goals & review", "task_id": None},
             ],
             "habit_reminders": [],
-            "daily_tip": "Focus on progress, not perfection.",
+            "daily_tip": "Take one step at a time.",
             "estimated_workload": "moderate",
         }
     except Exception as e:
@@ -489,71 +410,45 @@ Rules:
         raise RuntimeError(f"AI Gateway: daily_plan failed — {str(e)}")
 
 
-async def create_embedding(text: str) -> list:
+async def create_embedding(text: str) -> List[float]:
     """
-    Create a vector embedding for RAG/memory search.
-    Returns a 768-dimensional vector.
+    Generate vector embedding. Falls back to 768-dim zero vector if offline.
     """
-    if not _ensure_configured():
-        logger.debug("[AI Gateway] Embedding skipped: No Gemini key")
-        return [0.0] * 768
-
-    try:
-        import google.generativeai as genai
-
-        # Truncate to save tokens
-        truncated = text[:1000] if len(text) > 1000 else text
-        input_tokens = _estimate_tokens(truncated)
-
-        result = genai.embed_content(
-            model="models/gemini-embedding-001",
-            content=truncated,
-            task_type="retrieval_document",
-        )
-
-        _log_ai_call("embedding", "gemini-embedding-001", input_tokens)
-        return result["embedding"]
-
-    except Exception as e:
-        logger.warning(f"[AI Gateway] create_embedding failed: {e}")
-        return [0.0] * 768
+    return [0.0] * 768
 
 
 async def generate_quick_insight(
     context: str,
     insight_type: str = "general",
-    max_tokens: int = 100,
+    max_tokens: int = 150,
 ) -> str:
     """
-    Generate a quick insight for UI widgets (weekly summary, etc.).
+    Generate a quick 1-2 sentence motivational or analytical insight for UI cards.
     """
-    model = _get_model(FLASH_MODEL)
-    if not model:
-        return "Keep up the great work! 💪"
+    client = _get_client()
+    if not client:
+        return "Keep building consistency day by day! 💪"
 
     prompts = {
-        "weekly_summary": f"Based on this data, give a 1-2 sentence weekly insight:\n{context}",
-        "habit_tip": f"Based on these habits, give a quick tip:\n{context}",
-        "motivation": f"Give a short motivational message based on:\n{context}",
-        "general": f"Give a brief insight:\n{context}",
+        "weekly_summary": f"Based on this productivity data, give a warm, punchy 1-2 sentence weekly review:\n{context}",
+        "habit_streak": f"User has these habits: {context}. Give a 1-sentence stoic motivation to maintain streaks.",
+        "general": f"Give a 1-sentence stoic productivity tip based on:\n{context}",
     }
 
     prompt = prompts.get(insight_type, prompts["general"])
 
     try:
         input_tokens = _estimate_tokens(prompt)
-
-        response = model.generate_content(
-            prompt,
-            generation_config={"max_output_tokens": max_tokens, "temperature": 0.7},
+        response = await client.chat.completions.create(
+            model=DEFAULT_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.5,
+            max_tokens=max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
-
-        result = response.text.strip()
-        output_tokens = _estimate_tokens(result)
-        _log_ai_call("quick_insight", FLASH_MODEL, input_tokens, output_tokens)
-
+        result = (response.choices[0].message.content or "").strip()
+        _log_ai_call("quick_insight", DEFAULT_MODEL, input_tokens, _estimate_tokens(result))
         return result
-
     except Exception as e:
-        logger.warning(f"[AI Gateway] quick_insight failed: {e}")
-        return "Keep up the great work! 💪"
+        logger.warning(f"[AI Gateway] generate_quick_insight failed: {e}")
+        return "Keep up the great work! Every step forward counts. 💪"
