@@ -44,10 +44,10 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"❌ Migration runner failed: {e}", exc_info=True)
 
-    # Background keep-alive worker (prevents Render free tier cold starts)
+    # Background keep-alive worker (maintains active pool health and prevents cold starts)
     warmup_task = asyncio.create_task(keep_alive())
 
-    # APScheduler — empty for now, jobs added when email/payment is wired
+    # APScheduler worker initialized for scheduled background jobs
     scheduler = AsyncIOScheduler()
     scheduler.start()
     app.state.scheduler = scheduler

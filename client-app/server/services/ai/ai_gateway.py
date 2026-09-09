@@ -16,6 +16,8 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel
 
+from core.config import NVIDIA_API_KEY, NVIDIA_BASE_URL, NVIDIA_MODEL as DEFAULT_MODEL
+
 logger = logging.getLogger("mithra.ai_gateway")
 
 # ─── Pydantic Schemas for Structured Responses ───────────────────────────────
@@ -26,9 +28,6 @@ class ActionResponse(BaseModel):
 class DostResponseSchema(BaseModel):
     reply: str
     action: Optional[ActionResponse] = None
-
-# ─── Configuration ───────────────────────────────────────────────────────────
-from core.config import NVIDIA_API_KEY, NVIDIA_BASE_URL, NVIDIA_MODEL as DEFAULT_MODEL
 
 # ─── Lazy Client Initialization ──────────────────────────────────────────────
 _client = None

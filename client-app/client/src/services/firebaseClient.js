@@ -13,11 +13,11 @@ import {
 } from 'firebase/auth';
 
 /* ═══════════════════════════════════════════════════════════════
-   FIREBASE CLIENT — Singleton instance
+   FIREBASE CLIENT — Authentication & API Gateway Client
    
-   Replaces Supabase Auth. Uses Firebase Authentication only.
-   Database operations go through the FastAPI backend API.
-   Gracefully handles missing credentials (offline-only mode).
+   Handles client-side authentication and JWT token management.
+   Data operations are proxied through the authenticated FastAPI backend.
+   Gracefully handles unconfigured/offline environments.
    ═══════════════════════════════════════════════════════════════ */
 
 const firebaseConfig = {

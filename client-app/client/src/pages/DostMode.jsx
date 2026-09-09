@@ -27,7 +27,7 @@ const isAPIConfigured = true;
 const INITIAL_MSG = [
   {
     id: 1, sender: 'ai', type: 'text',
-    content: "Hey! I'm Dost — your AI companion. Here's what I can do:\n\n� **Tasks** — \"Call amma at 3pm\" or \"Add task: report by Friday\"\n🔥 **Habits** — \"I want to go gym for next 20 days\"\n📅 **Events** — \"Class from 2-7pm\" or \"Schedule meeting at 10am\"\n✨ **Smart Schedule** — \"Plan my day\" for an optimized AI day plan\n📊 **Summary** — \"Summarize my day\" or \"How are my habits?\"\n🎤 **Voice** — Tap the mic to speak\n\nWhat would you like to do?"
+    content: "Hey! I'm Dost — your AI companion. Here's what I can do:\n\n📝 **Tasks** — \"Call amma at 3pm\" or \"Add task: report by Friday\"\n🔥 **Habits** — \"I want to go gym for next 20 days\"\n📅 **Events** — \"Class from 2-7pm\" or \"Schedule meeting at 10am\"\n✨ **Smart Schedule** — \"Plan my day\" for an optimized AI day plan\n📊 **Summary** — \"Summarize my day\" or \"How are my habits?\"\n🎤 **Voice** — Tap the mic to speak\n\nWhat would you like to do?"
   },
 ];
 

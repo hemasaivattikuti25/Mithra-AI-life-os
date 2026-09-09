@@ -3,10 +3,10 @@
   <h1>Mithra Life OS v2</h1>
   <p><b>A Production-Grade, AI-Native Personal Operating System</b></p>
 
-  [![Active Users](https://img.shields.io/badge/Active_Users-900%2B-00E5FF?style=for-the-badge&logo=users)](#)
+  [![Active Users](https://img.shields.io/badge/Active_Users-1300%2B-00E5FF?style=for-the-badge&logo=users)](#)
   [![Live Platform](https://img.shields.io/badge/Live_Platform-mithra--lifeos.com-000000?style=for-the-badge&logo=vercel)](https://mithra-lifeos.com)
   [![Backend](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#)
-  [![Database](https://img.shields.io/badge/Neon_Serverless-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
+  [![Database](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![License](https://img.shields.io/badge/License-MIT-00E5FF?style=for-the-badge)](LICENSE)
 
   <p><i>A context-aware ecosystem featuring a custom Retrieval-Augmented Generation (RAG) pipeline, deterministic AI agents, semantic vector memory, and real-time habit tracking.</i></p>
@@ -20,7 +20,7 @@
 
 Mithra Life OS is a comprehensive, AI-first productivity ecosystem engineered to replace disjointed task managers, habit trackers, and journaling applications. Moving beyond simple CRUD applications, Mithra is designed around **Dost AI** — an embedded, context-aware companion agent that possesses true semantic memory of the user's life. 
 
-Currently serving a rapidly growing user base of **900+ active signups**, the platform serves as a technical showcase of integrating advanced Applied AI mechanics (RAG, agentic schemas, dynamic prompt injection) within a highly scalable, asynchronous Python backend, optimized for high availability with warmup cycles.
+Currently serving an active user base of **1,300+ registered users**, the platform serves as a technical showcase of integrating advanced Applied AI mechanics (RAG, agentic schemas, dynamic prompt injection) within a scalable, asynchronous Python backend, engineered with active health monitoring and warm pool maintenance for high availability.
 
 This repository contains the complete source code for both the React-based client and the FastAPI backend service.
 
@@ -34,7 +34,7 @@ The defining feature of Mithra is its integration of Large Language Models (LLMs
 Standard LLMs suffer from amnesia. To give Dost AI a persistent memory of the user's life, Mithra implements a highly optimized **Retrieval-Augmented Generation (RAG)** pipeline natively within PostgreSQL.
 
 1. **Embedding Generation:** When a user logs a journal entry, the text is immediately processed through a dense embedding model, converting the semantic meaning into a high-dimensional vector array.
-2. **Native Vector Storage:** Rather than introducing a complex secondary database (e.g., Pinecone or Weaviate), Mithra utilizes the `pgvector` extension in a Neon Serverless PostgreSQL instance. Vectors are stored natively alongside the relational user data, ensuring strict ACID compliance and zero data drift.
+2. **Native Vector Storage:** Rather than introducing a complex secondary database (e.g., Pinecone or Weaviate), Mithra utilizes the `pgvector` extension in PostgreSQL. Vectors are stored natively alongside the relational user data, ensuring strict ACID compliance and zero data drift.
 3. **Cosine Similarity Search:** During a chat interaction, the user's prompt is vectorized in real-time. The `memory_engine.py` executes an asynchronous SQL query utilizing the `<=>` operator to calculate Cosine Distance, instantly retrieving the most semantically relevant past journal entries.
 
 ### 2.2 Dynamic Context Injection
@@ -59,14 +59,14 @@ The backend parser extracts this payload, validates it via Pydantic schemas, and
 
 ### 2.4 Hybrid NLP & Cost Optimization
 To optimize API usage and reduce chat latency, Mithra incorporates a hybrid processing paradigm:
-* **Pre-LLM NLP Regex Parser:** Lightweight tasks, mood logs, and habit check-ins are intercepted via a local, regex-driven NLP matcher (`extract_casual_actions`), resolving routine user updates instantly without triggering API overhead.
+* **Zero-Latency Edge Intent Matcher:** Lightweight tasks, quick mood logs, and habit check-ins are intercepted client-side via a deterministic NLP matcher, resolving routine interactions instantly with zero latency while conserving cloud LLM token quotas.
 * **Token Budget Enforcement:** Strict context restrictions (`MAX_HISTORY_MESSAGES = 6`, `MAX_MESSAGE_LENGTH = 200`, `MAX_MEMORY_TOKENS = 200`) guarantee system prompts remain under an 800-token threshold, ensuring fast response times and highly optimized API utilization.
 
 ---
 
 ## ⚙️ 3. Backend Engineering
 
-The backend is engineered for high throughput, low latency, and strict security, serving as the robust foundation required to support 900+ concurrent users.
+The backend is engineered for high throughput, low latency, and strict security, serving as the robust foundation required to support 1,300+ active users.
 
 ### 3.1 Asynchronous FastAPI & asyncpg
 Built on Python 3.11 and **FastAPI**, the entire backend is fully asynchronous. By utilizing `asyncpg`, the server never blocks the main event loop while waiting for database queries or API responses from the AI gateway. This architectural decision allows a single Uvicorn worker to handle thousands of concurrent connections efficiently.
@@ -81,7 +81,7 @@ The codebase eschews monolithic patterns in favor of modular, Domain-Driven Desi
 Because Mithra stores highly sensitive personal data (journals, habits, tasks), security is paramount. The platform employs a Zero-Trust architecture:
 1. The client authenticates via **Firebase Auth** and receives a short-lived JSON Web Token (JWT).
 2. The FastAPI backend utilizes the Firebase Admin SDK within a dedicated `Depends` middleware to cryptographically verify every single incoming request.
-3. All operations scope queries using the cryptographically verified `user_id` context (`WHERE user_id = $1`), ensuring mathematically scoped tenant isolation and eliminating cross-account data leakage at the query layer.
+3. **Database Row-Level Security (RLS) & Query Scoping:** All PostgreSQL tables enforce Row-Level Security (RLS) policies paired with parameterized `user_id` context (`WHERE user_id = $1`), eliminating cross-account data leakage at both the application and database engine layers.
 
 ---
 
@@ -178,7 +178,7 @@ npm run dev
 
 ## 📈 7. Scaling & Future Roadmap
 
-Handling the transition from a local MVP to a live platform with **900+ users** required significant architectural refactoring. Moving forward, the roadmap includes:
+Handling the transition from a local MVP to a live platform with **1,300+ users** required significant architectural refactoring. Moving forward, the roadmap includes:
 
 1. **Redis Caching:** Implementing Redis to cache non-volatile data (like historical habit heatmaps) to reduce Postgres load.
 2. **WebSockets:** Upgrading the polling-based AI chat engine to true bidirectional WebSockets for streaming LLM tokens in real-time.
@@ -191,7 +191,7 @@ Handling the transition from a local MVP to a live platform with **900+ users** 
 <div align="center">
   <img src="./client-app/client/public/assets/hemasai.jpeg" alt="Hemasai Vattikuti" width="180" style="border-radius: 50%; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
   <h3>Hemasai Vattikuti</h3>
-  <p><i>Applied AI Engineer & backend Developer</i></p>
+  <p><i>Applied AI Engineer & Backend Developer</i></p>
 </div>
 
 I built Mithra because I believe the future of software isn't just about storing data; it's about software that understands you. Too many people struggle with scattered tools—a task list here, a habit tracker there, a journal somewhere else. I engineered Mithra to be the single source of truth for your personal life, powered by an AI that actually possesses the context to help you.
