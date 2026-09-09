@@ -17,8 +17,8 @@ import { localEngine } from '../services/dostLocalEngine';
 /* =========================================
    API Configuration
    ========================================= */
-const API_BASE = import.meta.env.VITE_API_URL || null;
-const isAPIConfigured = !!API_BASE;
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const isAPIConfigured = true;
 
 /* ═══════════════════════════════════════════════════════════════
    DOST MODE — AI Agent
@@ -45,6 +45,11 @@ function parseIntent(input, tasks, habits) {
   // ── SCHEDULE CONFIRMATION ──
   if (/^(?:yes|yeah|yep|sure|ok|okay|apply|go\s+ahead|do\s+it|change|update|confirm|sounds\s+good|let'?s\s+do\s+it)[\s!.]*$/i.test(lower)) {
     return { type: 'schedule_apply_yes' };
+  }
+
+  // ── SCHEDULE / CONFLICT CANCELLATION ──
+  if (/^(?:no|nope|nah|cancel|never\s*mind|don'?t|leave\s+it|stop)[\s!.]*$/i.test(lower)) {
+    return { type: 'schedule_apply_no' };
   }
 
   // ── SCHEDULE UNDO ──
@@ -102,26 +107,36 @@ function parseIntent(input, tasks, habits) {
   }
 
   // ── PERSON-BASED TASK (call/meet/text someone) — detects time and saves as event if time given ──
-  const personTaskMatch = input.match(/^(?:call|ring|phone|message|text|meet|ping|talk\s+to)\s+([\w\s]+?)(?:\s+(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?(?:\s+(?:on\s+)?(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday))?[\s.,!]*$/i);
+  const personTaskMatch = input.match(/^(?:call|ring|phone|message|text|meet|ping|talk\s+to)\s+(.+?)[\s.,!]*$/i);
   if (personTaskMatch) {
-    const person = personTaskMatch[1].trim();
-    const timeStr = personTaskMatch[2];
-    const dateStr = personTaskMatch[3];
-    let dueDate = dateStr ? parseFuzzyDate(dateStr) : new Date();
-    let hasTime = false;
-    if (timeStr) {
-      const pt = parseClockTime(timeStr);
-      if (pt) { dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
+    const rawRest = personTaskMatch[1].trim();
+    const timeMatch = rawRest.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+    const dateMatch = rawRest.match(/(?:on\s+)?(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+    const timeStr = timeMatch?.[1];
+    const dateStr = dateMatch?.[1];
+
+    let cleanPerson = rawRest
+      .replace(/(?:at|@)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '')
+      .replace(/(?:on\s+)?(?:today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, '')
+      .replace(/^\s*[,\s]+|[,\s]+$/g, '')
+      .trim();
+
+    if (cleanPerson && !/^(?:the\s+)?(?:task|habit|meeting|event)\b/i.test(cleanPerson)) {
+      let dueDate = dateStr ? parseFuzzyDate(dateStr) : new Date();
+      let hasTime = false;
+      if (timeStr) {
+        const pt = parseClockTime(timeStr);
+        if (pt) { dueDate.setHours(pt.hour, pt.minute, 0, 0); hasTime = true; }
+      }
+      const verb = input.match(/^(call|ring|phone|message|text|meet|ping|talk\s+to)/i)?.[1] || 'Call';
+      const verbTitle = verb.charAt(0).toUpperCase() + verb.slice(1).replace(/\s+to$/i, '');
+      const title = `${verbTitle} ${cleanPerson}`;
+      if (hasTime) {
+        const endDate = new Date(dueDate.getTime() + 30 * 60 * 1000); // 30min default
+        return { type: 'create_task_and_event', title, dueDate, endDate, priority: 'medium', hasTime, listId: 'dost', time: timeStr };
+      }
+      return { type: 'create_task', title, dueDate, priority: 'medium', hasTime, listId: 'dost' };
     }
-    const verb = input.match(/^(call|ring|phone|message|text|meet|ping|talk\s+to)/i)?.[1] || 'Call';
-    const verbTitle = verb.charAt(0).toUpperCase() + verb.slice(1).replace(/\s+to$/i, '');
-    const title = `${verbTitle} ${person}`;
-    // If a time is specified, create both a task AND a calendar event
-    if (hasTime) {
-      const endDate = new Date(dueDate.getTime() + 30 * 60 * 1000); // 30min default
-      return { type: 'create_task_and_event', title, dueDate, endDate, priority: 'medium', hasTime, listId: 'dost', time: timeStr };
-    }
-    return { type: 'create_task', title, dueDate, priority: 'medium', hasTime, listId: 'dost' };
   }
 
   // ── CREATE EVENT (time-range block: class from 2-7, yoga 6-7am) ──
@@ -129,12 +144,21 @@ function parseIntent(input, tasks, habits) {
   if (timeRangeBlockMatch) {
     const titleMatch = input.match(/^([\w\s]+?)(?:\s+from|\s+\d)/i);
     const title = (titleMatch?.[1]?.trim() || 'Event').replace(/^\s*(a|an|the)\s+/i, '');
-    const start = parseClockTime(timeRangeBlockMatch[1]);
-    const end = parseClockTime(timeRangeBlockMatch[2]);
+    let start = parseClockTime(timeRangeBlockMatch[1]);
+    let end = parseClockTime(timeRangeBlockMatch[2]);
     const eventDate = new Date();
-    const endDate = new Date();
-    if (start) eventDate.setHours(start.hour, start.minute, 0, 0);
-    if (end) endDate.setHours(end.hour, end.minute, 0, 0);
+    let endDate = new Date();
+    if (start && end) {
+      const startHasAmPm = /(?:am|pm)/i.test(timeRangeBlockMatch[1]);
+      if (!startHasAmPm && end.hour >= 12 && start.hour < 12 && (start.hour + 12) < end.hour) {
+        start.hour += 12;
+      }
+      eventDate.setHours(start.hour, start.minute, 0, 0);
+      endDate.setHours(end.hour, end.minute, 0, 0);
+      if (endDate <= eventDate) {
+        endDate = addDays(endDate, 1);
+      }
+    }
     return { type: 'create_event', title, eventDate, endDate, time: `${timeRangeBlockMatch[1]} – ${timeRangeBlockMatch[2]}`, isBlock: true };
   }
 
@@ -315,9 +339,20 @@ function parseIntent(input, tasks, habits) {
     }
   }
 
+  // ── COMPLETE HABIT ──
+  const habitCompleteMatch = input.match(/(?:i\s+)?(?:completed?|done|finished?|mark\s+done)\s+(?:my\s+|the\s+)?(?:habit[:\s]+)?(.+?)(?:\s+habit)?$/i)
+    || input.match(/(?:i\s+)?did\s+(?:my\s+)?(.+?)\s+habit$/i);
+  if (habitCompleteMatch && !/task/i.test(habitCompleteMatch[1])) {
+    const rawQuery = habitCompleteMatch[1].replace(/^(?:my|the)\s+/i, '').trim().toLowerCase();
+    const found = habits.find(h => h.title.toLowerCase().includes(rawQuery) || rawQuery.includes(h.title.toLowerCase()));
+    if (found) {
+      return { type: 'complete_habit', query: rawQuery, found };
+    }
+  }
+
   // ── COMPLETE TASK ──
-  if (/(?:complete|done|finish|mark done)\s+(?:the\s+)?task[:\s]*(.+)/i.test(lower)) {
-    const query = input.match(/(?:complete|done|finish|mark done)\s+(?:the\s+)?task[:\s]*(.+)/i)[1].trim().toLowerCase();
+  if (/(?:i\s+)?(?:complete|completed|done|finish|finished|mark done)\s+(?:the\s+|my\s+)?task[:\s]*(.+)/i.test(lower)) {
+    const query = input.match(/(?:i\s+)?(?:complete|completed|done|finish|finished|mark done)\s+(?:the\s+|my\s+)?task[:\s]*(.+)/i)[1].trim().toLowerCase();
     const found = tasks.find(t => t.title.toLowerCase().includes(query) && !t.completed);
     return { type: 'complete_task', query, found };
   }
@@ -524,7 +559,33 @@ function getCalendarConflicts(eventDate, endDate) {
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+  // Quote-aware CSV line splitter
+  const splitCSVLine = (line) => {
+    const result = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      if (char === '"') {
+        if (inQuotes && line[j + 1] === '"') {
+          cur += '"';
+          j++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(cur.trim());
+        cur = '';
+      } else {
+        cur += char;
+      }
+    }
+    result.push(cur.trim());
+    return result;
+  };
+
+  const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase());
   const titleIdx = headers.findIndex(h => /title|name|task|item/i.test(h));
   const priorityIdx = headers.findIndex(h => /priority|importance/i.test(h));
   const dateIdx = headers.findIndex(h => /date|due|deadline/i.test(h));
@@ -532,12 +593,17 @@ function parseCSV(text) {
   if (titleIdx < 0) return [];
 
   return lines.slice(1).filter(l => l.trim()).map((line, i) => {
-    const cols = line.split(',').map(c => c.trim());
+    const cols = splitCSVLine(line);
+    let dueDate = new Date();
+    if (dateIdx >= 0 && cols[dateIdx]) {
+      const parsed = new Date(cols[dateIdx]);
+      if (!isNaN(parsed.getTime())) dueDate = parsed;
+    }
     return {
       id: `import-${Date.now()}-${i}`,
       title: cols[titleIdx] || `Task ${i + 1}`,
-      priority: priorityIdx >= 0 ? (cols[priorityIdx] || 'medium').toLowerCase() : 'medium',
-      dueDate: dateIdx >= 0 && cols[dateIdx] ? new Date(cols[dateIdx]) : new Date(),
+      priority: priorityIdx >= 0 && cols[priorityIdx] ? (cols[priorityIdx]).toLowerCase() : 'medium',
+      dueDate,
       completed: false,
       starred: false,
       subtasks: [],
@@ -719,10 +785,12 @@ export default function DostMode() {
             // Mark habit as done today (update local state + API)
             const habit = habits.find(h => h.id === action.habit_id);
             if (habit && !habit.todayDone) {
-              const newDates = [...(habit.completedDates || []), today];
+              const prevDates = habit.consistency || habit.completedDates || [];
+              const newDates = prevDates.includes(today) ? prevDates : [...prevDates, today];
               const newStreak = (habit.streak || 0) + 1;
               const updated = {
                 ...habit,
+                consistency: newDates,
                 completedDates: newDates,
                 streak: newStreak,
                 bestStreak: Math.max(newStreak, habit.bestStreak || 0),
@@ -739,13 +807,15 @@ export default function DostMode() {
           }
 
           case 'log_mood': {
-            // Save mood to localStorage and API
+            // Save mood to localStorage and API (normalized to 1-5 scale)
             const moodHistory = JSON.parse(localStorage.getItem(getUserScopedKey('mood-history')) || '[]');
-            const labels = { 10: 'Amazing', 9: 'Great', 7: 'Good', 5: 'Okay', 4: 'Tired', 3: 'Stressed', 2: 'Sad', 1: 'Rough' };
+            const rawScore = parseInt(action.score);
+            const score = isNaN(rawScore) ? 3 : Math.min(5, Math.max(1, rawScore <= 5 ? rawScore : Math.round(rawScore / 2)));
+            const labels = { 5: 'Great', 4: 'Good', 3: 'Okay', 2: 'Low', 1: 'Rough' };
             const entry = {
               date: new Date().toISOString(),
-              mood: action.score,
-              label: labels[action.score] || 'Neutral'
+              mood: score,
+              label: labels[score] || 'Okay'
             };
             const updated = [entry, ...moodHistory].slice(0, 30);
             localStorage.setItem(getUserScopedKey('mood-history'), JSON.stringify(updated));
@@ -754,7 +824,7 @@ export default function DostMode() {
             if (isFirebaseConfigured) {
               apiFetch('/mood-logs', {
                 method: 'POST',
-                body: JSON.stringify({ mood_value: action.score, mood_label: entry.label })
+                body: JSON.stringify({ mood_value: score, mood_label: entry.label })
               }).catch(() => { });
             }
             break;
@@ -837,10 +907,12 @@ export default function DostMode() {
           if (!data.id) break;
           const habit = habits.find(h => h.id === data.id);
           if (habit && !habit.todayDone) {
-            const newDates = [...(habit.completedDates || []), today];
+            const prevDates = habit.consistency || habit.completedDates || [];
+            const newDates = prevDates.includes(today) ? prevDates : [...prevDates, today];
             const newStreak = (habit.streak || 0) + 1;
             const updated = {
               ...habit,
+              consistency: newDates,
               completedDates: newDates,
               streak: newStreak,
               bestStreak: Math.max(newStreak, habit.bestStreak || 0),
@@ -950,30 +1022,38 @@ export default function DostMode() {
     }
   }, [habits, tasks, updateHabit, toggleTask, addTask, updateTask]);
 
-  // Check if API server is reachable - ONLY if API is configured
+  // Check if API server is reachable
   useEffect(() => {
-    if (!isAPIConfigured) {
-      setIsOnline(false);
-      return;
-    }
     const checkAPI = async () => {
       try {
-        const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(3000) });
-        const data = await res.json();
-        setIsOnline(data?.status === 'online');
-      } catch { setIsOnline(false); }
+        const res = await fetch(`${API_BASE}/ping`, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          setIsOnline(true);
+        } else {
+          const rootRes = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(3000) });
+          const data = await rootRes.json().catch(() => ({}));
+          setIsOnline(data?.status === 'online');
+        }
+      } catch {
+        setIsOnline(false);
+      }
     };
     checkAPI();
     const interval = setInterval(checkAPI, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Save chat history
+  // Save chat history (filter out temporary blob URLs so images don't break on reload)
   useEffect(() => {
     try {
-      try {
-        localStorage.setItem(getUserScopedKey('chat-history'), JSON.stringify(messages.slice(-80)));
-      } catch { }
+      const sanitized = messages.slice(-80).map(m => {
+        if (m.imageUrl && m.imageUrl.startsWith('blob:')) {
+          const { imageUrl, ...rest } = m;
+          return { ...rest, imagePreviewExpired: true };
+        }
+        return m;
+      });
+      localStorage.setItem(getUserScopedKey('chat-history'), JSON.stringify(sanitized));
     } catch { }
   }, [messages]);
 
@@ -1170,12 +1250,13 @@ export default function DostMode() {
   /* ═══════════════════════════════
      MAIN SEND HANDLER — Intent-based routing
      ═══════════════════════════════ */
-  const handleSend = useCallback(async () => {
-    if (!input.trim()) return;
+  const handleSend = useCallback(async (textOverride = null) => {
+    const textToSend = (typeof textOverride === 'string' ? textOverride : input).trim();
+    if (!textToSend) return;
 
-    const userMsg = { id: Date.now(), sender: 'user', type: 'text', content: input };
+    const userMsg = { id: Date.now(), sender: 'user', type: 'text', content: textToSend };
     setMessages(prev => [...prev, userMsg]);
-    const userInput = input;
+    const userInput = textToSend;
     setInput("");
     setIsThinking(true);
 
@@ -1240,6 +1321,17 @@ export default function DostMode() {
             source: 'dost',
           };
           saveCalendarEvent(calEvt2);
+          if (isFirebaseConfigured) {
+            apiFetch('/events', {
+              method: 'POST',
+              body: JSON.stringify({
+                title: calEvt2.title,
+                start: calEvt2.start,
+                end: calEvt2.end,
+                category: calEvt2.category,
+              }),
+            }).catch(() => {});
+          }
           addAiMsg(
             `✅ **Task + Event created!**\n\n"${intent.title}"\n⏰ Time: **${format(intent.dueDate, 'h:mm a')}**\n📆 ${format(intent.dueDate, 'EEEE, MMM d')}\n\n✅ Saved to your **Calendar** and task list!`,
             { type: 'task_created', taskData: newTask2 }
@@ -1255,15 +1347,15 @@ export default function DostMode() {
             ? intent.endDate
             : new Date(intent.eventDate.getTime() + 3600000);
 
-          // \u2500\u2500 Conflict detection: check if any existing event overlaps this slot \u2500\u2500
+          // ── Conflict detection: check if any existing event overlaps this slot ──
           const conflicts = getCalendarConflicts(intent.eventDate, endDateForEvent);
           if (conflicts.length > 0) {
             // Store pending intent so user can confirm later
             const pending = { ...intent, endDate: endDateForEvent, _evId: evId, _durMins: durMins };
             pendingEventRef.current = pending;
-            const conflictList = conflicts.slice(0, 3).map(c => `• **${c.title}** (${format(new Date(c.start), 'h:mm a')} \u2013 ${format(new Date(c.end), 'h:mm a')})`).join('\n');
+            const conflictList = conflicts.slice(0, 3).map(c => `• **${c.title}** (${format(new Date(c.start), 'h:mm a')} – ${format(new Date(c.end), 'h:mm a')})`).join('\n');
             addAiMsg(
-              `\u26a0\ufe0f **Time slot already booked!**\n\n${conflictList}\n\n📅 You still want to add **"${intent.title}"** at **${format(intent.eventDate, 'h:mm a, MMM d')}**?\n\nReply **"yes"** to keep it or **"no"** to cancel.`,
+              `⚠️ **Time slot already booked!**\n\n${conflictList}\n\n📅 You still want to add **"${intent.title}"** at **${format(intent.eventDate, 'h:mm a, MMM d')}**?\n\nReply **"yes"** to keep it or **"no"** to cancel.`,
               { type: 'conflict_prompt' }
             );
             break;
@@ -1389,6 +1481,37 @@ export default function DostMode() {
           break;
         }
 
+        /* ── COMPLETE HABIT ── */
+        case 'complete_habit': {
+          if (intent.found) {
+            const habit = intent.found;
+            const today = format(new Date(), 'yyyy-MM-dd');
+            if (!habit.todayDone) {
+              const prevDates = habit.consistency || habit.completedDates || [];
+              const newDates = prevDates.includes(today) ? prevDates : [...prevDates, today];
+              const newStreak = (habit.streak || 0) + 1;
+              const updated = {
+                ...habit,
+                consistency: newDates,
+                completedDates: newDates,
+                streak: newStreak,
+                bestStreak: Math.max(newStreak, habit.bestStreak || 0),
+                todayDone: true,
+              };
+              updateHabit(updated);
+              if (isFirebaseConfigured) {
+                apiFetch(`/habits/${habit.id}/complete`, { method: 'POST' }).catch(() => {});
+              }
+              addAiMsg(`🔥 **Streak updated!** "${habit.title}" completed for today (${newStreak}-day streak)! Great job! 💪`);
+            } else {
+              addAiMsg(`You've already completed **"${habit.title}"** today! Keep up the great streak! 🔥`);
+            }
+          } else {
+            addAiMsg(`I couldn't find an active habit matching "${intent.query}". Say "How are my habits?" to check your habit list.`);
+          }
+          break;
+        }
+
         /* ── COMPLETE TASK ── */
         case 'complete_task': {
           if (intent.found) {
@@ -1498,7 +1621,7 @@ export default function DostMode() {
 
         /* ── SCHEDULE APPLY YES ── */
         case 'schedule_apply_yes': {
-          // \u2500\u2500 If a conflicting event is pending confirmation, handle it here first \u2500\u2500
+          // ── If a conflicting event is pending confirmation, handle it here first ──
           if (pendingEventRef.current) {
             const p = pendingEventRef.current;
             pendingEventRef.current = null;
@@ -1513,6 +1636,17 @@ export default function DostMode() {
               source: 'dost',
             };
             saveCalendarEvent(calEvtConfirmed);
+            if (isFirebaseConfigured) {
+              apiFetch('/events', {
+                method: 'POST',
+                body: JSON.stringify({
+                  title: calEvtConfirmed.title,
+                  start: calEvtConfirmed.start,
+                  end: calEvtConfirmed.end,
+                  category: calEvtConfirmed.category,
+                }),
+              }).catch(() => {});
+            }
             const evTask = {
               id: `task-${Date.now()}`,
               title: `📅 ${p.title}`,
@@ -1533,7 +1667,6 @@ export default function DostMode() {
             break;
           }
           if (!pendingSchedule) {
-
             addAiMsg('No pending schedule to apply! Say **"plan my day"** first to generate one. 😊');
             break;
           }
@@ -1549,20 +1682,34 @@ export default function DostMode() {
           const todayTasks = tasks.filter(t => !t.completed && (!t.dueDate || new Date(t.dueDate).toDateString() === new Date().toDateString()));
           const backup = { tasks: todayTasks, uses: (usage2.uses || 0) + 1 };
           localStorage.setItem(schedKey, JSON.stringify(backup));
-          // Remove today's pending tasks and add schedule as tasks
-          todayTasks.forEach(t => deleteTask(t.id));
-          pendingSchedule.filter(b => b.type === 'task' || b.type === 'habit').forEach(block => {
-            const t = {
-              id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-              title: block.title,
-              priority: block.type === 'task' ? 'medium' : 'low',
-              dueDate: (() => { const d = new Date(); const [h, m] = block.startTime.split(':'); d.setHours(parseInt(h), parseInt(m), 0, 0); return d; })(),
-              completed: false, starred: false, subtasks: [],
-              listId: 'dost',
-              details: `Smart Schedule: ${block.startTime} – ${block.endTime}`,
-              source: 'smart-schedule',
-            };
-            addTask(t);
+
+          // Schedule blocks: update scheduled tasks and add routines/focus sessions safely without deleting unscheduled tasks
+          pendingSchedule.filter(b => b.type === 'task' || b.type === 'habit' || b.type === 'focus' || b.type === 'break').forEach(block => {
+            const blockDue = (() => { const d = new Date(); const [h, m] = block.startTime.split(':'); d.setHours(parseInt(h), parseInt(m), 0, 0); return d; })();
+            if (block.sourceId && block.type === 'task') {
+              const existing = tasks.find(t => t.id === block.sourceId);
+              if (existing) {
+                updateTask({
+                  ...existing,
+                  dueDate: blockDue,
+                  details: `Smart Schedule: ${block.startTime} – ${block.endTime}${existing.details ? ` | ${existing.details}` : ''}`,
+                });
+                return;
+              }
+            }
+            if (block.type !== 'break') {
+              const t = {
+                id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                title: `${block.emoji} ${block.title}`,
+                priority: block.type === 'task' ? 'medium' : 'low',
+                dueDate: blockDue,
+                completed: false, starred: false, subtasks: [],
+                listId: 'dost',
+                details: `Smart Schedule: ${block.startTime} – ${block.endTime}`,
+                source: 'smart-schedule',
+              };
+              addTask(t);
+            }
           });
           setPendingSchedule(null);
           const left = usesLeft2 - 1;
@@ -1585,7 +1732,25 @@ export default function DostMode() {
           backup2.tasks.forEach(t => addTask(t));
           // Clear backup but keep uses count
           localStorage.setItem(schedKey2, JSON.stringify({ uses: backup2.uses, tasks: [] }));
-          addAiMsg(`↩️ **Original plan restored!**\n\n⚠️ **Note:** This counted as one of your 2 daily Smart Schedule uses. You have ${2 - (backup2.uses || 2)} use${2 - (backup2.uses || 2) !== 1 ? 's' : ''} remaining today.`);
+          const remainingUses = Math.max(0, 2 - (backup2.uses ?? 2));
+          addAiMsg(`↩️ **Original plan restored!**\n\n⚠️ **Note:** This counted as one of your 2 daily Smart Schedule uses. You have ${remainingUses} use${remainingUses !== 1 ? 's' : ''} remaining today.`);
+          break;
+        }
+
+        /* ── SCHEDULE / CONFLICT CANCELLATION (NO) ── */
+        case 'schedule_apply_no': {
+          if (pendingEventRef.current) {
+            const cancelledTitle = pendingEventRef.current.title;
+            pendingEventRef.current = null;
+            addAiMsg(`❌ Cancelled! I didn't schedule **"${cancelledTitle}"**.`);
+            break;
+          }
+          if (pendingSchedule) {
+            setPendingSchedule(null);
+            addAiMsg("👍 No problem! I've kept your day plan as-is.");
+            break;
+          }
+          addAiMsg("Got it! Let me know what else I can help you with.");
           break;
         }
 
@@ -1777,9 +1942,44 @@ export default function DostMode() {
                 <p className="text-sm mb-4" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>
                   Choose a file type to import tasks or data:
                 </p>
+                {/* CSV / Text Option */}
+                <button
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.accept = '.csv,.txt';
+                      fileInputRef.current.click();
+                      setTimeout(() => {
+                        if (fileInputRef.current) fileInputRef.current.accept = '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp';
+                      }, 1000);
+                    }
+                    setShowImportModal(false);
+                  }}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
+                  style={{
+                    background: isLight ? 'rgba(6,182,212,0.08)' : 'rgba(6,182,212,0.1)',
+                    border: 'none',
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-cyan-500/20">
+                    <FileText size={18} className="text-cyan-400" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <span className="font-medium block" style={{ color: 'var(--text-primary)' }}>CSV / Text File</span>
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>Import task list from .csv or .txt</span>
+                  </div>
+                </button>
                 {/* Excel Option */}
                 <button
-                  onClick={() => { fileInputRef.current?.setAttribute('accept', '.xlsx,.xls'); fileInputRef.current?.click(); setShowImportModal(false); }}
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.accept = '.xlsx,.xls';
+                      fileInputRef.current.click();
+                      setTimeout(() => {
+                        if (fileInputRef.current) fileInputRef.current.accept = '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp';
+                      }, 1000);
+                    }
+                    setShowImportModal(false);
+                  }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
                     background: isLight ? 'rgb(var(--color-accent) / 0.08)' : 'rgb(var(--color-accent) / 0.1)',
@@ -1796,7 +1996,16 @@ export default function DostMode() {
                 </button>
                 {/* Image Option */}
                 <button
-                  onClick={() => { fileInputRef.current?.setAttribute('accept', 'image/*'); fileInputRef.current?.click(); setShowImportModal(false); }}
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.accept = 'image/*';
+                      fileInputRef.current.click();
+                      setTimeout(() => {
+                        if (fileInputRef.current) fileInputRef.current.accept = '.csv,.xlsx,.xls,.txt,.jpg,.jpeg,.png,.webp';
+                      }, 1000);
+                    }
+                    setShowImportModal(false);
+                  }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02]"
                   style={{
                     background: isLight ? 'rgba(168,85,247,0.08)' : 'rgba(168,85,247,0.1)',
@@ -1960,6 +2169,11 @@ export default function DostMode() {
               {msg.imageUrl && (
                 <img src={msg.imageUrl} alt="Imported" className="mt-3 rounded-xl border border-white/10 max-h-48 object-cover w-full" />
               )}
+              {msg.imagePreviewExpired && !msg.imageUrl && (
+                <div className="mt-3 p-2.5 rounded-xl bg-black/10 text-xs opacity-60 flex items-center gap-2">
+                  <ImageIcon size={14} /> Image preview expired after session reload
+                </div>
+              )}
             </div>
           </motion.div>
         ))}
@@ -2064,7 +2278,7 @@ export default function DostMode() {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setApiError(null)} className="p-1.5 hover:bg-[var(--glass-bg-hover)] rounded-lg text-white/70 hover:text-white transition-colors"><X size={16} /></button>
-              <button onClick={() => { setInput(apiError.input); setApiError(null); }}
+              <button onClick={() => { const toRetry = apiError.input; setApiError(null); handleSend(toRetry); }}
                 className="px-3 py-1.5 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-white/90 transition-colors shadow-sm">
                 Retry
               </button>
