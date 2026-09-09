@@ -241,3 +241,52 @@ CREATE TABLE IF NOT EXISTS data_export_requests (
     download_url TEXT,
     expires_at TIMESTAMPTZ
 );
+
+-- ─── 13. ROW LEVEL SECURITY (RLS) ───────────────────────────────────────────
+-- Required by Supabase Security Advisor to prevent unauthorized public access via PostgREST.
+-- The FastAPI backend connects via PostgreSQL (postgres user) which bypasses RLS (BYPASSRLS).
+-- Enabling RLS blocks arbitrary anon/unauthenticated queries through Supabase's REST endpoints.
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mood_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE focus_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE oauth_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_export_requests ENABLE ROW LEVEL SECURITY;
+
+-- Dynamic safety net: Ensure any existing or newly added tables in public schema have RLS enabled
+DO $$
+DECLARE
+    tbl RECORD;
+BEGIN
+    FOR tbl IN 
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'public'
+    LOOP
+        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl.tablename);
+    END LOOP;
+END $$;
+
+-- ─── RLS POLICIES ────────────────────────────────────────────────────────────
+-- 1. Plans: Allow public read-only access so subscription tiers are visible
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'plans' AND policyname = 'Allow public read-only access to plans'
+    ) THEN
+        CREATE POLICY "Allow public read-only access to plans" ON public.plans
+            FOR SELECT
+            USING (true);
+    END IF;
+END $$;

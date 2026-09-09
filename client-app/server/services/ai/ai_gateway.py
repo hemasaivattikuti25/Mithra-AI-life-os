@@ -28,9 +28,7 @@ class DostResponseSchema(BaseModel):
     action: Optional[ActionResponse] = None
 
 # ─── Configuration ───────────────────────────────────────────────────────────
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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")
-NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-DEFAULT_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
+from core.config import NVIDIA_API_KEY, NVIDIA_BASE_URL, NVIDIA_MODEL as DEFAULT_MODEL
 
 # ─── Lazy Client Initialization ──────────────────────────────────────────────
 _client = None
