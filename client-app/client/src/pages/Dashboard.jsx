@@ -388,7 +388,7 @@ function Dashboard() {
     if (moodHistory.length === 0) return null;
     const last = moodHistory[0]; // already sorted newest-first
     return MOOD_EMOJIS.find(m => m.value === last.mood) || null;
-  }, [moodHistory, selectedMood]);
+  }, [moodHistory]);
 
   /* Check badges whenever stats change */
   useEffect(() => {
@@ -835,7 +835,7 @@ function Dashboard() {
           ════════════════════════════════════ */}
         {(() => {
           const schedKey = (() => { try { const a = JSON.parse(localStorage.getItem('mithra-auth') || 'null'); return a?.id ? `mithra-${a.id}-smart-schedule-${new Date().toISOString().slice(0, 10)}` : `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } catch { return `mithra-smart-schedule-${new Date().toISOString().slice(0, 10)}`; } })();
-          let schedData = null;
+          let schedData;
           try {
         schedData = JSON.parse(localStorage.getItem(schedKey) || '{}');
       } catch (err) {

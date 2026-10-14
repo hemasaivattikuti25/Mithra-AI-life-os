@@ -1,8 +1,8 @@
-"""
-Frontend Error Handling Hook (JavaScript/React)
-
-Place this file as: client-app/client/src/hooks/useErrorHandler.js
-"""
+/**
+ * Frontend Error Handling Hook (JavaScript/React)
+ * 
+ * Location: client-app/client/src/hooks/useErrorHandler.js
+ */
 
 import { useState, useCallback } from 'react';
 

@@ -1002,7 +1002,7 @@ export default function HabitFocusHub() {
     return Math.max(0, FREEZES_PER_MONTH - (data.used || 0));
   };
 
-  const useStreakFreeze = (habitId) => {
+  const handleStreakFreeze = (habitId) => {
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
     const avail = getAvailableFreezes();
@@ -1194,7 +1194,7 @@ export default function HabitFocusHub() {
     notificationManager.hapticHeavy();
     setIsActive(false);
     setIsPaused(false);
-    let elapsed = 0;
+    let elapsed;
     if (mode === 'stopwatch') {
       elapsed = Math.floor(stopwatchTime / 60);
       setStopwatchTime(0);
@@ -1425,7 +1425,7 @@ export default function HabitFocusHub() {
                         {brokenStreakHabits.slice(0, 3).map(h => (
                           <button
                             key={h.id}
-                            onClick={() => useStreakFreeze(h.id)}
+                            onClick={() => handleStreakFreeze(h.id)}
                             className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-all"
                             style={{
                               background: 'var(--accent-glow)',
@@ -1449,7 +1449,7 @@ export default function HabitFocusHub() {
                       onDelete={deleteHabit}
                       onEdit={(h) => { setEditingHabit(h); setShowModal(true); }}
                       availableFreezes={getAvailableFreezes()}
-                      onFreeze={useStreakFreeze} />
+                      onFreeze={handleStreakFreeze} />
                   ))}
                 </AnimatePresence>
               </div>

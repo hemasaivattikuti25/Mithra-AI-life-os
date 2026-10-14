@@ -47,7 +47,7 @@ export function GoogleCalendarCallback() {
         }
         
         // Exchange code for refresh token
-        const response = await apiFetch('/api/calendar/authorize', {
+        const data = await apiFetch('/api/calendar/authorize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -56,11 +56,9 @@ export function GoogleCalendarCallback() {
           })
         });
         
-        const data = await response.json();
-        
-        if (!response.ok) {
+        if (!data || data.error) {
           setStatus('error');
-          setMessage(data.detail || 'Authorization failed');
+          setMessage(data?.detail || data?.error || 'Authorization failed');
           return;
         }
         

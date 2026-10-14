@@ -7,30 +7,8 @@ This is what makes Dost feel truly personal — it remembers past entries.
 ═══════════════════════════════════════════════════════════════════════════════
 """
 import logging
-from datetime import date
-from typing import Optional
-
-from . import ai_gateway
 
 logger = logging.getLogger("mithra.memory_engine")
-
-
-EXPANSION_SYSTEM_PROMPT = """You are a search query expander for a personal journal database.
-Your task is to take a user's current message and write a search query consisting of 3-5 keywords or short phrases that are highly likely to appear in past journal entries describing similar situations, emotions, or reflections.
-Do NOT reply to the user. Do NOT write a sentence. Return ONLY the search terms, separated by commas.
-
-Example 1:
-Input: "I feel stressed about work"
-Output: work pressure, stressed, overwhelmed, deadline, career anxiety
-
-Example 2:
-Input: "My stomach hurts today"
-Output: stomach ache, feeling sick, health issue, physically unwell, nauseous
-
-Example 3:
-Input: "had a great workout"
-Output: exercise, gym, running, feeling energetic, workout success
-"""
 
 
 async def expand_query(query: str) -> str:

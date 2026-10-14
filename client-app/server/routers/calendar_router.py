@@ -6,13 +6,12 @@ Full OAuth integration will be enabled once Google OAuth verification is complet
 All event CRUD is handled by tasks_router.py (/api/events).
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import logging
 
 from core.security import get_current_user
-from core.config import get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])

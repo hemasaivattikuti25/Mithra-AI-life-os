@@ -1,4 +1,4 @@
-import { apiFetch } from './firebaseClient';
+import { apiFetch, API_URL } from './firebaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    SYNC ENGINE — Offline-first bidirectional sync with auto-retry
@@ -55,7 +55,7 @@ class SyncEngine {
     
     this.healthCheckInterval = setInterval(async () => {
       try {
-        const res = await fetch('/api/ping', { 
+        const res = await fetch(`${API_URL}/ping`, { 
           method: 'GET', 
           signal: AbortSignal.timeout(5000) 
         });

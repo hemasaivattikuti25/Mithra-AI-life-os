@@ -7,7 +7,6 @@ import logging
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, validator
 from typing import Optional
-import re
 
 from core.security import get_current_user
 from core.config import get_db

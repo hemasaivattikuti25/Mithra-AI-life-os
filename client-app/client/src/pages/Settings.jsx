@@ -11,6 +11,7 @@ import {
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import AIUsageDashboard from '../components/AIUsageDashboard';
+import GoogleCalendarAuth from './GoogleCalendarAuth';
 
 /* ═══════ SHARED TOGGLE ═══════ */
 const Toggle = ({ label, description, isActive, onToggle }) => (
@@ -615,6 +616,13 @@ export default function Settings() {
           <Toggle label="Sync Tasks to Calendar" description="Show tasks with due dates as events on your calendar" isActive={syncSettings.syncTasksToCalendar} onToggle={toggleSyncTasks} />
           <Toggle label="Sync Habits to Calendar" description="Show daily habits as scheduled blocks" isActive={syncSettings.syncHabitsToCalendar} onToggle={toggleSyncHabits} />
           <Toggle label="Sync Focus to Tracker" description="Automatically log focus sessions as habit progress" isActive={syncSettings.syncFocusToTracker} onToggle={toggleSyncFocus} />
+          <div className="pt-4 mt-2 border-t border-[var(--glass-border)] flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Google Calendar Integration</span>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>Connect Google Calendar for automated sync</p>
+            </div>
+            <GoogleCalendarAuth />
+          </div>
         </section>
 
         {/* ═══════ SUPPORT & ABOUT ═══════ */}

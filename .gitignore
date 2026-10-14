@@ -73,6 +73,8 @@ mitra_vectordb/
 # Misc
 *.bak
 *.tmp
+.~*
+~$*
 .cache/
 
 # Large media — tracked via Git LFS instead (see .gitattributes)

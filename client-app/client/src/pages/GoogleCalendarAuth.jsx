@@ -18,18 +18,16 @@ export function GoogleCalendarAuth({ onSuccess, onError, isConnected = false }) 
       setIsLoading(true);
       
       // Get OAuth URL from backend
-      const response = await apiFetch('/api/calendar/auth-url', {
+      const data = await apiFetch('/api/calendar/auth-url', {
         method: 'GET',
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to get authorization URL');
+      if (!data?.auth_url) {
+        throw new Error(data?.message || 'Google Calendar OAuth is pending verification. Events can be created directly in the app.');
       }
       
       // Store state for verification after callback
-      localStorage.setItem('oauth_state', data.state);
+      localStorage.setItem('oauth_state', data.state || '');
       localStorage.setItem('oauth_redirect_time', Date.now().toString());
       
       // Redirect to Google OAuth consent screen

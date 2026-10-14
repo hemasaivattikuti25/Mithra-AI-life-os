@@ -16,9 +16,10 @@ from schemas.models import (
     EventCreate,
 )
 from core.security import get_current_user
-from core.config import get_db, get_model, get_embedding
+from core.config import get_db
 from core.validators import InputValidator
 from core.errors import ValidationError, MithraError, PermissionError
+from services.ai import ai_gateway
 
 router = APIRouter()
 
@@ -42,37 +43,50 @@ async def _require_workspace_member(conn, workspace_id: Optional[str], user_id: 
 @router.post("/parse-schedule")
 async def parse_schedule(request: ScheduleRequest, current_user: dict = Depends(get_current_user)):
     try:
-        model = get_model()
-        if not model:
-            raise HTTPException(status_code=503, detail="AI Service Unavailable")
-
         today_str = date.today().isoformat()
         user_name = current_user.get('fullName', 'User')
 
         # SECURITY: Sanitize user input — truncate and strip potential prompt injection sequences
         safe_text = request.text[:500].replace('```', '').replace('<|', '').replace('|>', '')
 
-        prompt = f"""You are a calendar event parser. Extract events from the user's message.
+        sys_prompt = (
+            "You are a calendar event parser. Extract events from the user's message.\n"
+            f"User name: {user_name}\n"
+            f"Today's date: {today_str}\n\n"
+            "Return ONLY a valid JSON array with this exact format:\n"
+            '[{"title": "event name", "start": "ISO datetime", "end": "ISO datetime", "category": "Work|Personal|Health|Focus"}]\n\n'
+            "Rules:\n"
+            "- If duration is specified (e.g. '3 hours'), calculate end = start + duration exactly\n"
+            "- If end time is specified, use it exactly\n"
+            "- Default duration is 1 hour only if no duration mentioned\n"
+            "- Return ONLY the JSON array. No explanation, no markdown, no extra text."
+        )
 
-User name: {user_name}
-Today's date: {today_str}
-User message: {safe_text}
+        raw_resp = await ai_gateway.generate_chat_response(
+            system_prompt=sys_prompt,
+            user_message=safe_text,
+            max_tokens=600,
+            temperature=0.1,
+        )
+        clean_json = raw_resp.strip()
+        if clean_json.startswith("```json"):
+            clean_json = clean_json[7:]
+        if clean_json.startswith("```"):
+            clean_json = clean_json[3:]
+        if clean_json.endswith("```"):
+            clean_json = clean_json[:-3]
+        clean_json = clean_json.strip()
 
-Return ONLY a valid JSON array with this exact format:
-[{{"title": "event name", "start": "ISO datetime", "end": "ISO datetime", "category": "Work|Personal|Health|Focus"}}]
-
-Rules:
-- If duration is specified (e.g. '3 hours'), calculate end = start + duration exactly
-- If end time is specified, use it exactly
-- Default duration is 1 hour only if no duration mentioned
-- Return ONLY the JSON array. No explanation, no markdown, no extra text."""
-
-        response = model.generate_content(prompt)
-        clean_json = response.text.replace('```json', '').replace('```', '').strip()
         events = json.loads(clean_json)
+        if isinstance(events, dict) and "events" in events:
+            events = events["events"]
+        if not isinstance(events, list):
+            events = []
         return {"events": events}
     except json.JSONDecodeError:
         return {"events": []}
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception:
         raise HTTPException(status_code=500, detail="Schedule parsing failed. Please try again.")
 
@@ -928,6 +942,11 @@ async def delete_event(event_id: str, current_user: dict = Depends(get_current_u
     if not pool:
         raise HTTPException(status_code=503, detail="Database unavailable")
     try:
+        try:
+            event_uuid = uuid.UUID(event_id)
+        except ValueError:
+            return {"deleted": False, "reason": "Non-database event ID"}
+
         async with pool.acquire() as conn:
 
             result = await conn.execute(
@@ -935,7 +954,7 @@ async def delete_event(event_id: str, current_user: dict = Depends(get_current_u
                    AND (user_id = $2 OR workspace_id IN (
                        SELECT workspace_id FROM workspace_members WHERE user_id = $2
                    ))""",
-                event_id,
+                event_uuid,
                 current_user["id"],
             )
             if result == "DELETE 0":

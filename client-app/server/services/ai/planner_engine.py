@@ -11,7 +11,6 @@ Generates AI-powered daily schedules with:
 """
 import logging
 from datetime import date, datetime
-from typing import Optional
 
 from . import ai_gateway
 

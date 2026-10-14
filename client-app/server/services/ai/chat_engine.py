@@ -419,8 +419,6 @@ Return ONLY the raw JSON object."""
         Returns:
             {"reply": str, "action": dict, "actions": list, "memory_used": bool, "context_used": bool}
         """
-        from . import memory_engine
-
         # Fetch user context from DB
         user_context = await self._fetch_user_context(user_id, db_pool)
 

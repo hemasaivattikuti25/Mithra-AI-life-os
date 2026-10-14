@@ -10,7 +10,7 @@ Provides centralized validation for all user inputs to prevent:
 """
 
 from typing import Any, Dict, List, Optional
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 import re
 
 
@@ -18,7 +18,7 @@ class ValidationError(HTTPException):
     """Custom validation error with proper HTTP status."""
     def __init__(self, field: str, message: str):
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"Validation error in '{field}': {message}"
         )
 

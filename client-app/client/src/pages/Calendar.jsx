@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { clsx } from 'clsx';
 import { useData, getUserScopedKey } from '../context/DataContext';
+import { apiFetch, isFirebaseConfigured } from '../services/firebaseClient';
 
 /* ═══════════════════════════════════════════════════════════════
    COLOR PALETTE FOR EVENT CATEGORIES
@@ -1100,7 +1101,43 @@ const MithraCalendar = () => {
   const [selectedSlotDate, setSelectedSlotDate] = useState(null);
 
   // Persist events to localStorage
-  React.useEffect(() => { saveEvents(events); }, [events]);
+  useEffect(() => { saveEvents(events); }, [events]);
+
+  // Sync events from backend database on mount
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let isCancelled = false;
+
+    async function syncRemoteEvents() {
+      try {
+        const res = await apiFetch('/events');
+        const remoteEvents = res?.events || [];
+        if (!isCancelled && remoteEvents.length > 0) {
+          setEvents(prev => {
+            const localMap = new Map(prev.map(e => [e.id, e]));
+            remoteEvents.forEach(re => {
+              localMap.set(re.id, {
+                id: re.id,
+                title: re.title,
+                start: new Date(re.start_time || re.start),
+                end: new Date(re.end_time || re.end),
+                category: re.category || 'Personal',
+                location: re.location || '',
+                description: re.description || '',
+                repeat: re.repeat || 'Does not repeat',
+              });
+            });
+            return Array.from(localMap.values());
+          });
+        }
+      } catch (err) {
+        console.debug('[Calendar] Failed to sync remote events:', err.message);
+      }
+    }
+
+    syncRemoteEvents();
+    return () => { isCancelled = true; };
+  }, []);
 
   // Merge own events (with repeat expansion) with synced task/habit events
   const allEvents = useMemo(() => {
@@ -1128,7 +1165,24 @@ const MithraCalendar = () => {
       if (exists) return prev.map(e => e.id === evt.id ? evt : e);
       return [...prev, evt];
     });
+
+    if (isFirebaseConfigured) {
+      apiFetch('/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: evt.title,
+          start: evt.start instanceof Date ? evt.start.toISOString() : new Date(evt.start).toISOString(),
+          end: evt.end instanceof Date ? evt.end.toISOString() : (evt.end ? new Date(evt.end).toISOString() : new Date(evt.start).toISOString()),
+          category: evt.category || 'Personal',
+        }),
+      }).then(res => {
+        if (res?.id && res.id !== evt.id) {
+          setEvents(prev => prev.map(e => e.id === evt.id ? { ...e, id: res.id } : e));
+        }
+      }).catch(err => console.debug('[Calendar] Cloud event save failed:', err.message));
+    }
   };
+
   const handleDeleteEvent = (id) => {
     // Handle synced task/habit deletion
     if (typeof id === 'string' && id.startsWith('task-')) {
@@ -1140,6 +1194,11 @@ const MithraCalendar = () => {
       return;
     }
     setEvents(prev => prev.filter(e => e.id !== id));
+
+    if (isFirebaseConfigured && typeof id === 'string' && !id.includes('-repeat-')) {
+      apiFetch(`/events/${id}`, { method: 'DELETE' })
+        .catch(err => console.debug('[Calendar] Cloud event delete failed:', err.message));
+    }
   };
 
   const openNewEvent = (day, hour) => {

@@ -124,3 +124,38 @@ class TestSecurity:
                 await get_current_user(token="fake.jwt.token")
             assert exc.value.status_code == 500
 
+
+# ─── Schedule Parser ─────────────────────────────────────────────────────────
+class TestScheduleParser:
+    @pytest.mark.asyncio
+    async def test_parse_schedule_success(self):
+        from routers.tasks_router import parse_schedule
+        from schemas.models import ScheduleRequest
+        from unittest.mock import AsyncMock
+
+        mock_json = '[{"title": "Team Standup", "start": "2026-10-14T10:00:00", "end": "2026-10-14T11:00:00", "category": "Work"}]'
+        with patch("services.ai.ai_gateway.generate_chat_response", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = f"```json\n{mock_json}\n```"
+            res = await parse_schedule(
+                request=ScheduleRequest(text="Team standup at 10am"),
+                current_user={"id": "test-user", "fullName": "Tester"},
+            )
+            assert "events" in res
+            assert len(res["events"]) == 1
+            assert res["events"][0]["title"] == "Team Standup"
+
+    @pytest.mark.asyncio
+    async def test_parse_schedule_malformed_json_returns_empty(self):
+        from routers.tasks_router import parse_schedule
+        from schemas.models import ScheduleRequest
+        from unittest.mock import AsyncMock
+
+        with patch("services.ai.ai_gateway.generate_chat_response", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = "Not valid JSON at all"
+            res = await parse_schedule(
+                request=ScheduleRequest(text="random text"),
+                current_user={"id": "test-user", "fullName": "Tester"},
+            )
+            assert res == {"events": []}
+
+

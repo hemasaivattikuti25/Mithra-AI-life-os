@@ -46,8 +46,9 @@ export function ToastProvider({ children }) {
 
   // Cleanup on unmount
   useEffect(() => {
+    const currentTimers = timers.current;
     return () => {
-      Object.values(timers.current).forEach(clearTimeout);
+      Object.values(currentTimers).forEach(clearTimeout);
     };
   }, []);
 

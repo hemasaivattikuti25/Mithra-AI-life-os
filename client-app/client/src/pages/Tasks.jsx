@@ -684,7 +684,7 @@ export default function MithraTasks() {
         setSelectedTask(updated);
       }
     }
-  }, [tasks, selectedTask]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tasks, selectedTask]);
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

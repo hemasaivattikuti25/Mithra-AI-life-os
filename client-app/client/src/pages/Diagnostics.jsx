@@ -285,13 +285,16 @@ export default function Diagnostics() {
     try { rawJournal = JSON.parse(localStorage.getItem(getUserScopedKey('journal-entries')) || '[]'); } catch { }
     try { rawSessions = JSON.parse(localStorage.getItem(getUserScopedKey('focus-sessions')) || '[]'); } catch { }
 
+    const taskCount = Array.isArray(rawTasks) && rawTasks.length > 0 ? rawTasks.length : tasks.length;
+    const habitCount = Array.isArray(rawHabits) && rawHabits.length > 0 ? rawHabits.length : habits.length;
+
     return [
-      { name: 'Tasks (Cached)', count: Array.isArray(rawTasks) ? rawTasks.length : 0, icon: CheckCircle2 },
-      { name: 'Habits (Cached)', count: Array.isArray(rawHabits) ? rawHabits.length : 0, icon: Activity },
+      { name: 'Tasks (Cached)', count: taskCount, icon: CheckCircle2 },
+      { name: 'Habits (Cached)', count: habitCount, icon: Activity },
       { name: 'Journal Entries (Cached)', count: Array.isArray(rawJournal) ? rawJournal.length : 0, icon: Code },
       { name: 'Focus Sessions (Cached)', count: Array.isArray(rawSessions) ? rawSessions.length : (parseInt(rawSessions) || 0), icon: Clock },
     ];
-  }, [tasks, habits, profile]);
+  }, [tasks, habits]);
 
   return (
     <div className="p-4 pt-2 md:p-12 max-w-5xl mx-auto pb-28 md:pb-20 page-ambient" style={{ color: 'var(--text-primary)', '--ambient-x': '70%', '--ambient-y': '20%', '--ambient-opacity': '0.04' }}>

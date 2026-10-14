@@ -91,7 +91,7 @@ function parseIntent(input, tasks, habits) {
 
   if (addTaskMatch) {
     const rest = addTaskMatch[1].trim();
-    const byMatch = rest.match(/(.+?)\s+by\s+(tomorrow|today|next\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/i);
+    const byMatch = rest.match(/(.+?)\s+by\s+(tomorrow|today|next\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)/i);
     let title = rest, dueDate = new Date();
     if (byMatch) { title = byMatch[1].trim(); dueDate = parseFuzzyDate(byMatch[2]); }
     const timeMatch = rest.match(/(?:at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
@@ -1833,21 +1833,21 @@ export default function DostMode() {
     const now = new Date();
     const hour = now.getHours();
 
-    let greeting = '';
+    let greeting;
     if (hour < 12) greeting = 'Good morning!';
     else if (hour < 17) greeting = 'Good afternoon!';
     else greeting = 'Good evening!';
 
     let contextual = '';
     if (pendingTasks > 3) {
-      contextual = `\n\nYou have **${pendingTasks} pending tasks** — want me to help prioritize them? Try \"Summarize my day\" for a full overview.`;
+      contextual = `\n\nYou have **${pendingTasks} pending tasks** — want me to help prioritize them? Try "Summarize my day" for a full overview.`;
     } else if (doneHabits === totalHabits && totalHabits > 0) {
       contextual = '\n\n🌟 All your habits are done today — incredible discipline! Keep this momentum going.';
     } else if (totalHabits > 0) {
-      contextual = `\n\nYou've completed **${doneHabits}/${totalHabits}** habits today. Want to check your streak? Say \"How are my habits?\"`;
+      contextual = `\n\nYou've completed **${doneHabits}/${totalHabits}** habits today. Want to check your streak? Say "How are my habits?"`;
     }
 
-    return `${greeting} I'm here to help. 😊${contextual}\n\nHere's what I can do:\n\n📋 **\"Add task: <title>\"** — create a task\n🔥 **\"Add habit: <title>\"** — start a new habit\n📊 **\"Summarize my day\"** — get your daily overview\n🗑 **\"Delete task <name>\"** — remove a task\n✏️ **\"Edit task <name> to <new>\"** — update it\n😊 **\"How is my mood?\"** — review mood history\n\nOr just chat — I'm always here for you! 💬`;
+    return `${greeting} I'm here to help. 😊${contextual}\n\nHere's what I can do:\n\n📋 **"Add task: <title>"** — create a task\n🔥 **"Add habit: <title>"** — start a new habit\n📊 **"Summarize my day"** — get your daily overview\n🗑 **"Delete task <name>"** — remove a task\n✏️ **"Edit task <name> to <new>"** — update it\n😊 **"How is my mood?"** — review mood history\n\nOr just chat — I'm always here for you! 💬`;
   }
 
   /* ── Render message content with markdown-like bold ── */

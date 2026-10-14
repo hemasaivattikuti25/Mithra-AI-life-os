@@ -28,6 +28,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const PromoVideo = lazy(() => import('./pages/PromoVideo'));
 const Diagnostics = lazy(() => import('./pages/Diagnostics'));
+const GoogleCalendarCallback = lazy(() => import('./pages/GoogleCalendarCallback'));
 
 /* Lightweight page loading fallback (shows instantly, no cumulative layout shift) */
 const PageLoader = () => (
@@ -205,6 +206,7 @@ function AppRoutes() {
         </Route>
 
         {/* Public Pages */}
+        <Route path="/calendar/callback" element={<Suspense fallback={<PageLoader />}><GoogleCalendarCallback /></Suspense>} />
         <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Terms /></Suspense>} />
         <Route path="/promo-video" element={<Suspense fallback={<PageLoader />}><PromoVideo /></Suspense>} />

@@ -13,12 +13,20 @@ services:
         value: production
       - key: ALLOWED_ORIGINS
         value: "https://mithra-lifeos.com,https://www.mithra-lifeos.com,https://mithra-life-os.vercel.app"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_DATABASE_URL
+        sync: false
       - key: NEON_DATABASE_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
-      - key: GEMINI_API_KEY
+      - key: NVIDIA_API_KEY
         sync: false
+      - key: NVIDIA_BASE_URL
+        value: "https://integrate.api.nvidia.com/v1"
+      - key: NVIDIA_MODEL
+        value: "nvidia/nemotron-3.5-lightning-30b-a3b"
       - key: ENCRYPTION_KEY
         sync: false
       - key: GOOGLE_OAUTH_CLIENT_ID
